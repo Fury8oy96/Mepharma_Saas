@@ -1,0 +1,584 @@
+{
+  "@@locale": "ar",
+  "appTitle": "نظام إدارة الصيدلية",
+  "signIn": "تسجيل الدخول",
+  "signingIn": "جارٍ تسجيل الدخول...",
+  "username": "اسم المستخدم",
+  "password": "كلمة المرور",
+  "invalidCredentials": "اسم المستخدم أو كلمة المرور غير صحيحة",
+  "errorLogin": "حدث خطأ ما. حاول مرة أخرى.",
+  "language": "اللغة",
+  "english": "الإنجليزية",
+  "arabic": "العربية",
+  "dashboard": "الرئيسية",
+  "pos": "نقطة البيع",
+  "salesHistory": "سجل المبيعات",
+  "products": "المنتجات",
+  "categories": "الفئات",
+  "suppliers": "الموردون",
+  "purchases": "المشتريات",
+  "users": "المستخدمون",
+  "reports": "التقارير",
+  "settings": "الإعدادات",
+  "backup": "النسخ الاحتياطي",
+  "logout": "تسجيل الخروج",
+  "comingSoon": "قريباً",
+  "welcomeBack": "مرحباً بعودتك، {name}",
+  "@welcomeBack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeBackMessage": "أنت مسجل الدخول بصفة {role}",
+  "@welcomeBackMessage": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "roleAdmin": "مدير",
+  "roleStaff": "موظف",
+  "quickSale": "بيع جديد",
+  "todaySales": "مبيعات اليوم",
+  "lowStockItems": "عناصر منخفضة المخزون",
+  "actions": "إجراءات",
+  "save": "حفظ",
+  "saving": "جارٍ الحفظ...",
+  "saved": "تم الحفظ",
+  "cancel": "إلغاء",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "searchProducts": "ابحث بالاسم أو رمز الصنف أو الباركود",
+  "fieldRequired": "هذا الحقل مطلوب",
+  "invalidNumber": "رقم غير صالح",
+  "alreadyInUse": "{field} مستخدم بالفعل",
+  "@alreadyInUse": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOccurred": "حدث خطأ ما. حاول مرة أخرى.",
+  "sku": "رمز الصنف",
+  "barcode": "الباركود",
+  "productName": "اسم المنتج",
+  "category": "الفئة",
+  "supplier": "المورد",
+  "costPrice": "سعر التكلفة",
+  "sellingPrice": "سعر البيع",
+  "stock": "المخزون",
+  "lowStockThreshold": "تنبيه عند انخفاض المخزون",
+  "expiryDate": "تاريخ الانتهاء",
+  "description": "الوصف",
+  "noCategory": "بدون فئة",
+  "noSupplier": "بدون مورد",
+  "noProducts": "لا توجد منتجات",
+  "addProduct": "إضافة منتج",
+  "editProduct": "تعديل المنتج",
+  "deleteProduct": "حذف المنتج",
+  "productAdded": "تمت إضافة المنتج",
+  "productSaved": "تم حفظ المنتج",
+  "productDeleted": "تم حذف المنتج",
+  "confirmDeleteProduct": "حذف {name}؟",
+  "@confirmDeleteProduct": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDeleteProductMessage": "سيؤدي هذا إلى إزالة المنتج من المخزون. لا يمكن التراجع عن هذا الإجراء.",
+  "adjustStock": "تعديل المخزون",
+  "stockAdjustment": "تعديل المخزون",
+  "adjustmentQuantity": "تغيير الكمية",
+  "adjustmentReason": "السبب",
+  "adjustmentReasonHint": "مثال: تالف، منتهي، جرد",
+  "positiveAddsNegativeRemoves": "الموجب يضيف والسالب يخصم",
+  "currentStock": "المخزون الحالي",
+  "addCategory": "إضافة فئة",
+  "editCategory": "تعديل الفئة",
+  "categoryName": "اسم الفئة",
+  "deleteCategory": "حذف الفئة",
+  "categoryAdded": "تمت إضافة الفئة",
+  "categorySaved": "تم حفظ الفئة",
+  "confirmDeleteCategory": "حذف الفئة {name}؟",
+  "@confirmDeleteCategory": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noCategories": "لا توجد فئات بعد",
+  "addSupplier": "إضافة مورد",
+  "editSupplier": "تعديل المورد",
+  "supplierName": "اسم المورد",
+  "contactPerson": "الشخص المسؤول",
+  "phone": "الهاتف",
+  "email": "البريد الإلكتروني",
+  "address": "العنوان",
+  "deleteSupplier": "حذف المورد",
+  "supplierAdded": "تمت إضافة المورد",
+  "supplierSaved": "تم حفظ المورد",
+  "confirmDeleteSupplier": "حذف المورد {name}؟",
+  "@confirmDeleteSupplier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSuppliers": "لا يوجد موردون بعد",
+  "storeSettings": "إعدادات المتجر",
+  "storeName": "اسم المتجر",
+  "storeAddress": "عنوان المتجر",
+  "storePhone": "هاتف المتجر",
+  "storeTaxId": "الرقم الضريبي",
+  "taxRate": "نسبة الضريبة (%)",
+  "currencySymbol": "رمز العملة",
+  "scanBarcode": "امسح الباركود، الصنف، الاسم، أو الاسم العلمي...",
+  "productNotFound": "المنتج غير موجود",
+  "outOfStock": "نفد المخزون: {name}",
+  "@outOfStock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyCart": "السلة فارغة",
+  "insufficientStock": "المخزون غير كافٍ",
+  "insufficientReceived": "المبلغ المستلم أقل من الإجمالي",
+  "cart": "السلة",
+  "clearCart": "مسح السلة",
+  "confirmClearCartMessage": "ستتم إزالة جميع الأصناف من السلة.",
+  "newSale": "بيع جديد",
+  "holdSale": "تعليق البيع",
+  "resumeHold": "استئناف بيع معلق",
+  "saleHeld": "تم تعليق البيع",
+  "saleCompleted": "اكتمل البيع: {invoice}",
+  "@saleCompleted": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "noHolds": "لا توجد مبيعات معلقة",
+  "deleteHold": "حذف المعلق",
+  "confirmDeleteHold": "حذف البيع المعلق {number}؟",
+  "@confirmDeleteHold": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "holdPartiallyRestored": "بعض المنتجات لم تعد متوفرة وتم تخطيها: {missing}",
+  "@holdPartiallyRestored": {
+    "placeholders": {
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "subtotal": "المجموع الفرعي",
+  "discount": "الخصم",
+  "discountNone": "بدون خصم",
+  "discountPercentage": "نسبة مئوية",
+  "discountFixed": "مبلغ ثابت",
+  "tax": "الضريبة",
+  "total": "الإجمالي",
+  "pay": "الدفع",
+  "payment": "الدفع",
+  "paymentCash": "نقداً",
+  "paymentCard": "بطاقة",
+  "paymentMobileMoney": "محفظة إلكترونية",
+  "amountReceived": "المبلغ المستلم",
+  "changeDue": "الباقي",
+  "confirmPayment": "تأكيد الدفع",
+  "receiptInvoice": "فاتورة:",
+  "receiptCashier": "أمين الصندوق:",
+  "receiptCustomer": "العميل:",
+  "receiptOnAccount": "على الحساب",
+  "receiptThanks": "شكراً لشرائك!",
+  "printFailed": "فشلت الطباعة",
+  "printFailedMessage": "تعذرت طباعة الإيصال. تحقق من إعدادات الطابعة وحاول مرة أخرى، أو اطبعه لاحقاً من سجل المبيعات.",
+  "retry": "إعادة المحاولة",
+  "dismiss": "إغلاق",
+  "hintScan": "F1 مسح",
+  "hintPay": "F2 دفع",
+  "hintHold": "F4 تعليق",
+  "hintClear": "Esc مسح",
+  "printerSettings": "إعدادات الطابعة",
+  "printerType": "نوع الطابعة",
+  "printerNone": "بدون",
+  "printerWindows": "طابعة ويندوز (USB / تعريف)",
+  "printerNetwork": "طابعة شبكة (TCP / 9100)",
+  "printerAddress": "اسم الطابعة أو العنوان",
+  "printerAddressHintWindows": "اسم الطابعة المثبتة",
+  "printerAddressHintNetwork": "مثال: 192.168.1.50",
+  "printerPort": "المنفذ",
+  "paperSize": "حجم الورق",
+  "testPrint": "طباعة تجريبية",
+  "testReceiptSent": "تم إرسال إيصال تجريبي إلى الطابعة",
+  "from": "من",
+  "to": "إلى",
+  "searchInvoice": "ابحث برقم الفاتورة أو اسم العميل",
+  "dateRange": "الفترة الزمنية",
+  "paymentAll": "كل طرق الدفع",
+  "status": "الحالة",
+  "statusAll": "كل الحالات",
+  "resetFilters": "إعادة تعيين الفلاتر",
+  "noSales": "لا توجد مبيعات مطابقة للفلاتر الحالية",
+  "saleStatusCompleted": "مكتملة",
+  "saleStatusReturned": "مُرجع",
+  "saleStatusVoided": "ملغاة",
+  "saleDetail": "تفاصيل البيع",
+  "printReceipt": "طباعة الإيصال",
+  "returnItems": "إرجاع أصناف",
+  "close": "إغلاق",
+  "cashier": "الكاشير",
+  "customer": "العميل",
+  "date": "التاريخ",
+  "returns": "المرتجعات",
+  "returnProcessed": "تمت معالجة الإرجاع",
+  "nothingToReturn": "اختر صنفاً واحداً على الأقل للإرجاع",
+  "processReturn": "معالجة الإرجاع",
+  "returnReason": "السبب (اختياري)",
+  "returnReasonHint": "مثال: صنف خاطئ، تالف",
+  "sold": "المباع",
+  "alreadyReturned": "مُرجع مسبقاً",
+  "newPurchase": "شراء جديد",
+  "purchaseSaved": "تم حفظ عملية الشراء",
+  "noPurchases": "لا توجد مشتريات بعد",
+  "purchaseDetail": "تفاصيل الشراء",
+  "selectSupplier": "اختر المورد",
+  "noPurchaseLines": "لا توجد بنود شراء بعد",
+  "purchaseDate": "تاريخ الشراء",
+  "purchaseTotal": "إجمالي الشراء",
+  "addLine": "إضافة بند",
+  "decrease": "تقليل",
+  "increase": "زيادة",
+  "remove": "إزالة",
+  "selectProduct": "اختر المنتج",
+  "searchProduct": "ابحث عن المنتجات",
+  "noResults": "لا توجد نتائج",
+  "quantity": "الكمية",
+  "unitCost": "تكلفة الوحدة",
+  "add": "إضافة",
+  "invalidLineValues": "أدخل كمية وتكلفة وحدة صحيحتين",
+  "productAlreadyAdded": "المنتج موجود بالفعل في بنود الشراء",
+  "addUser": "إضافة مستخدم",
+  "editUser": "تعديل المستخدم",
+  "userAdded": "تمت إضافة المستخدم",
+  "userSaved": "تم حفظ المستخدم",
+  "role": "الدور",
+  "active": "نشط",
+  "inactive": "غير نشط",
+  "cannotDeactivateSelf": "لا يمكنك تعطيل حسابك الخاص",
+  "needOneActiveAdmin": "يجب وجود مدير نشط واحد على الأقل",
+  "newPassword": "كلمة المرور الجديدة",
+  "leaveEmptyToKeep": "اتركه فارغاً للإبقاء على كلمة المرور الحالية",
+  "salesCount": "المبيعات",
+  "revenue": "الإيرادات",
+  "netRevenue": "صافي الإيرادات",
+  "refunds": "المرتجعات",
+  "purchasesCost": "تكلفة المشتريات",
+  "estimatedProfit": "الربح التقديري",
+  "totalSales": "إجمالي المبيعات",
+  "salesByPayment": "المبيعات حسب طريقة الدفع",
+  "topProducts": "أفضل المنتجات",
+  "exportCsv": "تصدير CSV",
+  "exportedTo": "تم تصدير التقرير إلى {path}",
+  "@exportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "noData": "لا توجد بيانات لهذه الفترة",
+  "createBackup": "إنشاء نسخة احتياطية",
+  "backupCreated": "تم إنشاء النسخة الاحتياطية: {path}",
+  "@backupCreated": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "backupFailed": "فشل إنشاء النسخة الاحتياطية",
+  "restoreBackup": "استعادة",
+  "confirmRestore": "استعادة النسخة {name}؟ سيؤدي هذا إلى استبدال جميع البيانات الحالية بالنسخة الاحتياطية.",
+  "@confirmRestore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreComplete": "تمت الاستعادة. يرجى تسجيل الدخول مرة أخرى.",
+  "restoreFailed": "فشلت الاستعادة",
+  "backupsLocation": "تُخزَّن النسخ الاحتياطية في مجلد المستندات لديك (MePharmaBackups).",
+  "noBackups": "لا توجد نسخ احتياطية بعد",
+  "confirmDeleteBackup": "حذف النسخة الاحتياطية {fileName}؟ لا يمكن التراجع عن هذا الإجراء.",
+  "@confirmDeleteBackup": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeleted": "تم حذف النسخة الاحتياطية",
+  "customers": "العملاء",
+  "expiry": "الانتهاء",
+  "paymentCredit": "على الحساب",
+  "creditChargedToAccount": "سيُضاف هذا المبلغ إلى رصيد حساب العميل.",
+  "creditNeedsCustomer": "اختر عميلاً لتسجيل هذا البيع على حسابه.",
+  "creditLimitExceeded": "يتجاوز هذا البيع سقف الائتمان الخاص بالعميل.",
+  "outstandingBalance": "الرصيد المستحق",
+  "walkInCustomer": "عميل عابر",
+  "productExpired": "انتهت صلاحية هذا المنتج ولا يمكن بيعه.",
+  "addCustomer": "إضافة عميل",
+  "editCustomer": "تعديل العميل",
+  "customerName": "اسم العميل",
+  "creditLimit": "سقف الائتمان",
+  "notes": "ملاحظات",
+  "customerAdded": "تمت إضافة العميل",
+  "customerSaved": "تم حفظ العميل",
+  "recordPayment": "تسجيل دفعة",
+  "recordPaymentFor": "تسجيل دفعة لـ {name}",
+  "@recordPaymentFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "amount": "المبلغ",
+  "note": "ملاحظة",
+  "paymentRecorded": "تم تسجيل الدفعة",
+  "balance": "الرصيد",
+  "paymentHistory": "سجل الدفعات",
+  "noPayments": "لا توجد دفعات مسجلة بعد",
+  "confirmDeleteCustomer": "حذف العميل {name}؟",
+  "@confirmDeleteCustomer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCustomerHint": "سيُحذف سجل دفعات العميل وستبقى مبيعاته بدون عميل. لا يمكن التراجع عن هذا الإجراء.",
+  "customerHasOutstandingBalance": "لدى هذا العميل رصيد مستحق قدره {amount}.",
+  "@customerHasOutstandingBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "customerNameTaken": "يوجد عميل بهذا الاسم بالفعل",
+  "creditLimitNegative": "لا يمكن أن يكون سقف الائتمان سالباً",
+  "overLimit": "تجاوز الحد",
+  "searchCustomers": "ابحث عن العملاء",
+  "noCustomers": "لا يوجد عملاء بعد",
+  "payments": "الدفعات",
+  "todayLabel": "اليوم",
+  "yesterdayLabel": "أمس",
+  "nextDays": "الـ {days} أيام القادمة",
+  "@nextDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "expiryHint": "تُعلَّم المنتجات كمنتهية الصلاحية في تاريخ انتهائها.",
+  "noExpiringProducts": "لا توجد منتجات تنتهي خلال الفترة المحددة",
+  "expiredProducts": "منتهية الصلاحية",
+  "expiringSoon": "تنتهي قريباً",
+  "expiredOn": "انتهت في {date}",
+  "@expiredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "daysUntilExpiry": "بعد {days} يوم",
+  "@daysUntilExpiry": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "expiredLabel": "منتهية",
+  "defaultLowStockThreshold": "تنبيه المخزون المنخفض الافتراضي",
+  "defaultLowStockHint": "يُستخدم عند إضافة منتجات جديدة",
+  "receiptFooter": "تذييل الإيصال",
+  "receiptFooterHint": "يظهر أسفل الإيصالات المطبوعة، مثل رسالة شكر",
+  "import": "استيراد",
+  "export": "تصدير",
+  "exportComplete": "تم التصدير إلى {path}",
+  "@exportComplete": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "noProductsImported": "لا توجد منتجات في الملف المحدد",
+  "importComplete": "تم الاستيراد: {created} أُضيف، {updated} حُدّث، {errors} فشل",
+  "@importComplete": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "errors": {
+        "type": "int"
+      }
+    }
+  },
+  "monthlyComparison": "مقارنة شهرية",
+  "month": "الشهر",
+  "profitByCategory": "الربح حسب الفئة",
+  "stockValuation": "تقييم المخزون",
+  "stockValueAtCost": "القيمة بالتكلفة",
+  "stockValueAtRetail": "القيمة بسعر البيع",
+  "potentialProfit": "الربح المتوقع",
+  "totalItems": "منتجات في المخزون",
+  "brandName": "الاسم التجاري",
+  "genericName": "الاسم العلمي",
+  "dose": "الجرعة / العيار",
+  "profitMargin": "هامش الربح (مثلاً 0.3 لـ 30%)",
+  "supplierCompany": "الشركة",
+  "supplierCompanyContact": "رقم اتصال الشركة",
+  "serverSettings": "إعدادات الخادم",
+  "apiUrl": "رابط الخادم الرئيسي (API)",
+  "branchId": "رقم الفرع",
+  "testConnection": "فحص الاتصال",
+  "apiConnected": "تم الاتصال بخادم Laravel بنجاح!",
+  "apiConnectionFailed": "فشل الاتصال بالخادم. يرجى التحقق من الرابط وحالة الخادم.",
+  "invalidUrl": "يرجى إدخال رابط صحيح",
+  "superAdminRole": "مدير عام النظام (المركز الرئيسي)",
+  "branchAdminRole": "مدير الفرع",
+  "viewAll": "عرض الكل",
+  "pendingPurchases": "طلبيات الشراء المعلقة",
+  "estStockValuation": "التقييم التقديري للمخزون",
+  "grossMarginCogs": "هامش الربح الإجمالي (COGS)",
+  "inventoryValuation": "تقييم المخزون",
+  "totalCostValue": "إجمالي قيمة التكلفة",
+  "totalRetailValue": "إجمالي قيمة البيع",
+  "noRecentSales": "لا توجد مبيعات مسجلة مؤخراً.",
+  "quickActions": "إجراءات سريعة",
+  "customers": "العملاء",
+  "hqSettings": "إعدادات المركز الرئيسي",
+  "backups": "النسخ الاحتياطية",
+  "ordersCount": "{count} طلبيات",
+  "@ordersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "txCount": "{count} عملية",
+  "@txCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsLeft": "متبقي {count}",
+  "@itemsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "requestUnlistedDrug": "إضافة / طلب دواء غير مدرج",
+  "customDrugName": "اسم الدواء / المنتج",
+  "customDrugCategory": "التصنيف (اختياري)",
+  "selectSupplier": "اختر المورد",
+  "unassignedSupplierNotice": "يمكن تحديد المورد والأسعار لاحقاً بواسطة المدير.",
+  "purchaseApproval": "اعتماد الشراء",
+  "approveAndRestock": "اعتماد وإضافة للمخزون",
+  "pendingApproval": "بانتظار الاعتماد",
+  "approved": "معتمد",
+  "branchStaffManagement": "إدارة موظفي الفرع",
+  "addStaffMember": "إضافة موظف",
+  "managedBySuperAdmin": "تتم إدارته بواسطة المدير العام",
+  "outOfStockRequest": "طلب دواء غير متوفر",
+  "requestDrugForCustomer": "تسجيل طلب دواء لعميل",
+  "requestedDrugName": "اسم الدواء المطلوب",
+  "notes": "ملاحظات",
+  "customerWishlistSaved": "تم حفظ طلب الدواء للعميل",
+  "requestNewStock": "طلب توريد / مخزون جديد",
+  "restockAllLowStock": "طلب توريد النواقص",
+  "lowStockFilter": "النواقص والمخزون المنخفض",
+  "allProductsFilter": "جميع الأدوية",
+  "expired": "منتهي الصلاحية",
+  "adjustStock": "تعديل المخزون",
+  "stockAdjustment": "تعديل كمية المخزون",
+  "stockAdjusted": "تم تعديل المخزون بنجاح",
+  "adjustmentQuantity": "كمية التعديل (+/-)",
+  "positiveAddsNegativeRemoves": "العدد الموجب يضيف للمخزون، والسالب يخصم منه.",
+  "adjustmentReason": "سبب التعديل (اختياري)",
+  "adjustmentReasonHint": "مثال: جرد دوري، بضاعة تالفة، تصحيح إدخال",
+  "cogs": "تكلفة البضاعة (COGS)",
+  "profitMargin": "هامش الربح",
+  "averageOrderValue": "متوسط قيمة الطلب",
+  "grossRevenue": "إجمالي الإيرادات",
+  "totalDiscounts": "الخصومات",
+  "totalTax": "الضريبة",
+  "totalPurchasesCount": "فواتير المشتريات",
+  "today": "اليوم",
+  "last7Days": "آخر 7 أيام",
+  "last30Days": "آخر 30 يوماً",
+  "thisMonth": "هذا الشهر",
+  "customRange": "نطاق مخصص",
+  "paymentBreakdownSubtitle": "نسبة وتوزيع الإيرادات حسب وسيلة الدفع",
+  "topProductsSubtitle": "أعلى الأدوية تحقيقاً للإيرادات في هذه الفترة",
+  "margin": "الهامش",
+  "salesTrends": "مؤشرات المبيعات اليومية",
+  "salesTrendsSubtitle": "حركة الإيرادات وعدد العمليات اليومية",
+  "stockValuationTitle": "تقييم المخزون المالي",
+  "stockCostBasis": "التكلفة الإجمالية بسعر الجملة",
+  "potentialStockProfit": "الأرباح المتوقعة عند بيع المخزون",
+  "annualLedger": "السجل المالي السنوي (12 شهراً)",
+  "annualLedgerSubtitle": "الأداء المالي ونسب الأرباح الشهرية",
+  "printReport": "طباعة التقرير",
+  "printPreview": "معاينة التقرير",
+  "unitsSold": "الوحدات المباعة",
+  "rankMedal": "الترتيب",
+  "financialLedgerSummary": "الملخص المالي",
+  "invoicesCount": "الفواتير",
+  "potentialMargin": "الهامش المتوقع",
+  "staffFeedback": "ملاحظات وتوصيات الكاشير",
+  "sendRestockFeedback": "طلب نواقص / توصية توريد",
+  "feedbackSubmitted": "تم إرسال توصية التوريد لمدير الفرع بنجاح",
+  "branchRestockRequests": "توصيات نواقص الأدوية من الكاشير",
+  "urgencyHighDemand": "طلب متزايد / نفاد وشيك",
+  "urgencyLowStock": "مخزون منخفض / نافد",
+  "urgencyNormal": "إعادة طلب دورية",
+  "suggestedQty": "الكمية المقترحة",
+  "staffNotes": "ملاحظات الكاشير (اختياري)",
+  "createPurchaseOrderForDrug": "إنشاء أمر شراء",
+  "markOrdered": "تم الطلب",
+  "dismissFeedback": "تجاهل",
+  "noStaffFeedback": "لا توجد توصيات نواقص معلقة لهذا الفرع حالياً",
+  "cashierFeedbackSubtitle": "رؤى وتوصيات الكاشير حول الأدوية الأكثر طلباً والنواقص",
+  "reportedBy": "بواسطة: {name}"
+}

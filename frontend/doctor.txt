@@ -1,0 +1,40 @@
+[ΓêÜ] Flutter (Channel stable, 3.41.8, on Microsoft Windows [Version 10.0.19045.6466], locale en-US) [1,641ms]
+    ΓÇó Flutter version 3.41.8 on channel stable at C:\dev\flutter
+    ΓÇó Upstream repository https://github.com/flutter/flutter.git
+    ΓÇó Framework revision 02085feb3f (4 months ago), 2026-04-24 13:54:45 -0700
+    ΓÇó Engine revision 59aa584fdf
+    ΓÇó Dart version 3.11.5
+    ΓÇó DevTools version 2.54.2
+    ΓÇó Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[ΓêÜ] Windows Version (10 Pro 64-bit, 22H2, 2009) [3.8s]
+
+[!] Android toolchain - develop for Android devices (Android SDK version 36.1.0) [1,369ms]
+    ΓÇó Android SDK at C:\Users\mfury\AppData\Local\Android\sdk
+    ΓÇó Emulator version 36.6.11.0 (build_id 15507667) (CL:N/A)
+    X cmdline-tools component is missing.
+      Try installing or updating Android Studio.
+      Alternatively, download the tools from https://developer.android.com/studio#command-line-tools-only and make sure to set the ANDROID_HOME environment variable.
+      See https://developer.android.com/studio/command-line for more details.
+    X Android license status unknown.
+      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+      See https://flutter.dev/to/windows-android-setup for more details.
+
+[ΓêÜ] Chrome - develop for the web [793ms]
+    ΓÇó Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[!] Visual Studio - develop Windows apps (Visual Studio Build Tools 2022 17.14.37 (July 2026)) [789ms]
+    ΓÇó Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+    ΓÇó Visual Studio Build Tools 2022 version 17.14.37516.0
+    X The current Visual Studio installation is incomplete.
+      Please use Visual Studio Installer to complete the installation or reinstall Visual Studio.
+
+[ΓêÜ] Connected device (3 available) [670ms]
+    ΓÇó Windows (desktop) ΓÇó windows ΓÇó windows-x64    ΓÇó Microsoft Windows [Version 10.0.19045.6466]
+    ΓÇó Chrome (web)      ΓÇó chrome  ΓÇó web-javascript ΓÇó Google Chrome 151.0.7922.109
+    ΓÇó Edge (web)        ΓÇó edge    ΓÇó web-javascript ΓÇó Microsoft Edge 150.0.4078.105
+
+[ΓêÜ] Network resources [38.5s]
+    ΓÇó All expected network resources are available.
+
+! Doctor found issues in 2 categories.

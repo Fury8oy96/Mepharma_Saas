@@ -1,0 +1,315 @@
+{
+  "project": "Pharmacy Management System",
+  "description": "A standalone Windows desktop application for managing a pharmacy, including point-of-sale, inventory, purchases, roles, barcodes, thermal receipt printing, and multi-language support. Initially local (offline-first), designed to later support multi-branch centralized server.",
+  "platform": "Windows (standalone installer)",
+  "tech_stack": {
+    "framework": "Flutter (Dart)",
+    "state_management": "Riverpod",
+    "database_layer": "Repository pattern with abstract data sources. Persistence via drift: default backend is SQLite (native on Windows via sqlite3_flutter_libs). Future support for MySQL/PostgreSQL via drift_mysql / drift_postgres without rewriting repositories (schema is portable). Connection settings stored in app settings.",
+    "local_database": "SQLite (default, via drift + sqlite3_flutter_libs)",
+    "barcode_input": "Keyboard wedge scanner simulation (accept barcode as text input). Support for USB, Bluetooth, serial scanners. Configurable prefix/suffix stripping. Optional camera-based scanning.",
+    "printing": "ESC/POS byte generation with esc_pos_utils. Windows transports: (1) USB / installed printers via the Windows print spooler RAW job (package:win32 Winspool: OpenPrinter -> StartDocPrinter(RAW) -> WritePrinter); (2) Network (Ethernet/Wi-Fi) printers via raw TCP socket to port 9100 (Epson TM-i, Star, Citizen); (3) Bluetooth deferred (optional adapter via flutter_thermal_printer_windows or BT serial COM port). esc_pos_printer is NOT used: its Bluetooth/USB transports are Android-only. Per-device printer settings: type, printer name or IP, paper width (58/80mm), code page/encoding, cut option.",
+    "pdf": "pdf package for invoice/receipt export",
+    "packaging": "Flutter Windows build → MSIX installer",
+    "localization": "Flutter intl with ARB files. Default languages: English (en) and Arabic (ar) with RTL support.",
+    "security": "bcrypt for password hashing (package: bcrypt)",
+    "backup": "Automatic scheduled backup using cron-like scheduler (package: cron). Default weekly backup, configurable frequency and destination."
+  },
+  "features": {
+    "authentication": {
+      "roles": ["admin", "staff"],
+      "permissions": {
+        "admin": "full access (sales, inventory, purchases, users, reports, settings, backup management)",
+        "staff": "POS sales, basic product lookup (price, stock), sales history, reprint own receipts; no access to purchases, user management, admin reports, or settings"
+      },
+      "password_hashing": "bcrypt with salt"
+    },
+    "pos": {
+      "description": "Main sales interface. Product search by name/SKU/barcode. Add to cart with quantity. Apply discount (percentage or fixed). Select payment method (cash, card, mobile money). Complete sale, print thermal receipt, update stock automatically. Support customer name (optional). Fast keyboard operation (F1: barcode focus, F2: pay, Esc: cancel).",
+      "barcode_reader_support": "Accepts input from keyboard wedge scanners (USB, Bluetooth, serial). Configurable prefix/suffix characters to strip. Auto-focus on barcode field. Optional camera scanning for testing.",
+      "thermal_printer_support": "Uses ESC/POS protocol. Compatible with major brands (Epson, Star, Citizen, etc.). Printer connection via USB, Bluetooth, or network. Settings include paper width (58mm/80mm), character encoding, and cutting options."
+    },
+    "inventory": {
+      "description": "Full product catalog. Fields: SKU (unique), barcode, name, category, supplier, cost price, selling price, stock quantity, expiry date, description. Low stock alerts on dashboard. Stock adjustments (manual + reason). Add/edit/delete products. Barcode label generation (optional)."
+    },
+    "sales_history": {
+      "description": "View all sales with filters (date range, payment method, staff). View receipt details, reprint receipt, process returns/refunds with stock reversal."
+    },
+    "purchases": {
+      "description": "Create purchase invoices from suppliers. Add multiple products with quantities and cost prices. Automatically update stock and product cost. View purchase history per supplier. Manage supplier list (name, contact info)."
+    },
+    "roles_permissions": {
+      "description": "Admin creates staff accounts with username/password. Role-based UI (menu items hidden/shown). Staff cannot access admin-only pages (users, purchases, reports, settings)."
+    },
+    "receipts": {
+      "description": "After sale, generate receipt with store details, items, totals, payment info. Print using thermal printer. Save receipt in database. Reprint option from sales history.",
+      "printing_flow": "Receipt printing is initiated automatically immediately after the sale transaction commits (POS calls ThermalPrinterService on completion). If printing fails, the sale remains saved and a retry/print dialog appears without blocking checkout. Manual reprint from sales history always available."
+    },
+    "barcode_support": {
+      "description": "Products have barcode field. POS barcode input works with hardware scanners (keyboard wedge). Generate barcodes (code128) for product labels if needed."
+    },
+    "suppliers": {
+      "description": "Manage supplier details (name, contact person, phone, email, address). Link suppliers to products and purchases."
+    },
+    "reports": {
+      "description": "Admin reports: daily/monthly sales summary, sales by product, profit margin, inventory valuation, purchase summary, low stock/expiry alerts."
+    },
+    "backup": {
+      "description": "Automatic backup of database to a configurable local folder (or network path). Default weekly (every 7 days) at a chosen time. Manual backup option. Backup history and restore functionality. For SQLite, WAL checkpoint then safe copy (or sqlite3 online backup API); for external DB, use dump/export. Backup copies written to temp file then atomically renamed to avoid corruption.",
+      "settings": "Backup frequency (daily/weekly/monthly), time, destination path, retention count."
+    },
+    "localization": {
+      "description": "Multi-lingual support with English and Arabic. Full RTL layout for Arabic. Language selection in settings or login screen. All user-facing strings from ARB files."
+    }
+  },
+  "database_schema": {
+    "tables": [
+      {
+        "name": "users",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "username TEXT UNIQUE NOT NULL",
+          "password_hash TEXT NOT NULL",  // bcrypt hash
+          "role TEXT NOT NULL CHECK(role IN ('admin','staff'))",
+          "is_active INTEGER NOT NULL DEFAULT 1",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "categories",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "name TEXT NOT NULL",
+          "description TEXT"
+        ]
+      },
+      {
+        "name": "suppliers",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "name TEXT NOT NULL",
+          "contact_person TEXT",
+          "phone TEXT",
+          "email TEXT",
+          "address TEXT"
+        ]
+      },
+      {
+        "name": "products",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "sku TEXT UNIQUE NOT NULL",
+          "barcode TEXT UNIQUE",
+          "name TEXT NOT NULL",
+          "category_id INTEGER REFERENCES categories(id)",
+          "supplier_id INTEGER REFERENCES suppliers(id)",
+          "cost_price INTEGER NOT NULL",  // minor units (cents)
+          "selling_price INTEGER NOT NULL",  // minor units (cents)
+          "stock_quantity INTEGER DEFAULT 0",
+          "low_stock_threshold INTEGER DEFAULT 10",
+          "expiry_date DATE",
+          "description TEXT",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP",
+          "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "sales",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "invoice_number TEXT UNIQUE NOT NULL",
+          "user_id INTEGER REFERENCES users(id)",
+          "customer_name TEXT",
+          "subtotal INTEGER NOT NULL",  // minor units (cents), before discount/tax
+          "discount INTEGER NOT NULL DEFAULT 0",  // minor units (cents)
+          "discount_type TEXT CHECK(discount_type IN ('percentage','fixed'))",
+          "tax_amount INTEGER NOT NULL DEFAULT 0",  // minor units (cents)
+          "total_amount INTEGER NOT NULL",  // minor units (cents), final payable
+          "paid_amount INTEGER NOT NULL DEFAULT 0",  // minor units (cents)
+          "change_amount INTEGER NOT NULL DEFAULT 0",  // minor units (cents)
+          "payment_method TEXT",
+          "status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('completed','returned','voided'))",
+          "branch_id INTEGER",  // nullable, future multi-branch
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "sale_items",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE",
+          "product_id INTEGER REFERENCES products(id)",
+          "product_name TEXT NOT NULL",  // snapshot for history/reprints
+          "barcode TEXT",  // snapshot
+          "quantity INTEGER NOT NULL",
+          "unit_price INTEGER NOT NULL",  // minor units (cents)
+          "discount INTEGER NOT NULL DEFAULT 0",  // minor units (cents), line discount
+          "total_price INTEGER NOT NULL"  // minor units (cents)
+        ]
+      },
+      {
+        "name": "purchases",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "invoice_number TEXT UNIQUE NOT NULL",
+          "supplier_id INTEGER REFERENCES suppliers(id)",
+          "user_id INTEGER REFERENCES users(id)",
+          "total_amount INTEGER NOT NULL",  // minor units (cents)
+          "purchase_date DATE NOT NULL",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "purchase_items",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "purchase_id INTEGER REFERENCES purchases(id) ON DELETE CASCADE",
+          "product_id INTEGER REFERENCES products(id)",
+          "product_name TEXT NOT NULL",  // snapshot
+          "quantity INTEGER NOT NULL",
+          "cost_price INTEGER NOT NULL",  // minor units (cents)
+          "total_cost INTEGER NOT NULL"  // minor units (cents)
+        ]
+      },
+      {
+        "name": "stock_adjustments",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "product_id INTEGER REFERENCES products(id)",
+          "adjustment_quantity INTEGER NOT NULL",
+          "reason TEXT",
+          "reference TEXT",  // e.g. 'manual', 'sale:12', 'purchase:34', 'return:5'
+          "user_id INTEGER REFERENCES users(id)",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "returns",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "sale_id INTEGER REFERENCES sales(id)",
+          "invoice_number TEXT NOT NULL",  // snapshot of original invoice
+          "user_id INTEGER REFERENCES users(id)",
+          "total_refund INTEGER NOT NULL",  // minor units (cents)
+          "reason TEXT",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "return_items",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "return_id INTEGER REFERENCES returns(id) ON DELETE CASCADE",
+          "sale_item_id INTEGER REFERENCES sale_items(id)",
+          "product_id INTEGER REFERENCES products(id)",
+          "product_name TEXT NOT NULL",  // snapshot
+          "quantity INTEGER NOT NULL",
+          "unit_price INTEGER NOT NULL",  // minor units (cents), refunded unit price
+          "total_refund INTEGER NOT NULL"  // minor units (cents)
+        ]
+      },
+      {
+        "name": "sales_holds",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "hold_number TEXT UNIQUE NOT NULL",
+          "user_id INTEGER REFERENCES users(id)",
+          "items_json TEXT NOT NULL",  // serialized cart
+          "subtotal INTEGER NOT NULL",  // minor units (cents)
+          "discount INTEGER NOT NULL DEFAULT 0",
+          "discount_type TEXT CHECK(discount_type IN ('percentage','fixed'))",
+          "total_amount INTEGER NOT NULL",
+          "created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ]
+      },
+      {
+        "name": "settings",
+        "columns": [
+          "key TEXT PRIMARY KEY",
+          "value TEXT"
+        ]
+      },
+      {
+        "name": "backup_logs",
+        "columns": [
+          "id INTEGER PRIMARY KEY AUTOINCREMENT",
+          "backup_time DATETIME NOT NULL",
+          "file_path TEXT",
+          "status TEXT CHECK(status IN ('success','failed'))",
+          "notes TEXT"
+        ]
+      }
+    ],
+    "notes": [
+      "PRAGMA foreign_keys = ON must be enabled at every connection.",
+      "All monetary values stored as INTEGER minor units (cents); format on display and receipts.",
+      "Indexes: products(sku), products(barcode), sales(invoice_number), sales(created_at), sale_items(sale_id), purchase_items(purchase_id).",
+      "Connection settings for external backends (MySQL/PostgreSQL via drift_mysql / drift_postgres) reserved in settings for future multi-branch deployment."
+    ]
+  },
+  "app_structure": {
+    "routing": "GoRouter with route guards for role-based access",
+    "pages": [
+      "LoginPage (language selection)",
+      "DashboardPage (admin: summary cards, alerts, backup status; staff: quick sales access)",
+      "POSPage (product search, barcode input, cart, payment dialog, receipt print)",
+      "ProductsPage (list, search, add/edit product, barcode generation)",
+      "CategoriesPage",
+      "SuppliersPage",
+      "PurchasesPage (list purchase invoices, add new purchase)",
+      "PurchaseDetailPage",
+      "SalesHistoryPage (list, filter, returns/refunds)",
+      "SaleDetailPage (receipt view, reprint)",
+      "UsersPage (admin only: manage staff accounts)",
+      "ReportsPage (admin only: sales, inventory, profit reports)",
+      "SettingsPage (store info, printer connection, backup settings, language, tax rate, logo, footer)",
+      "BackupHistoryPage (view backup logs, manual backup/restore)"
+    ],
+    "components": [
+      "AppDrawer (role-based menu items, language switcher)",
+      "ProductSearchWidget (autocomplete, barcode/SKU search)",
+      "CartWidget (list items, quantity controls, totals, discount input)",
+      "PaymentDialog (cash/card/Mobile money, exact amount, change calculation)",
+      "ReceiptViewWidget (preview before print, company details, items, total, barcode, localized)",
+      "BarcodeInputField (autofocus in POS, configurable prefix/suffix handling)",
+      "LowStockAlertCard (on dashboard)",
+      "ExpiryDateWarningList (on dashboard)",
+      "PrintSettingsDialog (printer type, IP/Bluetooth/USB config, paper width, encoding)",
+      "PdfPreviewWidget (share/export receipt as PDF)",
+      "RoleGuardWidget (hide/show widgets based on permissions)",
+      "BackupSchedulerService (background task using cron package)",
+      "ThermalPrinterService (builds ESC/POS bytes via esc_pos_utils; adapters: Windows spooler RAW via win32, network TCP 9100)",
+      "ReturnDialog (in SalesHistory: pick items, refund amount, stock reversal)"
+    ]
+  },
+  "implementation_plan": {
+    "phase1": "Initialize Flutter project, set up repository pattern with SQLite implementation, localization infrastructure (ARB files for en/ar), user authentication with bcrypt, role-based navigation shell, login page with language selection.",
+    "phase2": "Product CRUD, category/supplier management, SKU/barcode fields, stock adjustments, low stock logic. Settings table for store info and printer config.",
+    "phase3": "POS layout, cart engine, barcode input handling (keyboard wedge with prefix/suffix config), payment processing, sales transaction recording, stock deduction, receipt generation and automatic printing via ThermalPrinterService (esc_pos_utils + win32 spooler RAW / network TCP 9100). Test with various thermal printer brands.",
+    "phase4": "Sales history list/detail, reprint receipt, return/refund workflow (reverse sale, adjust stock).",
+    "phase5": "Purchase invoice creation, linking suppliers, product selection, update stock and cost price, purchase history.",
+    "phase6": "Reports (sales summary, inventory valuation, profit margins), printer settings integration, app settings (store info, tax, language), backup scheduler (weekly automatic backup using cron package; WAL checkpoint + safe copy), manual backup/restore.",
+    "phase7": "UI/UX polish (theming, responsiveness, keyboard shortcuts, RTL layout), end-to-end testing with multiple barcode scanners and thermal printers, build Windows MSIX installer, user acceptance testing."
+  },
+  "ui_ux_guidelines": {
+    "theme": "Clean, modern pharmacy aesthetic. Default palette: white backgrounds, blue primary, green accents. Fonts: Roboto (or system default). Buttons large and touch-friendly for POS. Sidebar navigation.",
+    "pos_layout": "Two‑panel: left panel = product search + grid/list, barcode input bar at top; right panel = cart, subtotal/discount/total, payment button. Full‑screen mode recommended.",
+    "keyboard_shortcuts": "F1: focus barcode, F2: open payment, F4: hold sale, Esc: clear cart/close dialogs.",
+    "receipt_customization": "Store name, address, phone, tax ID, custom footer message, logo (optional) – all configurable from Settings.",
+    "localization": "Full RTL support for Arabic. Language switch available on login and in settings. All strings externalized.",
+    "accessibility": "High contrast support, scalable text, clear icons, error messages in red."
+  },
+  "additional_considerations": {
+    "architecture": "Three-layer architecture: presentation (UI), domain (business logic), data (repository). Data layer abstracts database operations, allowing switch from SQLite to MySQL/PostgreSQL for multi-branch later.",
+    "offline_first": "Initial version works fully offline with SQLite. Database connection settings for external SQL providers are prepared but not required.",
+    "backup": "Automatic weekly backup to configurable path. SQLite backup is a simple file copy; for external DB, scheduled export. Backup logs tracked.",
+    "security": "bcrypt password hashing with salt (cost factor 12). Role-based UI and logic guards. Database file permissions.",
+    "performance": "Index database on SKU, barcode, invoice_number, sales.created_at; lazy load product lists; limit loaded sales history.",
+    "money": "All monetary values stored as INTEGER minor units (cents) to avoid floating-point rounding errors; format on display and on receipts.",
+    "sqlite_foreign_keys": "Enable PRAGMA foreign_keys = ON at every connection; all REFERENCES clauses depend on it.",
+    "backup_runtime": "cron-based scheduled backups only run while the app is running; SQLite backup uses WAL checkpoint + safe copy (or sqlite3 online backup). Optionally register a Windows Task Scheduler entry for out-of-app backups.",
+    "barcode_reader_compatibility": "Keyboard wedge interface is universal; serial scanners may require additional configuration. Option to add custom input method later.",
+    "thermal_printer_compatibility": "ESC/POS is industry standard; all major brands supported. Printer-specific settings tested during implementation.",
+    "localization": "English and Arabic fully supported, with RTL layout. Additional languages can be added via ARB files."
+  }
+}

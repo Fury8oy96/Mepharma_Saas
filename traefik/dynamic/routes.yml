@@ -1,0 +1,35 @@
+http:
+  routers:
+    mepharma_saas_http:
+      entryPoints:
+        - "web"
+      # Matches all incoming requests across all domains and subdomains
+      rule: "PathPrefix(`/`)"
+      # To enforce HTTPS redirection in production, uncomment the line below:
+      # middlewares: ["redirect-to-https"]
+      service: "mepharma_service"
+
+    mepharma_saas_https:
+      entryPoints:
+        - "websecure"
+      # Matches all incoming TLS requests across all domains and subdomains
+      rule: "PathPrefix(`/`)"
+      service: "mepharma_service"
+      tls: {}
+
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: "https"
+        permanent: true
+
+  services:
+    mepharma_service:
+      loadBalancer:
+        servers:
+          - url: "http://mepharma_backend:3333"
+
+tls:
+  certificates:
+    - certFile: "/etc/traefik/certs/mepharma-cert.pem"
+      keyFile: "/etc/traefik/certs/mepharma-key.pem"

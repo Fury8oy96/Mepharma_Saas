@@ -1,0 +1,87 @@
+services:
+  # --------------------------------------------------------------------------
+  # 1. Edge Gateway & Reverse Proxy (Traefik v3.0)
+  # Dynamic SSL termination, wildcard tenant routing ({pharmacy}.mepharma.io)
+  # --------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: mepharma_gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"                 # Public HTTP ingress
+      - "443:443"               # Public HTTPS ingress
+      - "127.0.0.1:8080:8080"   # Traefik Web UI & Metrics dashboard (restricted to loopback)
+    volumes:
+      - ./traefik:/etc/traefik:ro
+    networks:
+      - mepharma_net
+
+  # --------------------------------------------------------------------------
+  # 2. Main System Database (PostgreSQL 16 Multi-Tenant Core)
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: mepharma_db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"   # Loopback only: mapped to host 5433 for admin maintenance, shielded from WAN
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-mepharma}
+      POSTGRES_USER: ${DB_USER:-mepharma_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mepharma_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mepharma_user} -d ${DB_DATABASE:-mepharma}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mepharma_net
+
+  # --------------------------------------------------------------------------
+  # 3. Enterprise Multi-Tenant AdonisJS v6 SaaS Backend Engine
+  # Serves Provider Platform, Pharmacy Admin Dashboards, and Desktop POS APIs
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mepharma_backend
+    restart: unless-stopped
+    ports:
+      - "${POS_DIRECT_PORT:-8000}:3333"   # Standard Desktop POS API port (LAN access)
+      - "127.0.0.1:3334:3333"             # Direct AdonisJS native port (restricted to loopback)
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3333/status').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3333
+      - HOST=0.0.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - APP_KEY=${APP_KEY:-mepharma_secure_app_key_32_chars_2026_saas}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-mepharma}
+      - DB_USER=${DB_USER:-mepharma_user}
+      - DB_PASSWORD=${DB_PASSWORD:-mepharma_password}
+      - LICENSE_SECRET=${LICENSE_SECRET:-mepharma_saas_license_crypto_master_secret_2026}
+      - JWT_SECRET=${JWT_SECRET:-mepharma_jwt_access_token_secret_key_2026}
+    volumes:
+      - ./backups:/app/backups
+    networks:
+      - mepharma_net
+
+networks:
+  mepharma_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

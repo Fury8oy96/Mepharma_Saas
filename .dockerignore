@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.dart_tool
+**/build
+.git
+.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

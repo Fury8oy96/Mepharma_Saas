@@ -1,0 +1,515 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+:root, body.theme-dark {
+  --font-sans: 'Tajawal', 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-arabic: 'Tajawal', 'Public Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Vuexy Dark Palette & Surface Tokens */
+  --bg-body: #161d31;
+  --bg-card: #283046;
+  --bg-sidebar: #283046;
+  --bg-navbar: rgba(40, 48, 70, 0.85);
+  --bg-input: #161d31;
+  --bg-input-focus: #161d31;
+  --bg-table-th: rgba(22, 29, 49, 0.6);
+  --bg-modal-backdrop: rgba(15, 20, 34, 0.8);
+  --bg-hover-row: rgba(115, 103, 240, 0.04);
+  --bg-user-chip: rgba(22, 29, 49, 0.6);
+
+  /* Vuexy Signature Royal Violet Primary */
+  --color-primary: #7367f0;
+  --color-primary-hover: #685dd8;
+  --color-primary-light: rgba(115, 103, 240, 0.12);
+  --color-primary-gradient: linear-gradient(72.47deg, #7367f0 22.16%, rgba(115, 103, 240, 0.7) 76.47%);
+  --shadow-primary: 0px 4px 18px 0px rgba(115, 103, 240, 0.48);
+
+  /* Status Tokens */
+  --color-success: #28c76f;
+  --color-success-light: rgba(40, 199, 111, 0.12);
+  --color-danger: #ea5455;
+  --color-danger-light: rgba(234, 84, 85, 0.12);
+  --color-warning: #ff9f43;
+  --color-warning-light: rgba(255, 159, 67, 0.12);
+  --color-info: #00cfe8;
+  --color-info-light: rgba(0, 207, 232, 0.12);
+  --color-secondary: #a8aaae;
+  --color-secondary-light: rgba(168, 170, 174, 0.12);
+
+  /* Typography Colors */
+  --text-primary: #d0d2d6;
+  --text-heading: #ffffff;
+  --text-muted: #676d7d;
+  --text-subtle: #b4b7bd;
+
+  /* Borders & Dividers */
+  --border-color: #3b4253;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+
+  /* Card Shadows */
+  --card-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.24);
+  --card-shadow-hover: 0 8px 30px 0 rgba(0, 0, 0, 0.36);
+
+  /* Border Radiuses */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* Animation Timings */
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-light {
+  /* Vuexy Light Palette & Surface Tokens */
+  --bg-body: #f8f7fa;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-navbar: rgba(255, 255, 255, 0.9);
+  --bg-input: #ffffff;
+  --bg-input-focus: #ffffff;
+  --bg-table-th: #f4f5fa;
+  --bg-modal-backdrop: rgba(47, 43, 61, 0.5);
+  --bg-hover-row: rgba(115, 103, 240, 0.04);
+  --bg-user-chip: #f8f7fa;
+
+  /* Typography Colors */
+  --text-primary: #5d596c;
+  --text-heading: #33303c;
+  --text-muted: #a5a3ae;
+  --text-subtle: #6f6b7d;
+
+  /* Borders & Dividers */
+  --border-color: #dbdade;
+  --border-subtle: #ebe9f1;
+
+  /* Card Shadows */
+  --card-shadow: 0 4px 18px 0 rgba(75, 70, 92, 0.1);
+  --card-shadow-hover: 0 6px 24px 0 rgba(75, 70, 92, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  font-size: 0.9375rem;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+/* Unified Platform Font: Tajawal Across All Controls & Portals */
+html, body, button, input, select, textarea, optgroup,
+.btn, .nav-link, .nav-title, .section-label, .sidebar-header,
+.vuexy-sidebar, .breadcrumb-item, .logo-title, .badge, .dropdown-menu,
+.table, th, td, h1, h2, h3, h4, h5, h6 {
+  font-family: 'Tajawal', 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* RTL Mode Typography & Base Layout */
+body.rtl-mode, html[dir="rtl"] body {
+  font-family: var(--font-arabic);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-body);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7367f0;
+}
+
+/* Vuexy Glass & Surface Cards */
+.glass-panel, .vuexy-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.vuexy-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Buttons (Vuexy Style) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  outline: none;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--color-primary-gradient);
+  color: #ffffff;
+  box-shadow: var(--shadow-primary);
+}
+.btn-primary:hover {
+  background: var(--color-primary);
+  box-shadow: 0 6px 20px rgba(115, 103, 240, 0.6);
+}
+
+.btn-secondary {
+  background: var(--color-secondary-light);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.btn-secondary:hover {
+  background: rgba(168, 170, 174, 0.22);
+  color: var(--text-heading);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: #ffffff;
+  box-shadow: 0 3px 12px rgba(40, 199, 111, 0.4);
+}
+.btn-success:hover {
+  background: #24b263;
+}
+
+.btn-danger {
+  background: var(--color-danger-light);
+  border: 1px solid rgba(234, 84, 85, 0.3);
+  color: #ea5455;
+}
+.btn-danger:hover {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-xs);
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-icon:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-icon-danger:hover {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* Vuexy Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.badge-approved, .badge-completed, .badge-active {
+  background: var(--color-success-light);
+  color: #28c76f;
+}
+.badge-approved::before, .badge-completed::before, .badge-active::before {
+  background: #28c76f;
+  box-shadow: 0 0 6px #28c76f;
+}
+
+.badge-pending {
+  background: var(--color-warning-light);
+  color: #ff9f43;
+}
+.badge-pending::before {
+  background: #ff9f43;
+  box-shadow: 0 0 6px #ff9f43;
+}
+
+.badge-danger, .badge-cancelled, .badge-inactive, .badge-low-stock {
+  background: var(--color-danger-light);
+  color: #ea5455;
+}
+.badge-danger::before, .badge-cancelled::before, .badge-inactive::before, .badge-low-stock::before {
+  background: #ea5455;
+  box-shadow: 0 0 6px #ea5455;
+}
+
+.badge-role {
+  background: var(--color-primary-light);
+  color: #7367f0;
+}
+.badge-role::before {
+  background: #7367f0;
+  box-shadow: 0 0 6px #7367f0;
+}
+
+.badge-info {
+  background: var(--color-info-light);
+  color: #00cfe8;
+}
+.badge-info::before {
+  background: #00cfe8;
+  box-shadow: 0 0 6px #00cfe8;
+}
+
+/* Form Controls (Vuexy Style) */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.22);
+}
+
+.form-input::placeholder, .form-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23676d7d' viewBox='0 0 16 16'%3E%3Cpath d='M8 11.5l-5-5h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+body.rtl-mode .form-select, html[dir="rtl"] .form-select {
+  background-position: left 14px center;
+  padding-right: 14px;
+  padding-left: 36px;
+}
+
+/* Vuexy DataTables */
+.table-container,
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  display: block;
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+body.rtl-mode table.data-table, html[dir="rtl"] table.data-table {
+  text-align: right;
+}
+
+table.data-table th {
+  padding: 12px 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-table-th);
+  white-space: nowrap;
+}
+
+table.data-table td {
+  padding: 13px 18px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+table.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.data-table tbody tr {
+  transition: background var(--transition);
+}
+
+table.data-table tbody tr:hover td {
+  background: var(--bg-hover-row);
+}
+
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-modal-backdrop);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.modal-card {
+  width: 90%;
+  max-width: 580px;
+  background: var(--bg-card);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  color: var(--text-heading);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.close-btn:hover {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* RTL Layout Mirroring for Sidebar and Page */
+body.rtl-mode .vuexy-sidebar, html[dir="rtl"] .vuexy-sidebar {
+  left: auto !important;
+  right: 0 !important;
+  border-right: none !important;
+  border-left: 1px solid var(--border-color) !important;
+}
+
+body.rtl-mode .vuexy-page-content, html[dir="rtl"] .vuexy-page-content {
+  margin-left: 0 !important;
+  margin-right: 260px !important;
+}
+
+body.rtl-mode .nav-link:hover, html[dir="rtl"] .nav-link:hover {
+  transform: translateX(-3px) !important;
+}
+
+body.rtl-mode .toast-container, html[dir="rtl"] .toast-container {
+  right: auto !important;
+  left: 24px !important;
+}
