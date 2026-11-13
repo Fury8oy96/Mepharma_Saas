@@ -112,6 +112,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final apiConfig = ref.watch(apiConfigProvider);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    final displayName = apiConfig.mode == DatabaseMode.local &&
+            (apiConfig.pharmacyName == null || apiConfig.pharmacyName == 'Local Pharmacy (Offline)')
+        ? (isArabic ? 'صيدلية محلية (بدون إنترنت)' : 'Local Pharmacy (Offline)')
+        : (apiConfig.pharmacyName ?? AppConstants.appName);
+
+    final displayAddress = apiConfig.mode == DatabaseMode.local &&
+            (apiConfig.pharmacyAddress == null || apiConfig.pharmacyAddress == 'Standalone SQLite Database')
+        ? (isArabic ? 'قاعدة بيانات SQLite محلية مستقلة' : 'Standalone SQLite Database')
+        : (apiConfig.pharmacyAddress ?? l10n.appTitle);
+
+    final modeBadgeLabel = apiConfig.mode == DatabaseMode.onlineApi
+        ? (isArabic ? 'متصل مباشر • ${apiConfig.pharmacyDomain}' : 'ONLINE • ${apiConfig.pharmacyDomain}')
+        : (isArabic ? 'محلي • SQLite' : 'LOCAL • SQLite');
 
     return Scaffold(
       body: Container(
@@ -180,7 +195,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          apiConfig.pharmacyName ?? AppConstants.appName,
+                          displayName,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w800,
@@ -190,7 +205,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          apiConfig.pharmacyAddress ?? l10n.appTitle,
+                          displayAddress,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -231,9 +246,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    apiConfig.mode == DatabaseMode.onlineApi
-                                        ? 'ONLINE • ${apiConfig.pharmacyDomain}'
-                                        : 'LOCAL • SQLite',
+                                    modeBadgeLabel,
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -502,9 +515,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             onPressed: () => context.go('/setup'),
                             icon: const Icon(Icons.tune_outlined, size: 16),
-                            label: const Text(
-                              'Terminal Setup & License Settings',
-                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                            label: Text(
+                              isArabic ? 'إعدادات المحطة والترخيص' : 'Terminal Setup & License Settings',
+                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),

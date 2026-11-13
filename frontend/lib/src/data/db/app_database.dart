@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -17,6 +17,13 @@ part 'app_database.g.dart';
 Future<File> defaultDatabaseFilePath() async {
   final documents = await getApplicationDocumentsDirectory();
   return File(p.join(documents.path, '${AppConstants.databaseName}.sqlite'));
+}
+
+QueryExecutor _openConnection() {
+  return LazyDatabase(() async {
+    final file = await defaultDatabaseFilePath();
+    return NativeDatabase.createInBackground(file);
+  });
 }
 
 @DriftDatabase(
@@ -43,15 +50,7 @@ Future<File> defaultDatabaseFilePath() async {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(
-          executor ??
-              driftDatabase(
-                name: AppConstants.databaseName,
-                native: DriftNativeOptions(
-                  databaseDirectory: getApplicationDocumentsDirectory,
-                ),
-              ),
-        );
+      : super(executor ?? _openConnection());
 
   @override
   int get schemaVersion => 5;
