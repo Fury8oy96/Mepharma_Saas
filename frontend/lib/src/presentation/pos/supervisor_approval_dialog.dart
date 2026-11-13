@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/services/api_client.dart';
 import '../../domain/models/api_config.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class SupervisorApprovalDialog extends ConsumerStatefulWidget {
   const SupervisorApprovalDialog({
@@ -40,11 +41,12 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
   }
 
   Future<void> _verify() async {
+    final l10n = AppLocalizations.of(context);
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (password.isEmpty) {
-      setState(() => _errorMessage = 'Please enter supervisor password or PIN.');
+      setState(() => _errorMessage = l10n.supervisorPasswordPin);
       return;
     }
 
@@ -85,7 +87,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
           }
         }
         setState(() {
-          _errorMessage = 'Invalid local supervisor password.';
+          _errorMessage = l10n.invalidSupervisorPassword;
           _loading = false;
         });
       }
@@ -96,7 +98,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Authorization failed: ${e.toString()}';
+        _errorMessage = e.toString();
         _loading = false;
       });
     }
@@ -104,12 +106,13 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
       title: Row(
         children: [
           const Icon(Icons.shield_outlined, color: Colors.orange, size: 28),
           const SizedBox(width: 10),
-          const Text('Supervisor Authorization'),
+          Text(l10n.supervisorAuthorization),
         ],
       ),
       content: SizedBox(
@@ -141,10 +144,10 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
             const SizedBox(height: 16),
             TextField(
               controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Supervisor Username (optional)',
-                prefixIcon: Icon(Icons.person_outline),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.supervisorUsernameOptional,
+                prefixIcon: const Icon(Icons.person_outline),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -152,10 +155,10 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Supervisor Password / PIN *',
-                prefixIcon: Icon(Icons.lock_outline),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.supervisorPasswordPin,
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onSubmitted: (_) => _verify(),
@@ -173,7 +176,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
       actions: [
         TextButton(
           onPressed: _loading ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _loading ? null : _verify,
@@ -183,7 +186,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Authorize'),
+              : Text(l10n.authorize),
         ),
       ],
     );

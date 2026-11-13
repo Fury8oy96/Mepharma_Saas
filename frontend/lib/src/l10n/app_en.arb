@@ -587,5 +587,38 @@
         "type": "String"
       }
     }
-  }
+  },
+  "offlineModeBannerTitle": "Operating in Offline Mode — Local Storage Active",
+  "offlineModeBannerSubtitle": "All changes are saved locally to SQLite.",
+  "offlinePendingTransactions": "{count, plural, =1{1 transaction queued for sync.} other{{count} transactions queued for sync.}}",
+  "@offlinePendingTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "syncFailedBannerTitle": "Sync Failed — Retries When Connection Is Stable",
+  "networkRestoredBannerTitle": "Network Restored — Synchronizing with Server...",
+  "pendingSyncBannerTitle": "Pending Local Changes Ready to Sync",
+  "reconcilingRecordsSubtitle": "Reconciling pending records and updating stock...",
+  "pendingServerReconciliation": "{count, plural, =1{1 offline transaction pending server reconciliation.} other{{count} offline transactions pending server reconciliation.}}",
+  "@pendingServerReconciliation": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkConnection": "Check Connection",
+  "syncNow": "Sync Now",
+  "supervisorAuthorization": "Supervisor Authorization",
+  "supervisorUsernameOptional": "Supervisor Username (optional)",
+  "supervisorPasswordPin": "Supervisor Password / PIN *",
+  "authorize": "Authorize",
+  "invalidSupervisorPassword": "Invalid local supervisor password or PIN.",
+  "checkForUpdates": "Check for Updates",
+  "checkingForUpdates": "Checking for updates...",
+  "upToDate": "MePharma is up to date",
+  "updateAvailable": "Update Available"
 }

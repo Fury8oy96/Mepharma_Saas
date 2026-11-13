@@ -83,7 +83,7 @@ router.group(() => {
     router.post('/master-catalog', [MasterCatalogController, 'store'])
     router.put('/master-catalog/:id', [MasterCatalogController, 'update'])
     router.delete('/master-catalog/:id', [MasterCatalogController, 'destroy'])
-  }).use(middleware.authJwt())
+  }).use(middleware.providerGate())
 }).prefix('/provider/api')
 
 /*
@@ -282,13 +282,6 @@ router.group(() => {
   router.post('/sync/push', [PosSyncController, 'pushBatch'])
   router.post('/sync/push-batch', [PosSyncController, 'pushBatch'])
 }).prefix('/api').use(middleware.authJwt())
-
-// Also register sync and licensing routes on root for flexibility
-router.get('/sync/status', [PosSyncController, 'status'])
-router.get('/sync/pull', [PosSyncController, 'pullUpdates'])
-router.get('/sync/pull-updates', [PosSyncController, 'pullUpdates'])
-router.post('/sync/push', [PosSyncController, 'pushBatch'])
-router.post('/sync/push-batch', [PosSyncController, 'pushBatch'])
 
 // Also register direct /pos license routes on root
 router.post('/pos/activate-license', [PosLicenseController, 'activateLicense'])

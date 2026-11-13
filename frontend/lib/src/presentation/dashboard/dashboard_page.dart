@@ -751,7 +751,7 @@ class _RecentSalesCard extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
-                      '${DateFormat.Hm().format(sale.createdAt)} • ${sale.customerName ?? "Walk-in"} • ${sale.paymentMethod?.toUpperCase() ?? "CASH"}',
+                      '${DateFormat.Hm().format(sale.createdAt)} • ${sale.customerName ?? l10n.walkInCustomer} • ${sale.paymentMethod?.toUpperCase() ?? "CASH"}',
                     ),
                     trailing: Text(
                       formatMoney(sale.totalAmount, symbol: currency),

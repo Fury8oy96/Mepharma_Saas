@@ -11,6 +11,7 @@ import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
 import '../session/session_controller.dart';
 import '../settings/hardware_devices_section.dart';
+import '../common/update_notification_dialog.dart';
 import 'navigation.dart';
 
 /// Modern Vuexy-inspired Shell: collapsible/expandable grouped sidebar,
@@ -19,6 +20,7 @@ class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
+  static bool _hasCheckedUpdateToday = false;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,6 +63,23 @@ class AppShell extends ConsumerWidget {
       (s) => s.path == location,
       orElse: () => appSections.first,
     );
+    final l10n = AppLocalizations.of(context);
+
+    // Daily Background Update Check (Non-intrusive)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!_hasCheckedUpdateToday) {
+        _hasCheckedUpdateToday = true;
+        final updateService = ref.read(updateCheckerServiceProvider);
+        final updateInfo = await updateService.checkForUpdate(force: false);
+        if (updateInfo != null && context.mounted) {
+          UpdateNotificationDialog.show(
+            context,
+            updateInfo: updateInfo,
+            onDismissPermanently: () => updateService.dismissVersion(updateInfo.version),
+          );
+        }
+      }
+    });
 
     return Scaffold(
       body: Row(
@@ -86,8 +105,8 @@ class AppShell extends ConsumerWidget {
                   activeSection: activeSection,
                   username: user.username,
                   roleLabel: user.role.isSuperAdmin
-                      ? 'Super Admin'
-                      : (user.role.isBranchAdmin ? 'Branch Admin' : 'Staff'),
+                      ? l10n.superAdminRole
+                      : (user.role.isBranchAdmin ? l10n.branchAdminRole : l10n.roleStaff),
                   onLogout: () => ref.read(sessionProvider.notifier).logout(),
                 ),
                 const NetworkStatusBanner(),

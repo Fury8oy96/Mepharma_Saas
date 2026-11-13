@@ -1250,4 +1250,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String reportedBy(String name) {
     return 'Reported by $name';
   }
+
+  @override
+  String get offlineModeBannerTitle =>
+      'Operating in Offline Mode — Local Storage Active';
+
+  @override
+  String get offlineModeBannerSubtitle =>
+      'All changes are saved locally to SQLite.';
+
+  @override
+  String offlinePendingTransactions(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transactions queued for sync.',
+      one: '1 transaction queued for sync.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncFailedBannerTitle =>
+      'Sync Failed — Retries When Connection Is Stable';
+
+  @override
+  String get networkRestoredBannerTitle =>
+      'Network Restored — Synchronizing with Server...';
+
+  @override
+  String get pendingSyncBannerTitle => 'Pending Local Changes Ready to Sync';
+
+  @override
+  String get reconcilingRecordsSubtitle =>
+      'Reconciling pending records and updating stock...';
+
+  @override
+  String pendingServerReconciliation(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count offline transactions pending server reconciliation.',
+      one: '1 offline transaction pending server reconciliation.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get checkConnection => 'Check Connection';
+
+  @override
+  String get syncNow => 'Sync Now';
+
+  @override
+  String get supervisorAuthorization => 'Supervisor Authorization';
+
+  @override
+  String get supervisorUsernameOptional => 'Supervisor Username (optional)';
+
+  @override
+  String get supervisorPasswordPin => 'Supervisor Password / PIN *';
+
+  @override
+  String get authorize => 'Authorize';
+
+  @override
+  String get invalidSupervisorPassword =>
+      'Invalid local supervisor password or PIN.';
+
+  @override
+  String get checkForUpdates => 'Check for Updates';
+
+  @override
+  String get checkingForUpdates => 'Checking for updates...';
+
+  @override
+  String get upToDate => 'MePharma is up to date';
+
+  @override
+  String get updateAvailable => 'Update Available';
 }

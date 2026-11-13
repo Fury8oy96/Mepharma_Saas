@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken'
 import env from '#start/env'
 
 export default class PosAuthController {
+  private static failedSupervisorAttempts = new Map<string, { count: number; lockedUntil: number }>()
+
   async login({ request, response, tenant }: HttpContext) {
     const { username, password } = request.all()
 
@@ -63,6 +65,19 @@ export default class PosAuthController {
 
   async verifySupervisor({ request, response }: HttpContext) {
     const { username, password, pin } = request.all()
+    const clientIp = request.ip() || 'unknown'
+    const attemptKey = `${clientIp}:${String(username || 'all').toLowerCase()}`
+
+    const now = Date.now()
+    const record = PosAuthController.failedSupervisorAttempts.get(attemptKey)
+    if (record && record.lockedUntil > now) {
+      const remainingSeconds = Math.ceil((record.lockedUntil - now) / 1000)
+      return response.status(429).json({
+        authorized: false,
+        error: `Too many failed supervisor attempts. Please wait ${remainingSeconds} seconds before trying again.`,
+        retryAfter: remainingSeconds,
+      })
+    }
 
     if (!password && !pin) {
       return response.status(400).json({ error: 'Password or PIN required for authorization.' })
@@ -81,8 +96,22 @@ export default class PosAuthController {
       if (user.role === 'branch_admin' || user.role === 'supervisor' || user.role === 'pharmacy_admin') {
         const passwordMatch = await bcrypt.compare(String(password || pin).trim(), user.password)
         if (passwordMatch) {
+          PosAuthController.failedSupervisorAttempts.delete(attemptKey)
+          const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
+          const supervisorToken = jwt.sign(
+            {
+              supervisorId: user.id,
+              supervisorUsername: user.username,
+              supervisorRole: user.role,
+              action: 'supervisor_override',
+            },
+            secret,
+            { expiresIn: '5m' }
+          )
+
           return response.ok({
             authorized: true,
+            supervisorToken,
             supervisor: {
               id: user.id,
               username: user.username,
@@ -93,9 +122,16 @@ export default class PosAuthController {
       }
     }
 
+    const count = (record?.count || 0) + 1
+    const lockedUntil = count >= 3 ? now + 5 * 60 * 1000 : 0
+    PosAuthController.failedSupervisorAttempts.set(attemptKey, { count, lockedUntil })
+
     return response.status(403).json({
       authorized: false,
-      error: 'Invalid supervisor credentials or insufficient permissions.',
+      error:
+        count >= 3
+          ? 'Too many failed supervisor attempts. Account locked for 5 minutes.'
+          : `Invalid supervisor credentials or insufficient permissions. (${3 - count} attempts remaining)`,
     })
   }
 }

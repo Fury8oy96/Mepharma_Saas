@@ -1242,4 +1242,89 @@ class AppLocalizationsAr extends AppLocalizations {
   String reportedBy(String name) {
     return 'بواسطة: $name';
   }
+
+  @override
+  String get offlineModeBannerTitle =>
+      'العمل في وضع عدم الاتصال — التخزين المحلي نشط';
+
+  @override
+  String get offlineModeBannerSubtitle =>
+      'يتم حفظ جميع التغييرات محلياً في قاعدة البيانات.';
+
+  @override
+  String offlinePendingTransactions(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count معاملة في انتظار المزامنة.',
+      many: '$count معاملة في انتظار المزامنة.',
+      few: '$count معاملات في انتظار المزامنة.',
+      two: 'معاملتان في انتظار المزامنة.',
+      one: 'معاملة واحدة في انتظار المزامنة.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncFailedBannerTitle =>
+      'فشلت المزامنة — ستتم إعادة المحاولة فور استقرار الاتصال';
+
+  @override
+  String get networkRestoredBannerTitle =>
+      'تمت استعادة الاتصال — جارٍ المزامنة مع الخادم...';
+
+  @override
+  String get pendingSyncBannerTitle => 'تغييرات محلية جاهزة للمزامنة';
+
+  @override
+  String get reconcilingRecordsSubtitle =>
+      'جارٍ مطابقة السجلات المعلقة وتحديث المخزون...';
+
+  @override
+  String pendingServerReconciliation(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count معاملة بانتظار المطابقة مع الخادم.',
+      many: '$count معاملة بانتظار المطابقة مع الخادم.',
+      few: '$count معاملات بانتظار المطابقة مع الخادم.',
+      two: 'معاملتان بانتظار المطابقة مع الخادم.',
+      one: 'معاملة واحدة بانتظار المطابقة مع الخادم.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get checkConnection => 'فحص الاتصال';
+
+  @override
+  String get syncNow => 'مزامنة الآن';
+
+  @override
+  String get supervisorAuthorization => 'صلاحية المشرف';
+
+  @override
+  String get supervisorUsernameOptional => 'اسم مستخدم المشرف (اختياري)';
+
+  @override
+  String get supervisorPasswordPin => 'رمز المشرف أو كلمة المرور *';
+
+  @override
+  String get authorize => 'تأكيد الصلاحية';
+
+  @override
+  String get invalidSupervisorPassword =>
+      'رمز المشرف أو كلمة المرور غير صحيحة.';
+
+  @override
+  String get checkForUpdates => 'التحقق من التحديثات';
+
+  @override
+  String get checkingForUpdates => 'جارٍ التحقق من التحديثات...';
+
+  @override
+  String get upToDate => 'نظام MePharma محدّث إلى آخر إصدار';
+
+  @override
+  String get updateAvailable => 'يتوفر تحديث جديد';
 }

@@ -3,9 +3,9 @@
 ; ==============================================================================
 
 #define MyAppName "MePharma"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "MePharma Systems"
-#define MyAppURL "https://github.com/Fury8oy96/mepharma"
+#define MyAppURL "https://github.com/Fury8oy96/Mepharma_Saas"
 #define MyAppExeName "mepharma.exe"
 #define SourceDir "..\frontend\build\windows\x64\runner\Release"
 #define AppIconPath "..\frontend\windows\runner\resources\app_icon.ico"
@@ -19,6 +19,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+AppMutex=MePharmaSingletonMutex
 
 ; Destination Directories
 DefaultDirName={autopf}\{#MyAppName}
@@ -41,6 +42,10 @@ RestartApplications=no
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
+#if defined(SignToolCmd)
+SignTool={#SignToolCmd}
+#endif
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
@@ -60,6 +65,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+const
+  AppGuid = '{D819C456-9B38-4F7E-9031-FA15093EAE72}';
+
 var
   EnvironmentPage: TWizardPage;
   LocalModeRadio: TRadioButton;
@@ -208,13 +216,119 @@ begin
   CleanInstallCheckBox.Top := ScaleY(235);
   CleanInstallCheckBox.Width := ScaleX(390);
   CleanInstallCheckBox.Height := ScaleY(20);
-  CleanInstallCheckBox.Caption := 'Clean install: Wipe previous local database (fresh start for this installation)';
-  CleanInstallCheckBox.Checked := True;
+  if RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
+     RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') then
+  begin
+    CleanInstallCheckBox.Caption := 'Reset database: Wipe local database and start fresh (Caution: deletes offline sales)';
+    CleanInstallCheckBox.Checked := False;
+  end
+  else
+  begin
+    CleanInstallCheckBox.Caption := 'Clean install: Wipe previous local database (fresh start for this installation)';
+    CleanInstallCheckBox.Checked := True;
+  end;
+end;
+
+function GetExistingInstallDir: String;
+var
+  InstallPath: String;
+begin
+  Result := '';
+  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'Inno Setup: App Path', InstallPath) then
+  begin
+    if Length(InstallPath) > 0 then
+    begin
+      Result := InstallPath;
+      Exit;
+    end;
+  end;
+  if RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'Inno Setup: App Path', InstallPath) then
+  begin
+    if Length(InstallPath) > 0 then
+    begin
+      Result := InstallPath;
+      Exit;
+    end;
+  end;
+  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'InstallLocation', InstallPath) then
+  begin
+    if Length(InstallPath) > 0 then
+    begin
+      Result := InstallPath;
+      Exit;
+    end;
+  end;
+  if RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'InstallLocation', InstallPath) then
+  begin
+    if Length(InstallPath) > 0 then
+    begin
+      Result := InstallPath;
+      Exit;
+    end;
+  end;
+end;
+
+procedure LoadExistingConfig;
+var
+  InstallDir: String;
+  ConfigFile: String;
+  FileContent: AnsiString;
+  P, PEnd: Integer;
+begin
+  InstallDir := GetExistingInstallDir;
+  if Length(InstallDir) = 0 then
+    Exit;
+
+  ConfigFile := InstallDir + '\api_config.json';
+  if FileExists(ConfigFile) then
+  begin
+    if LoadStringFromFile(ConfigFile, FileContent) then
+    begin
+      P := Pos('"pharmacyDomain": "', String(FileContent));
+      if P > 0 then
+      begin
+        P := P + Length('"pharmacyDomain": "');
+        PEnd := Pos('"', Copy(String(FileContent), P, Length(String(FileContent)) - P + 1));
+        if PEnd > 1 then
+          DomainEdit.Text := Copy(String(FileContent), P, PEnd - 1);
+      end;
+      P := Pos('"licenseKey": "', String(FileContent));
+      if P > 0 then
+      begin
+        P := P + Length('"licenseKey": "');
+        PEnd := Pos('"', Copy(String(FileContent), P, Length(String(FileContent)) - P + 1));
+        if PEnd > 1 then
+          LicenseKeyEdit.Text := Copy(String(FileContent), P, PEnd - 1);
+      end;
+      P := Pos('"mode": "local"', String(FileContent));
+      if P > 0 then
+      begin
+        LocalModeRadio.Checked := True;
+        OnlineModeRadio.Checked := False;
+        ModeRadioOnClick(nil);
+      end;
+    end;
+  end;
 end;
 
 procedure InitializeWizard;
+var
+  IsUpdateInstall: Boolean;
+  ExistingDir: String;
 begin
   CreateEnvironmentPage;
+  IsUpdateInstall := RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
+                     RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1');
+  if IsUpdateInstall then
+  begin
+    WizardForm.Caption := 'Update - ' + '{#MyAppName}';
+    ExistingDir := GetExistingInstallDir;
+    if Length(ExistingDir) > 0 then
+    begin
+      WizardForm.DirEdit.Text := ExistingDir;
+    end;
+    LoadExistingConfig;
+  end;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;

@@ -2437,6 +2437,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reported by {name}'**
   String reportedBy(String name);
+
+  /// No description provided for @offlineModeBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operating in Offline Mode — Local Storage Active'**
+  String get offlineModeBannerTitle;
+
+  /// No description provided for @offlineModeBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All changes are saved locally to SQLite.'**
+  String get offlineModeBannerSubtitle;
+
+  /// No description provided for @offlinePendingTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 transaction queued for sync.} other{{count} transactions queued for sync.}}'**
+  String offlinePendingTransactions(num count);
+
+  /// No description provided for @syncFailedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Failed — Retries When Connection Is Stable'**
+  String get syncFailedBannerTitle;
+
+  /// No description provided for @networkRestoredBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Restored — Synchronizing with Server...'**
+  String get networkRestoredBannerTitle;
+
+  /// No description provided for @pendingSyncBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Local Changes Ready to Sync'**
+  String get pendingSyncBannerTitle;
+
+  /// No description provided for @reconcilingRecordsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconciling pending records and updating stock...'**
+  String get reconcilingRecordsSubtitle;
+
+  /// No description provided for @pendingServerReconciliation.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 offline transaction pending server reconciliation.} other{{count} offline transactions pending server reconciliation.}}'**
+  String pendingServerReconciliation(num count);
+
+  /// No description provided for @checkConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Connection'**
+  String get checkConnection;
+
+  /// No description provided for @syncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Now'**
+  String get syncNow;
+
+  /// No description provided for @supervisorAuthorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Authorization'**
+  String get supervisorAuthorization;
+
+  /// No description provided for @supervisorUsernameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Username (optional)'**
+  String get supervisorUsernameOptional;
+
+  /// No description provided for @supervisorPasswordPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Password / PIN *'**
+  String get supervisorPasswordPin;
+
+  /// No description provided for @authorize.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorize'**
+  String get authorize;
+
+  /// No description provided for @invalidSupervisorPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid local supervisor password or PIN.'**
+  String get invalidSupervisorPassword;
+
+  /// No description provided for @checkForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get checkForUpdates;
+
+  /// No description provided for @checkingForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get checkingForUpdates;
+
+  /// No description provided for @upToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'MePharma is up to date'**
+  String get upToDate;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available'**
+  String get updateAvailable;
 }
 
 class _AppLocalizationsDelegate

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/services/network_monitor.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class NetworkStatusBanner extends ConsumerWidget {
   const NetworkStatusBanner({super.key});
@@ -45,23 +46,25 @@ class NetworkStatusBanner extends ConsumerWidget {
             ? Icons.error_rounded
             : (isSyncing ? Icons.sync_rounded : Icons.cloud_upload_rounded);
 
+    final l10n = AppLocalizations.of(context);
+
     final title = isOffline
-        ? 'Operating in Offline Mode — Local Storage Active'
+        ? l10n.offlineModeBannerTitle
         : hasError
-            ? 'Sync Failed — Retries When Connection Is Stable'
+            ? l10n.syncFailedBannerTitle
             : (isSyncing
-                ? 'Network Restored — Synchronizing with Server...'
-                : 'Pending Local Changes Ready to Sync');
+                ? l10n.networkRestoredBannerTitle
+                : l10n.pendingSyncBannerTitle);
 
     final subtitle = isOffline
         ? (pendingCount > 0
-            ? '$pendingCount transaction${pendingCount > 1 ? 's' : ''} queued for sync.'
-            : 'All changes are saved locally to SQLite.')
+            ? l10n.offlinePendingTransactions(pendingCount)
+            : l10n.offlineModeBannerSubtitle)
         : hasError
             ? lastError
             : (isSyncing
-                ? 'Reconciling pending records and updating stock...'
-                : '$pendingCount offline transaction${pendingCount > 1 ? 's' : ''} pending server reconciliation.');
+                ? l10n.reconcilingRecordsSubtitle
+                : l10n.pendingServerReconciliation(pendingCount));
 
     return Container(
       width: double.infinity,
@@ -118,7 +121,7 @@ class NetworkStatusBanner extends ConsumerWidget {
                 }
               },
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Check Connection'),
+              label: Text(l10n.checkConnection),
               style: ElevatedButton.styleFrom(
                 backgroundColor: textColor,
                 foregroundColor: Colors.white,
@@ -136,7 +139,7 @@ class NetworkStatusBanner extends ConsumerWidget {
                 await syncEngine.triggerSync();
               },
               icon: const Icon(Icons.sync_rounded, size: 16),
-              label: const Text('Sync Now'),
+              label: Text(l10n.syncNow),
               style: ElevatedButton.styleFrom(
                 backgroundColor: textColor,
                 foregroundColor: Colors.white,

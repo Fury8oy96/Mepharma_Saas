@@ -8,6 +8,7 @@ import '../core/services/thermal_printer_service.dart';
 import '../core/services/device_identifier_service.dart';
 import '../core/services/network_monitor.dart';
 import '../core/services/sync_engine.dart';
+import '../core/services/update_checker_service.dart';
 import '../data/db/app_database.dart' hide Customer, CustomerPayment;
 import '../data/db/enums.dart';
 // SQLite Repositories
@@ -530,6 +531,10 @@ final backupHistoryProvider = StreamProvider<List<BackupRecord>>((ref) {
 
 final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
   return ThermalPrinterService(ref.watch(settingsRepositoryProvider));
+});
+
+final updateCheckerServiceProvider = Provider<UpdateCheckerService>((ref) {
+  return UpdateCheckerService(ref.watch(settingsRepositoryProvider));
 });
 
 /// The currently selected locale (en / ar). Persisted through the settings

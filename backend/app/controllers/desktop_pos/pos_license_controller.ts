@@ -133,7 +133,7 @@ export default class PosLicenseController {
 
     let settingsMap: Record<string, string> = {}
     try {
-      const settingsRows = await db.rawQuery(`SELECT key, value FROM ${schemaName}.settings;`)
+      const settingsRows = await db.rawQuery(`SELECT key, value FROM "${schemaName}".settings;`)
       for (const row of settingsRows.rows || []) {
         settingsMap[row.key] = row.value
       }

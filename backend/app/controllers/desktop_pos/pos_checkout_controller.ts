@@ -3,6 +3,8 @@ import db from '@adonisjs/lucid/services/db'
 import Sale from '#models/tenant/sale'
 import SaleItem from '#models/tenant/sale_item'
 import Product from '#models/tenant/product'
+import jwt from 'jsonwebtoken'
+import env from '#start/env'
 
 export default class PosCheckoutController {
   async index({ response }: HttpContext) {
@@ -50,6 +52,30 @@ export default class PosCheckoutController {
       return response.status(400).json({ error: 'At least one sale item is required.' })
     }
 
+    const supervisorToken = request.input('supervisor_token') || request.input('supervisorToken')
+    const role = (authUser?.role || '').toLowerCase()
+    const isSupervisorOrAdmin = ['super_admin', 'pharmacy_admin', 'branch_admin', 'supervisor'].includes(role)
+    let supervisorAuthorized = isSupervisorOrAdmin
+
+    if (!supervisorAuthorized && supervisorToken) {
+      try {
+        const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
+        const decoded = jwt.verify(supervisorToken, secret) as any
+        if (decoded && decoded.action === 'supervisor_override') {
+          supervisorAuthorized = true
+        }
+      } catch (_) {
+        supervisorAuthorized = false
+      }
+    }
+
+    const overallDiscount = Math.max(0, parseInt(discount, 10) || 0)
+    if (overallDiscount > 0 && !supervisorAuthorized) {
+      return response.status(403).json({
+        error: 'Cart-level discount requires supervisor authorization.',
+      })
+    }
+
     // 2. Atomic ACID Checkout Transaction with Optimistic Locking
     return await db.transaction(async (trx) => {
       let subtotal = 0
@@ -89,10 +115,16 @@ export default class PosCheckoutController {
         product.version += 1
         await product.useTransaction(trx).save()
 
-        const unitPrice = Math.max(0, parseInt(item.unit_price, 10) || product.sellingPrice)
+        const submittedUnitPrice = item.unit_price !== undefined ? parseInt(item.unit_price, 10) : product.sellingPrice
+        const itemDiscount = Math.max(0, parseInt(item.discount, 10) || 0)
+
+        if ((submittedUnitPrice !== product.sellingPrice || itemDiscount > 0) && !supervisorAuthorized) {
+          throw new Error(`Price override or discount on '${product.name}' requires supervisor authorization.`)
+        }
+
+        const unitPrice = Math.max(0, submittedUnitPrice)
         const lineTotal = unitPrice * qty
         subtotal += lineTotal
-        const itemDiscount = Math.max(0, parseInt(item.discount, 10) || 0)
 
         saleItemsData.push({
           productId: product.id,

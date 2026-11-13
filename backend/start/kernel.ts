@@ -24,6 +24,7 @@ router.use([
  */
 export const middleware = router.named({
   webGate: () => import('#middleware/web_dashboard_gate_middleware'),
+  providerGate: () => import('#middleware/provider_gate_middleware'),
   terminalSeat: () => import('#middleware/terminal_seat_middleware'),
   authJwt: () => import('#middleware/auth_jwt_middleware'),
 })

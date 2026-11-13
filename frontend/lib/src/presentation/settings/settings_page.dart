@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/constants/app_constants.dart';
 import '../../domain/models/store_settings.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
+import '../common/update_notification_dialog.dart';
 import 'hardware_devices_section.dart';
 import 'server_settings_section.dart';
 
@@ -600,12 +602,155 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   const Divider(),
                   const SizedBox(height: 24),
                   const ServerSettingsSection(),
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 24),
+                  const _SystemUpdatesSection(),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SystemUpdatesSection extends ConsumerStatefulWidget {
+  const _SystemUpdatesSection();
+
+  @override
+  ConsumerState<_SystemUpdatesSection> createState() => _SystemUpdatesSectionState();
+}
+
+class _SystemUpdatesSectionState extends ConsumerState<_SystemUpdatesSection> {
+  bool _checking = false;
+
+  Future<void> _checkUpdate() async {
+    setState(() => _checking = true);
+    final l10n = AppLocalizations.of(context);
+    final updateService = ref.read(updateCheckerServiceProvider);
+
+    try {
+      final info = await updateService.checkForUpdate(force: true);
+      if (!mounted) return;
+
+      if (info != null) {
+        UpdateNotificationDialog.show(
+          context,
+          updateInfo: info,
+          onDismissPermanently: () => updateService.dismissVersion(info.version),
+        );
+      } else {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(l10n.upToDate),
+                ],
+              ),
+              backgroundColor: Colors.green.shade700,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isArabic ? 'النظام والتحديثات' : 'System & Updates',
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          isArabic
+              ? 'معلومات إصدار البرنامج والتحقق التلقائي واليدوي من التحديثات'
+              : 'Software version information and manual update checker',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.verified_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MePharma Desktop v${AppConstants.appVersion}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isArabic
+                              ? 'رقم البناء: #${AppConstants.buildNumber} • القناة: الإنتاج'
+                              : 'Build: #${AppConstants.buildNumber} • Channel: Production',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: _checking ? null : _checkUpdate,
+                  icon: _checking
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync_rounded, size: 18),
+                  label: Text(_checking ? l10n.checkingForUpdates : l10n.checkForUpdates),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
