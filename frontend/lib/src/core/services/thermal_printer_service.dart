@@ -412,6 +412,11 @@ class ThermalPrinterService {
     return text.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
   }
 
+  /// Sends raw bytes directly to any installed Windows printer by name.
+  Future<void> printRawToPrinter(Uint8List bytes, String printerName) async {
+    await _printViaSpooler(bytes, printerName);
+  }
+
   Future<void> _printViaSpooler(Uint8List bytes, String printerName) async {
     final name = printerName.trim();
     if (name.isEmpty) {

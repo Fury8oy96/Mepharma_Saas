@@ -6,7 +6,7 @@ import '../../domain/models/store_settings.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
-import 'printer_settings_section.dart';
+import 'hardware_devices_section.dart';
 import 'server_settings_section.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -595,7 +595,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 24),
-                  const PrinterSettingsSection(),
+                  const HardwareDevicesSection(),
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 24),

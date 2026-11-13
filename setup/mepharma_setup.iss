@@ -36,6 +36,8 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 DisableWelcomePage=no
+CloseApplications=yes
+RestartApplications=no
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
@@ -62,6 +64,7 @@ var
   EnvironmentPage: TWizardPage;
   LocalModeRadio: TRadioButton;
   OnlineModeRadio: TRadioButton;
+  CleanInstallCheckBox: TCheckBox;
   DomainLabel: TLabel;
   DomainEdit: TNewEdit;
   DomainHintLabel: TLabel;
@@ -189,7 +192,7 @@ begin
   OnlineNoteLabel := TLabel.Create(EnvironmentPage);
   OnlineNoteLabel.Parent := EnvironmentPage.Surface;
   OnlineNoteLabel.Left := ScaleX(30);
-  OnlineNoteLabel.Top := ScaleY(210);
+  OnlineNoteLabel.Top := ScaleY(205);
   OnlineNoteLabel.Width := ScaleX(370);
   OnlineNoteLabel.Height := ScaleY(24);
   OnlineNoteLabel.AutoSize := False;
@@ -197,6 +200,16 @@ begin
   OnlineNoteLabel.Font.Color := clHighlight;
   OnlineNoteLabel.Caption := 'Pharmacy branding and terminal seats will be auto-grabbed from the server.';
   OnlineNoteLabel.Visible := True;
+
+  // Clean Install Option (Wipes previous SQLite database for fresh start)
+  CleanInstallCheckBox := TCheckBox.Create(EnvironmentPage);
+  CleanInstallCheckBox.Parent := EnvironmentPage.Surface;
+  CleanInstallCheckBox.Left := ScaleX(10);
+  CleanInstallCheckBox.Top := ScaleY(235);
+  CleanInstallCheckBox.Width := ScaleX(390);
+  CleanInstallCheckBox.Height := ScaleY(20);
+  CleanInstallCheckBox.Caption := 'Clean install: Wipe previous local database (fresh start for this installation)';
+  CleanInstallCheckBox.Checked := True;
 end;
 
 procedure InitializeWizard;
@@ -345,5 +358,16 @@ begin
 
     ConfigPath := ExpandConstant('{app}\api_config.json');
     SaveStringToFile(ConfigPath, ConfigJson, False);
+
+    // If clean installation was selected, purge previous local SQLite database
+    if CleanInstallCheckBox.Checked then
+    begin
+      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite'));
+      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-shm'));
+      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-wal'));
+      DeleteFile(ExpandConstant('{userappdata}\MePharma\api_config.json'));
+      // Drop clean install flag next to mepharma.exe to guarantee in-app database reset on first launch
+      SaveStringToFile(ExpandConstant('{app}\clean_install.flag'), 'CLEAN', False);
+    end;
   end;
 end;

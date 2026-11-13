@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
         );
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -72,8 +72,34 @@ class AppDatabase extends _$AppDatabase {
         if (from < 4) {
           await m.createTable(staffProductFeedbacks);
         }
+        if (from < 5) {
+          await m.addColumn(purchases, purchases.status);
+          await m.addColumn(purchases, purchases.notes);
+        }
       },
     );
+  }
+
+  /// Completely wipes all operational tables and resets to an empty database state.
+  Future<void> wipeAndReset() async {
+    await transaction(() async {
+      await delete(saleItems).go();
+      await delete(sales).go();
+      await delete(salesHolds).go();
+      await delete(purchaseItems).go();
+      await delete(purchases).go();
+      await delete(stockAdjustments).go();
+      await delete(customerPayments).go();
+      await delete(customers).go();
+      await delete(products).go();
+      await delete(categories).go();
+      await delete(suppliers).go();
+      await delete(staffProductFeedbacks).go();
+      await delete(syncQueueEntries).go();
+      await delete(backupLogs).go();
+      await delete(settings).go();
+      await delete(users).go();
+    });
   }
 }
 

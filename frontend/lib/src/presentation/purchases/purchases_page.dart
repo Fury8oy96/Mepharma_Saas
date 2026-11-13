@@ -54,6 +54,7 @@ class PurchasesPage extends ConsumerWidget {
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final purchase = purchases[index];
+        final isPending = purchase.status == PurchaseStatus.pending;
         return ListTile(
           onTap: () => showDialog<void>(
             context: context,
@@ -61,14 +62,41 @@ class PurchasesPage extends ConsumerWidget {
               purchaseId: purchase.id,
             ),
           ),
-          leading: const CircleAvatar(
-            child: Icon(Icons.inventory_2_outlined),
-          ),
-          title: Text(
-            purchase.invoiceNumber,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
+          leading: CircleAvatar(
+            backgroundColor: isPending ? Colors.amber.shade100 : theme.colorScheme.primaryContainer,
+            child: Icon(
+              isPending ? Icons.pending_actions : Icons.inventory_2_outlined,
+              color: isPending ? Colors.amber.shade900 : theme.colorScheme.onPrimaryContainer,
             ),
+          ),
+          title: Row(
+            children: [
+              Text(
+                purchase.invoiceNumber,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isPending ? Colors.amber.shade50 : Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isPending ? Colors.amber.shade400 : Colors.green.shade400,
+                  ),
+                ),
+                child: Text(
+                  isPending ? l10n.pendingApproval : l10n.approved,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isPending ? Colors.amber.shade900 : Colors.green.shade800,
+                  ),
+                ),
+              ),
+            ],
           ),
           subtitle: Text(
             [
@@ -116,14 +144,14 @@ class PurchasesPage extends ConsumerWidget {
                       indicatorColor: theme.colorScheme.primary,
                       labelColor: theme.colorScheme.primary,
                       unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                      tabs: const [
+                      tabs: [
                         Tab(
-                          icon: Icon(Icons.check_circle_outline, size: 18),
-                          text: 'Approved',
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          text: l10n.approved,
                         ),
                         Tab(
-                          icon: Icon(Icons.pending_actions, size: 18),
-                          text: 'Pending Confirmation',
+                          icon: const Icon(Icons.pending_actions, size: 18),
+                          text: l10n.pendingApproval,
                         ),
                       ],
                     ),

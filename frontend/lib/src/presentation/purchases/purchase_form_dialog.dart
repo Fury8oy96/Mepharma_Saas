@@ -233,6 +233,7 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
             userId: userId,
             supplierId: supplierId,
             purchaseDate: _purchaseDate ?? DateTime.now(),
+            autoApprove: false,
             items: [
               for (final line in _lines)
                 PurchaseLineInput(

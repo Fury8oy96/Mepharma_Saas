@@ -199,6 +199,10 @@ class Purchases extends Table {
 
   DateTimeColumn get purchaseDate => dateTime()();
 
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  TextColumn get notes => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

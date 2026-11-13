@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import 'src/app/app.dart';
 import 'src/app/providers.dart';
@@ -15,6 +18,23 @@ Future<void> main() async {
     // Opens the database (creating the schema if needed) and seeds the
     // default admin account on first run.
     final db = container.read(databaseProvider);
+
+    // If a clean install flag file exists (dropped by installer during fresh setup),
+    // wipe the SQLite database immediately on startup to guarantee a 100% clean state.
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      final flagFile = File(p.join(exeDir.path, 'clean_install.flag'));
+      if (await flagFile.exists()) {
+        debugPrint('Clean installation flag detected: wiping SQLite database...');
+        await db.wipeAndReset();
+        try {
+          await flagFile.delete();
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Clean install flag check notice: $e');
+    }
+
     await SqliteUserRepository(db).ensureDefaultAdmin();
 
     // Restore the persisted language (defaults to English).

@@ -36,6 +36,9 @@ class _PosPageState extends ConsumerState<PosPage> {
   final _searchController = TextEditingController();
   final _discountController = TextEditingController();
 
+  final StringBuffer _globalBarcodeBuffer = StringBuffer();
+  DateTime? _lastGlobalKeyTime;
+
   final _searchBarKey = GlobalKey();
   final _layerLink = LayerLink();
   final Object _searchTapGroupId = Object();
@@ -50,10 +53,12 @@ class _PosPageState extends ConsumerState<PosPage> {
     _barcodeFocus = FocusNode(onKeyEvent: _handleSearchKey);
     _barcodeFocus.addListener(_onBarcodeFocusChanged);
     _barcodeController.addListener(_onBarcodeChanged);
+    HardwareKeyboard.instance.addHandler(_handleGlobalHardwareScan);
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalHardwareScan);
     _removeOverlay();
     _barcodeFocus.removeListener(_onBarcodeFocusChanged);
     _barcodeFocus.dispose();
@@ -63,6 +68,41 @@ class _PosPageState extends ConsumerState<PosPage> {
     _discountController.dispose();
     _resultsScrollController.dispose();
     super.dispose();
+  }
+
+  bool _handleGlobalHardwareScan(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+
+    final now = DateTime.now();
+    final lastTime = _lastGlobalKeyTime;
+    _lastGlobalKeyTime = now;
+
+    // USB barcode readers transmit bursts under 80ms per character.
+    // If more than 80ms has elapsed, clear buffer as this is manual typing or reset.
+    if (lastTime != null && now.difference(lastTime).inMilliseconds > 80) {
+      _globalBarcodeBuffer.clear();
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+      final code = _globalBarcodeBuffer.toString().trim();
+      _globalBarcodeBuffer.clear();
+
+      if (code.length >= 3) {
+        if (!_barcodeFocus.hasFocus) {
+          _handleSearchSubmitted(code);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    final char = event.character;
+    if (char != null && char.isNotEmpty && !char.contains(RegExp(r'[\r\n\t]'))) {
+      _globalBarcodeBuffer.write(char);
+    }
+
+    return false;
   }
 
   void _onBarcodeChanged() {

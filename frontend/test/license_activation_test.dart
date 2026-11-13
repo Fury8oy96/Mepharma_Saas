@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,8 @@ void main() {
     } on SocketException catch (_) {
       // Backend server not active during local unit test run
     } on http.ClientException catch (_) {
+      // Backend server not active during local unit test run
+    } on TimeoutException catch (_) {
       // Backend server not active during local unit test run
     }
   });

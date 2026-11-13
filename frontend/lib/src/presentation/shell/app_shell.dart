@@ -10,7 +10,7 @@ import '../common/network_status_banner.dart';
 import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
 import '../session/session_controller.dart';
-import '../settings/printer_settings_section.dart';
+import '../settings/hardware_devices_section.dart';
 import 'navigation.dart';
 
 /// Modern Vuexy-inspired Shell: collapsible/expandable grouped sidebar,
@@ -619,11 +619,13 @@ class _ModernHeader extends ConsumerWidget {
           const LanguageSwitcher(),
           const SizedBox(width: 8),
 
-          // Quick Thermal Printer Setup (accessible to all POS operators & managers)
+          // Quick Hardware & Devices Setup (accessible to all POS operators & managers)
           IconButton(
             icon: const Icon(Icons.print_outlined, size: 20),
-            tooltip: l10n.printerSettings,
-            onPressed: () => PrinterSettingsDialog.show(context),
+            tooltip: Localizations.localeOf(context).languageCode == 'ar'
+                ? 'إدارة الطابعات والأجهزة المتصلة'
+                : 'Connected Hardware & Printers',
+            onPressed: () => HardwareDevicesDialog.show(context),
           ),
           const SizedBox(width: 10),
 

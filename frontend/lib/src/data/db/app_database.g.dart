@@ -4038,6 +4038,25 @@ class $PurchasesTable extends Purchases
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4058,6 +4077,8 @@ class $PurchasesTable extends Purchases
     userId,
     totalAmount,
     purchaseDate,
+    status,
+    notes,
     createdAt,
   ];
   @override
@@ -4124,6 +4145,18 @@ class $PurchasesTable extends Purchases
     } else if (isInserting) {
       context.missing(_purchaseDateMeta);
     }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4163,6 +4196,14 @@ class $PurchasesTable extends Purchases
         DriftSqlType.dateTime,
         data['${effectivePrefix}purchase_date'],
       )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4185,6 +4226,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   /// Minor units (cents).
   final int totalAmount;
   final DateTime purchaseDate;
+  final String status;
+  final String? notes;
   final DateTime createdAt;
   const Purchase({
     required this.id,
@@ -4193,6 +4236,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     required this.userId,
     required this.totalAmount,
     required this.purchaseDate,
+    required this.status,
+    this.notes,
     required this.createdAt,
   });
   @override
@@ -4204,6 +4249,10 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     map['user_id'] = Variable<int>(userId);
     map['total_amount'] = Variable<int>(totalAmount);
     map['purchase_date'] = Variable<DateTime>(purchaseDate);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -4216,6 +4265,10 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       userId: Value(userId),
       totalAmount: Value(totalAmount),
       purchaseDate: Value(purchaseDate),
+      status: Value(status),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       createdAt: Value(createdAt),
     );
   }
@@ -4232,6 +4285,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       userId: serializer.fromJson<int>(json['userId']),
       totalAmount: serializer.fromJson<int>(json['totalAmount']),
       purchaseDate: serializer.fromJson<DateTime>(json['purchaseDate']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -4245,6 +4300,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       'userId': serializer.toJson<int>(userId),
       'totalAmount': serializer.toJson<int>(totalAmount),
       'purchaseDate': serializer.toJson<DateTime>(purchaseDate),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -4256,6 +4313,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     int? userId,
     int? totalAmount,
     DateTime? purchaseDate,
+    String? status,
+    Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
   }) => Purchase(
     id: id ?? this.id,
@@ -4264,6 +4323,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     userId: userId ?? this.userId,
     totalAmount: totalAmount ?? this.totalAmount,
     purchaseDate: purchaseDate ?? this.purchaseDate,
+    status: status ?? this.status,
+    notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
   );
   Purchase copyWithCompanion(PurchasesCompanion data) {
@@ -4282,6 +4343,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       purchaseDate: data.purchaseDate.present
           ? data.purchaseDate.value
           : this.purchaseDate,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4295,6 +4358,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           ..write('userId: $userId, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('purchaseDate: $purchaseDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4308,6 +4373,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     userId,
     totalAmount,
     purchaseDate,
+    status,
+    notes,
     createdAt,
   );
   @override
@@ -4320,6 +4387,8 @@ class Purchase extends DataClass implements Insertable<Purchase> {
           other.userId == this.userId &&
           other.totalAmount == this.totalAmount &&
           other.purchaseDate == this.purchaseDate &&
+          other.status == this.status &&
+          other.notes == this.notes &&
           other.createdAt == this.createdAt);
 }
 
@@ -4330,6 +4399,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   final Value<int> userId;
   final Value<int> totalAmount;
   final Value<DateTime> purchaseDate;
+  final Value<String> status;
+  final Value<String?> notes;
   final Value<DateTime> createdAt;
   const PurchasesCompanion({
     this.id = const Value.absent(),
@@ -4338,6 +4409,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     this.userId = const Value.absent(),
     this.totalAmount = const Value.absent(),
     this.purchaseDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   PurchasesCompanion.insert({
@@ -4347,6 +4420,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     required int userId,
     required int totalAmount,
     required DateTime purchaseDate,
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : invoiceNumber = Value(invoiceNumber),
        supplierId = Value(supplierId),
@@ -4360,6 +4435,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Expression<int>? userId,
     Expression<int>? totalAmount,
     Expression<DateTime>? purchaseDate,
+    Expression<String>? status,
+    Expression<String>? notes,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -4369,6 +4446,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       if (userId != null) 'user_id': userId,
       if (totalAmount != null) 'total_amount': totalAmount,
       if (purchaseDate != null) 'purchase_date': purchaseDate,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -4380,6 +4459,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     Value<int>? userId,
     Value<int>? totalAmount,
     Value<DateTime>? purchaseDate,
+    Value<String>? status,
+    Value<String?>? notes,
     Value<DateTime>? createdAt,
   }) {
     return PurchasesCompanion(
@@ -4389,6 +4470,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
       userId: userId ?? this.userId,
       totalAmount: totalAmount ?? this.totalAmount,
       purchaseDate: purchaseDate ?? this.purchaseDate,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -4414,6 +4497,12 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     if (purchaseDate.present) {
       map['purchase_date'] = Variable<DateTime>(purchaseDate.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4429,6 +4518,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
           ..write('userId: $userId, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('purchaseDate: $purchaseDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -14012,6 +14103,8 @@ typedef $$PurchasesTableCreateCompanionBuilder =
       required int userId,
       required int totalAmount,
       required DateTime purchaseDate,
+      Value<String> status,
+      Value<String?> notes,
       Value<DateTime> createdAt,
     });
 typedef $$PurchasesTableUpdateCompanionBuilder =
@@ -14022,6 +14115,8 @@ typedef $$PurchasesTableUpdateCompanionBuilder =
       Value<int> userId,
       Value<int> totalAmount,
       Value<DateTime> purchaseDate,
+      Value<String> status,
+      Value<String?> notes,
       Value<DateTime> createdAt,
     });
 
@@ -14108,6 +14203,16 @@ class $$PurchasesTableFilterComposer
 
   ColumnFilters<DateTime> get purchaseDate => $composableBuilder(
     column: $table.purchaseDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14217,6 +14322,16 @@ class $$PurchasesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -14295,6 +14410,12 @@ class $$PurchasesTableAnnotationComposer
     column: $table.purchaseDate,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -14409,6 +14530,8 @@ class $$PurchasesTableTableManager
                 Value<int> userId = const Value.absent(),
                 Value<int> totalAmount = const Value.absent(),
                 Value<DateTime> purchaseDate = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => PurchasesCompanion(
                 id: id,
@@ -14417,6 +14540,8 @@ class $$PurchasesTableTableManager
                 userId: userId,
                 totalAmount: totalAmount,
                 purchaseDate: purchaseDate,
+                status: status,
+                notes: notes,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -14427,6 +14552,8 @@ class $$PurchasesTableTableManager
                 required int userId,
                 required int totalAmount,
                 required DateTime purchaseDate,
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => PurchasesCompanion.insert(
                 id: id,
@@ -14435,6 +14562,8 @@ class $$PurchasesTableTableManager
                 userId: userId,
                 totalAmount: totalAmount,
                 purchaseDate: purchaseDate,
+                status: status,
+                notes: notes,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

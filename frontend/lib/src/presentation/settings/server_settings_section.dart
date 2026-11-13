@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../../app/providers.dart';
+import '../../data/repositories/sqlite_user_repository.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 import '../../domain/models/api_config.dart';
@@ -136,6 +137,85 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
     } finally {
       if (mounted) {
         setState(() => _testing = false);
+      }
+    }
+  }
+
+  Future<void> _resetDatabase() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            Text(
+              l10n.localeName.startsWith('ar')
+                  ? 'تأكيد تهيئة قاعدة البيانات'
+                  : 'Confirm Database Reset',
+            ),
+          ],
+        ),
+        content: Text(
+          l10n.localeName.startsWith('ar')
+              ? 'تحذير: سيتم حذف جميع المبيعات والمشتريات والمنتجات والعملاء والموردين محلياً، وإعادة تعيين حساب المسؤول الافتراضي (admin / admin123). لا يمكن التراجع عن هذا الإجراء!\n\nهل أنت متأكد من الاستمرار؟'
+              : 'Warning: This will delete all local sales, purchases, inventory, customers, and suppliers, and restore the default administrator account (admin / admin123). This action cannot be undone!\n\nAre you sure you want to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              l10n.localeName.startsWith('ar') ? 'نعم، تهيئة وحذف' : 'Yes, Wipe & Reset',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final db = ref.read(databaseProvider);
+      await db.wipeAndReset();
+      await SqliteUserRepository(db).ensureDefaultAdmin();
+
+      // Refresh providers
+      ref.invalidate(productListProvider);
+      ref.invalidate(purchaseListProvider);
+      ref.invalidate(categoryListProvider);
+      ref.invalidate(supplierListProvider);
+      ref.invalidate(customerListProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.localeName.startsWith('ar')
+                    ? 'تمت تهيئة قاعدة البيانات بنجاح وبدء قاعدة بيانات نظيفة فارغة.'
+                    : 'Database has been wiped and reset to a clean empty state.',
+              ),
+              backgroundColor: Colors.green.shade800,
+            ),
+          );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Failed to reset database: $e'),
+              backgroundColor: Colors.red.shade800,
+            ),
+          );
       }
     }
   }
@@ -305,6 +385,63 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
                 label: Text(l10n.save),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.red.shade200),
+            ),
+            color: Colors.red.shade50.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.cleaning_services_outlined, color: Colors.red.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.localeName.startsWith('ar')
+                            ? 'صيانة وتهيئة قاعدة البيانات'
+                            : 'Database Maintenance & Reset',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.localeName.startsWith('ar')
+                        ? 'إذا كنت تقوم بإعداد هذا الفرع كفرع جديد تماماً بدون بيانات سابقة، أو ترغب في مسح البيانات القديمة المتزامنة من الخادم والبدء بقاعدة بيانات نظيفة فارغة، يمكنك إعادة التهيئة هنا.'
+                        : 'If you are setting up this branch from scratch or want to erase stale synced data and start with a completely fresh, empty database, you can wipe and reset the local database here.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: _resetDatabase,
+                    icon: const Icon(Icons.delete_forever_outlined),
+                    label: Text(
+                      l10n.localeName.startsWith('ar')
+                          ? 'تهيئة قاعدة بيانات جديدة فارغة (حذف البيانات القديمة)'
+                          : 'Reset Database to Fresh Empty State',
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

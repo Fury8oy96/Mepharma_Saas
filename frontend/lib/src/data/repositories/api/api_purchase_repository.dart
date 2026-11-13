@@ -117,6 +117,7 @@ class ApiPurchaseRepository implements PurchaseRepository {
     required int userId,
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
+    bool autoApprove = true,
   }) async {
     final bodyItems = items.map((i) => {
       'product_id': (i.productId == 0 || i.productId == null) ? null : i.productId,
