@@ -90,6 +90,12 @@ begin
   LicenseKeyEdit.Enabled := OnlineModeRadio.Checked;
   LicenseKeyHintLabel.Enabled := OnlineModeRadio.Checked;
   OnlineNoteLabel.Visible := OnlineModeRadio.Checked;
+
+  // When Standalone Local SQLite is selected, default CleanInstall to True to guarantee an empty, clean DB
+  if LocalModeRadio.Checked then
+  begin
+    CleanInstallCheckBox.Checked := True;
+  end;
 end;
 
 procedure CreateEnvironmentPage;
@@ -447,7 +453,7 @@ begin
       NormalizedUrl := 'http://localhost:8000/api';
       RawDomain := 'local';
       TenantCode := 'local';
-      LicenseKeyVal := '';
+      LicenseKeyVal := 'OFFLINE-STANDALONE-PERPETUAL';
     end
     else
     begin
@@ -467,18 +473,28 @@ begin
       '  "pharmacyCode": "' + TenantCode + '",' + #13#10 +
       '  "licenseKey": "' + LicenseKeyVal + '",' + #13#10 +
       '  "branchId": 1,' + #13#10 +
-      '  "isConfigured": true' + #13#10 +
+      '  "isConfigured": true,' + #13#10 +
+      '  "isLicenseValid": true,' + #13#10 +
+      '  "licensePlan": "offline_standalone",' + #13#10 +
+      '  "validityDaysRemaining": 365,' + #13#10 +
+      '  "pharmacyName": "Local Pharmacy (Offline)",' + #13#10 +
+      '  "pharmacyAddress": "Standalone SQLite Database",' + #13#10 +
+      '  "currency": "USD",' + #13#10 +
+      '  "currencySymbol": "$"' + #13#10 +
       '}';
 
     ConfigPath := ExpandConstant('{app}\api_config.json');
     SaveStringToFile(ConfigPath, ConfigJson, False);
 
-    // If clean installation was selected, purge previous local SQLite database
-    if CleanInstallCheckBox.Checked then
+    // If clean installation was selected OR local offline mode is chosen, purge previous local SQLite database
+    if CleanInstallCheckBox.Checked or LocalModeRadio.Checked then
     begin
       DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite'));
       DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-shm'));
       DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-wal'));
+      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite'));
+      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite-shm'));
+      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite-wal'));
       DeleteFile(ExpandConstant('{userappdata}\MePharma\api_config.json'));
       // Drop clean install flag next to mepharma.exe to guarantee in-app database reset on first launch
       SaveStringToFile(ExpandConstant('{app}\clean_install.flag'), 'CLEAN', False);

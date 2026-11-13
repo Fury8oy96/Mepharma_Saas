@@ -130,29 +130,32 @@ class ApiConfig {
   }
 
   factory ApiConfig.fromJson(Map<String, dynamic> json) {
+    final mode = DatabaseMode.values.firstWhere(
+      (e) => e.name == json['mode'],
+      orElse: () => DatabaseMode.onlineApi,
+    );
+    final isLocal = mode == DatabaseMode.local;
+
     return ApiConfig(
-      mode: DatabaseMode.values.firstWhere(
-        (e) => e.name == json['mode'],
-        orElse: () => DatabaseMode.onlineApi,
-      ),
+      mode: mode,
       baseUrl: json['baseUrl'] as String? ?? 'http://localhost:8000',
       token: json['token'] as String?,
       branchId: json['branchId'] as int? ?? 1,
       pharmacyDomain: json['pharmacyDomain'] as String? ?? (json['baseUrl'] as String? ?? 'main.localhost:8000'),
       pharmacyCode: json['pharmacyCode'] as String? ?? 'main',
-      licenseKey: json['licenseKey'] as String?,
-      isConfigured: json['isConfigured'] as bool? ?? (json['licenseKey'] != null && (json['licenseKey'] as String).isNotEmpty),
-      isLicenseValid: json['isLicenseValid'] as bool? ?? false,
-      pharmacyName: json['pharmacyName'] as String?,
+      licenseKey: json['licenseKey'] as String? ?? (isLocal ? 'OFFLINE-STANDALONE-PERPETUAL' : null),
+      isConfigured: json['isConfigured'] as bool? ?? (isLocal ? true : (json['licenseKey'] != null && (json['licenseKey'] as String).isNotEmpty)),
+      isLicenseValid: json['isLicenseValid'] as bool? ?? (isLocal ? true : false),
+      pharmacyName: json['pharmacyName'] as String? ?? (isLocal ? 'Local Pharmacy (Offline)' : null),
       pharmacyPhone: json['pharmacyPhone'] as String?,
-      pharmacyAddress: json['pharmacyAddress'] as String?,
-      currency: json['currency'] as String?,
-      currencySymbol: json['currencySymbol'] as String?,
-      taxRate: (json['taxRate'] as num?)?.toDouble(),
+      pharmacyAddress: json['pharmacyAddress'] as String? ?? (isLocal ? 'Standalone SQLite Database' : null),
+      currency: json['currency'] as String? ?? (isLocal ? 'USD' : null),
+      currencySymbol: json['currencySymbol'] as String? ?? (isLocal ? r'$' : null),
+      taxRate: (json['taxRate'] as num?)?.toDouble() ?? (isLocal ? 0.0 : null),
       receiptFooter: json['receiptFooter'] as String?,
       licenseExpiresAt: json['licenseExpiresAt'] as String?,
-      licensePlan: json['licensePlan'] as String?,
-      validityDaysRemaining: json['validityDaysRemaining'] as int?,
+      licensePlan: json['licensePlan'] as String? ?? (isLocal ? 'offline_standalone' : null),
+      validityDaysRemaining: json['validityDaysRemaining'] as int? ?? (isLocal ? 365 : null),
       terminalHardwareId: json['terminalHardwareId'] as String?,
       terminalName: json['terminalName'] as String?,
       seatNumber: json['seatNumber'] as int?,

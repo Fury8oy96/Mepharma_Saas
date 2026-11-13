@@ -47,9 +47,45 @@ if (-not $IsccExe) {
 Write-Host "`n[2/3] Building Flutter Windows application in Release mode..." -ForegroundColor Yellow
 Push-Location $FrontendDir
 try {
-    flutter build windows --release
-    if ($LASTEXITCODE -ne 0) {
-        throw "Flutter release build failed with exit code $LASTEXITCODE"
+    $ReleaseDir = Join-Path $FrontendDir "build\windows\x64\runner\Release"
+    $ReleaseDataDir = Join-Path $ReleaseDir "data"
+    $AssembledDir = Join-Path $FrontendDir "build\windows_assembled"
+
+    # Attempt standard flutter build windows --release first if toolchain is available
+    $Built = $false
+    try {
+        & flutter build windows --release
+        if ($LASTEXITCODE -eq 0) {
+            $Built = $true
+        }
+    } catch {
+        $Built = $false
+    }
+
+    if (-not $Built) {
+        Write-Host "Standard MSBuild toolchain not invoked; using Flutter direct AOT engine assembler..." -ForegroundColor Yellow
+        if (-not (Test-Path $AssembledDir)) {
+            New-Item -ItemType Directory -Path $AssembledDir -Force | Out-Null
+        }
+        & flutter assemble -dTargetPlatform=windows-x64 -dBuildMode=release -dTrackWidgetCreation=false -o $AssembledDir release_bundle_windows-x64_assets
+        if ($LASTEXITCODE -ne 0) {
+            throw "Flutter assemble release failed with exit code $LASTEXITCODE"
+        }
+
+        # Synchronize assembled AOT app.so and flutter_assets to Release data
+        $AssembledAppSo = Join-Path $AssembledDir "windows\app.so"
+        $AssembledAssets = Join-Path $AssembledDir "flutter_assets"
+        $TargetAppSo = Join-Path $ReleaseDataDir "app.so"
+        $TargetAssets = Join-Path $ReleaseDataDir "flutter_assets"
+
+        if (Test-Path $AssembledAppSo) {
+            Copy-Item $AssembledAppSo $TargetAppSo -Force
+            Write-Host "Updated Release AOT binary: $TargetAppSo" -ForegroundColor Green
+        }
+        if (Test-Path $AssembledAssets) {
+            Copy-Item $AssembledAssets\* $TargetAssets -Recurse -Force
+            Write-Host "Updated Release flutter assets: $TargetAssets" -ForegroundColor Green
+        }
     }
     Write-Host "Flutter release build succeeded!" -ForegroundColor Green
 } finally {

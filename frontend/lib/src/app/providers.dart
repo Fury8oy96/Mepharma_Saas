@@ -86,11 +86,17 @@ final apiConfigManagerProvider = Provider<ApiConfigManager>((ref) {
 });
 
 class ApiConfigNotifier extends StateNotifier<ApiConfig> {
-  ApiConfigNotifier(this._manager)
-      : super(const ApiConfig(
-          mode: DatabaseMode.onlineApi,
+  ApiConfigNotifier(this._manager, [ApiConfig? initialConfig])
+      : super(initialConfig ?? const ApiConfig(
+          mode: DatabaseMode.local,
           baseUrl: 'http://localhost:8000/api',
           branchId: 1,
+          isConfigured: true,
+          isLicenseValid: true,
+          pharmacyName: 'Local Pharmacy (Offline)',
+          pharmacyAddress: 'Standalone SQLite Database',
+          licensePlan: 'offline_standalone',
+          validityDaysRemaining: 365,
         )) {
     load();
   }
