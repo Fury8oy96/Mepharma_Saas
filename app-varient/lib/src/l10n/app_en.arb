@@ -1,0 +1,695 @@
+{
+  "@@locale": "en",
+  "appTitle": "Pharmacy Management System",
+  "signIn": "Sign in",
+  "signingIn": "Signing in...",
+  "username": "Username",
+  "password": "Password",
+  "invalidCredentials": "Invalid username or password",
+  "errorLogin": "Something went wrong. Please try again.",
+  "language": "Language",
+  "english": "English",
+  "arabic": "Arabic",
+  "dashboard": "Dashboard",
+  "pos": "Point of Sale",
+  "salesHistory": "Sales History",
+  "products": "Products",
+  "categories": "Categories",
+  "suppliers": "Suppliers",
+  "purchases": "Purchases",
+  "users": "Users",
+  "reports": "Reports",
+  "settings": "Settings",
+  "backup": "Backup",
+  "logout": "Log out",
+  "comingSoon": "Coming soon",
+  "welcomeBack": "Welcome back, {name}",
+  "@welcomeBack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeBackMessage": "You are signed in as {role}",
+  "@welcomeBackMessage": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "roleAdmin": "Administrator",
+  "roleStaff": "Staff",
+  "quickSale": "New sale",
+  "todaySales": "Today's sales",
+  "lowStockItems": "Low stock items",
+  "actions": "Actions",
+  "save": "Save",
+  "saving": "Saving...",
+  "saved": "Saved",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "searchProducts": "Search by name, SKU, or barcode",
+  "fieldRequired": "This field is required",
+  "invalidNumber": "Invalid number",
+  "alreadyInUse": "{field} is already in use",
+  "@alreadyInUse": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOccurred": "Something went wrong. Please try again.",
+  "sku": "SKU",
+  "barcode": "Barcode",
+  "productName": "Product name",
+  "category": "Category",
+  "supplier": "Supplier",
+  "costPrice": "Cost price",
+  "sellingPrice": "Selling price",
+  "stock": "Stock",
+  "lowStockThreshold": "Low stock alert at",
+  "expiryDate": "Expiry date",
+  "description": "Description",
+  "noCategory": "No category",
+  "noSupplier": "No supplier",
+  "noProducts": "No products found",
+  "addProduct": "Add product",
+  "editProduct": "Edit product",
+  "deleteProduct": "Delete product",
+  "productAdded": "Product added",
+  "productSaved": "Product saved",
+  "productDeleted": "Product deleted",
+  "confirmDeleteProduct": "Delete {name}?",
+  "@confirmDeleteProduct": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDeleteProductMessage": "This will remove the product from inventory. This action cannot be undone.",
+  "adjustStock": "Adjust Stock",
+  "stockAdjustment": "Stock Adjustment",
+  "adjustmentQuantity": "Adjustment Quantity (+/-)",
+  "adjustmentReason": "Reason (Optional)",
+  "adjustmentReasonHint": "e.g. Inventory audit, damaged items, return to supplier",
+  "positiveAddsNegativeRemoves": "Positive number adds stock, negative removes stock.",
+  "currentStock": "Current stock",
+  "addCategory": "Add category",
+  "editCategory": "Edit category",
+  "categoryName": "Category name",
+  "deleteCategory": "Delete category",
+  "categoryAdded": "Category added",
+  "categorySaved": "Category saved",
+  "confirmDeleteCategory": "Delete category {name}?",
+  "@confirmDeleteCategory": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noCategories": "No categories yet",
+  "addSupplier": "Add supplier",
+  "editSupplier": "Edit supplier",
+  "supplierName": "Supplier name",
+  "contactPerson": "Contact person",
+  "phone": "Phone",
+  "email": "Email",
+  "address": "Address",
+  "deleteSupplier": "Delete supplier",
+  "supplierAdded": "Supplier added",
+  "supplierSaved": "Supplier saved",
+  "confirmDeleteSupplier": "Delete supplier {name}?",
+  "@confirmDeleteSupplier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSuppliers": "No suppliers yet",
+  "storeSettings": "Store settings",
+  "storeName": "Store name",
+  "storeAddress": "Store address",
+  "storePhone": "Store phone",
+  "storeTaxId": "Tax ID",
+  "taxRate": "Tax rate (%)",
+  "currencySymbol": "Currency symbol",
+  "scanBarcode": "Scan barcode, SKU, name, or generic name...",
+  "productNotFound": "Product not found",
+  "outOfStock": "Out of stock: {name}",
+  "@outOfStock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyCart": "The cart is empty",
+  "insufficientStock": "Insufficient stock",
+  "insufficientReceived": "Amount received is less than the total",
+  "cart": "Cart",
+  "clearCart": "Clear cart",
+  "confirmClearCartMessage": "All items will be removed from the cart.",
+  "newSale": "New sale",
+  "holdSale": "Hold sale",
+  "resumeHold": "Resume hold",
+  "saleHeld": "Sale held",
+  "saleCompleted": "Sale completed: {invoice}",
+  "@saleCompleted": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "noHolds": "No held sales",
+  "deleteHold": "Delete hold",
+  "confirmDeleteHold": "Delete hold {number}?",
+  "@confirmDeleteHold": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "holdPartiallyRestored": "Some products are no longer available and were skipped: {missing}",
+  "@holdPartiallyRestored": {
+    "placeholders": {
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "subtotal": "Subtotal",
+  "discount": "Discount",
+  "discountNone": "No discount",
+  "discountPercentage": "Percentage",
+  "discountFixed": "Fixed amount",
+  "tax": "Tax",
+  "total": "Total",
+  "pay": "Pay",
+  "payment": "Payment",
+  "paymentCash": "Cash",
+  "paymentCard": "Card",
+  "paymentMobileMoney": "Mobile money",
+  "amountReceived": "Amount received",
+  "changeDue": "Change",
+  "confirmPayment": "Confirm payment",
+  "receiptInvoice": "Invoice:",
+  "receiptCashier": "Cashier:",
+  "receiptCustomer": "Customer:",
+  "receiptOnAccount": "On account",
+  "receiptThanks": "Thank you for your purchase!",
+  "printFailed": "Print failed",
+  "printFailedMessage": "The receipt could not be printed. Check the printer settings and try again, or print it later from Sales History.",
+  "retry": "Retry",
+  "dismiss": "Dismiss",
+  "hintScan": "F1 Scan",
+  "hintPay": "F2 Pay",
+  "hintHold": "F4 Hold",
+  "hintClear": "Esc Clear",
+  "printerSettings": "Printer settings",
+  "printerType": "Printer type",
+  "printerNone": "None",
+  "printerWindows": "Windows printer (USB / driver)",
+  "printerNetwork": "Network printer (TCP / 9100)",
+  "printerAddress": "Printer name or address",
+  "printerAddressHintWindows": "Name of the installed printer",
+  "printerAddressHintNetwork": "e.g. 192.168.1.50",
+  "printerPort": "Port",
+  "paperSize": "Paper size",
+  "testPrint": "Test print",
+  "testReceiptSent": "Test receipt sent to printer",
+  "from": "From",
+  "to": "To",
+  "searchInvoice": "Search by invoice number or customer",
+  "dateRange": "Date range",
+  "paymentAll": "All payments",
+  "status": "Status",
+  "statusAll": "All statuses",
+  "resetFilters": "Reset filters",
+  "noSales": "No sales match the current filters",
+  "saleStatusCompleted": "Completed",
+  "saleStatusReturned": "Returned",
+  "saleStatusVoided": "Voided",
+  "saleDetail": "Sale detail",
+  "printReceipt": "Print receipt",
+  "returnItems": "Return items",
+  "close": "Close",
+  "cashier": "Cashier",
+  "customer": "Customer",
+  "date": "Date",
+  "returns": "Returns",
+  "returnProcessed": "Return processed",
+  "nothingToReturn": "Select at least one item to return",
+  "processReturn": "Process return",
+  "returnReason": "Reason (optional)",
+  "returnReasonHint": "e.g. wrong item, damaged",
+  "sold": "Sold",
+  "alreadyReturned": "Already returned",
+  "newPurchase": "New purchase",
+  "purchaseSaved": "Purchase saved",
+  "noPurchases": "No purchases yet",
+  "purchaseDetail": "Purchase detail",
+  "selectSupplier": "Select Supplier",
+  "noPurchaseLines": "No purchase lines yet",
+  "purchaseDate": "Purchase date",
+  "purchaseTotal": "Purchase total",
+  "addLine": "Add line",
+  "decrease": "Decrease",
+  "increase": "Increase",
+  "remove": "Remove",
+  "selectProduct": "Select product",
+  "searchProduct": "Search products",
+  "noResults": "No results",
+  "quantity": "Quantity",
+  "unitCost": "Unit cost",
+  "add": "Add",
+  "invalidLineValues": "Enter a valid quantity and unit cost",
+  "productAlreadyAdded": "Product is already in the purchase lines",
+  "addUser": "Add user",
+  "editUser": "Edit user",
+  "userAdded": "User added",
+  "userSaved": "User saved",
+  "role": "Role",
+  "active": "Active",
+  "inactive": "Inactive",
+  "cannotDeactivateSelf": "You cannot deactivate your own account",
+  "needOneActiveAdmin": "At least one active administrator is required",
+  "newPassword": "New password",
+  "leaveEmptyToKeep": "Leave empty to keep the current password",
+  "salesCount": "Sales",
+  "revenue": "Revenue",
+  "netRevenue": "Net revenue",
+  "refunds": "Refunds",
+  "purchasesCost": "Purchases cost",
+  "estimatedProfit": "Estimated profit",
+  "totalSales": "Total sales",
+  "salesByPayment": "Sales by payment method",
+  "topProducts": "Top products",
+  "exportCsv": "Export CSV",
+  "exportedTo": "Report exported to {path}",
+  "@exportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "noData": "No data for this period",
+  "createBackup": "Create backup",
+  "backupCreated": "Backup created: {path}",
+  "@backupCreated": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "backupFailed": "Backup failed",
+  "restoreBackup": "Restore",
+  "confirmRestore": "Restore backup {name}? This will replace all current data with the backup.",
+  "@confirmRestore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreComplete": "Backup restored. Please sign in again.",
+  "restoreFailed": "Restore failed",
+  "backupsLocation": "Backups are stored in your Documents folder (MePharmaBackups).",
+  "noBackups": "No backups yet",
+  "confirmDeleteBackup": "Delete backup {fileName}? This cannot be undone.",
+  "@confirmDeleteBackup": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeleted": "Backup deleted",
+  "customers": "Customers",
+  "expiry": "Expiry",
+  "paymentCredit": "On account",
+  "creditChargedToAccount": "This amount will be added to the customer's account balance.",
+  "creditNeedsCustomer": "Select a customer to charge this sale to their account.",
+  "creditLimitExceeded": "This sale exceeds the customer's credit limit.",
+  "outstandingBalance": "Outstanding balance",
+  "walkInCustomer": "Walk-in customer",
+  "productExpired": "This product has expired and cannot be sold.",
+  "addCustomer": "Add customer",
+  "editCustomer": "Edit customer",
+  "customerName": "Customer name",
+  "creditLimit": "Credit limit",
+  "notes": "Notes",
+  "customerAdded": "Customer added",
+  "customerSaved": "Customer saved",
+  "recordPayment": "Record payment",
+  "recordPaymentFor": "Record payment for {name}",
+  "@recordPaymentFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "amount": "Amount",
+  "note": "Note",
+  "paymentRecorded": "Payment recorded",
+  "balance": "Balance",
+  "paymentHistory": "Payment history",
+  "noPayments": "No payments recorded yet",
+  "confirmDeleteCustomer": "Delete customer {name}?",
+  "@confirmDeleteCustomer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCustomerHint": "The customer's payment history will be deleted and their sales will remain without a customer. This action cannot be undone.",
+  "customerHasOutstandingBalance": "This customer has an outstanding balance of {amount}.",
+  "@customerHasOutstandingBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "customerNameTaken": "A customer with this name already exists",
+  "creditLimitNegative": "Credit limit cannot be negative",
+  "overLimit": "Over limit",
+  "searchCustomers": "Search customers",
+  "noCustomers": "No customers yet",
+  "payments": "Payments",
+  "todayLabel": "Today",
+  "yesterdayLabel": "Yesterday",
+  "nextDays": "Next {days} days",
+  "@nextDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "expiryHint": "Products are flagged as expired on their expiry date.",
+  "noExpiringProducts": "No products expire within the selected period",
+  "expiredProducts": "Expired",
+  "expiringSoon": "Expiring soon",
+  "expiredOn": "Expired on {date}",
+  "@expiredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "daysUntilExpiry": "in {days} days",
+  "@daysUntilExpiry": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "expiredLabel": "Expired",
+  "defaultLowStockThreshold": "Default low-stock alert",
+  "defaultLowStockHint": "Used when adding new products",
+  "receiptFooter": "Receipt footer",
+  "receiptFooterHint": "Shown at the bottom of printed receipts, e.g. thank-you message",
+  "import": "Import",
+  "export": "Export",
+  "exportComplete": "Exported to {path}",
+  "@exportComplete": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "noProductsImported": "No products found in the selected file",
+  "importComplete": "Imported: {created} added, {updated} updated, {errors} failed",
+  "@importComplete": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "errors": {
+        "type": "int"
+      }
+    }
+  },
+  "monthlyComparison": "Monthly comparison",
+  "month": "Month",
+  "profitByCategory": "Profit by category",
+  "stockValuation": "Stock valuation",
+  "stockValueAtCost": "Value at cost",
+  "stockValueAtRetail": "Value at retail",
+  "potentialProfit": "Potential profit",
+  "totalItems": "Products in stock",
+  "brandName": "Brand name",
+  "genericName": "Generic name",
+  "dose": "Dose / Dosage",
+  "profitMargin": "Profit Margin",
+  "supplierCompany": "Company",
+  "supplierCompanyContact": "Company contact number",
+  "serverSettings": "Server Configuration",
+  "apiUrl": "API Server Base URL",
+  "branchId": "Branch ID",
+  "testConnection": "Test Connection",
+  "apiConnected": "Successfully connected to Laravel API!",
+  "apiConnectionFailed": "Failed to connect to API server. Check URL and server status.",
+  "invalidUrl": "Please enter a valid URL",
+  "superAdminRole": "Super Admin (HQ)",
+  "branchAdminRole": "Branch Admin",
+  "viewAll": "View all",
+  "pendingPurchases": "Pending Purchases",
+  "estStockValuation": "Est. Stock Valuation",
+  "grossMarginCogs": "Gross Margin (COGS)",
+  "inventoryValuation": "Inventory Valuation",
+  "totalCostValue": "Total Cost Value",
+  "totalRetailValue": "Total Retail Value",
+  "noRecentSales": "No recent sales recorded.",
+  "quickActions": "Quick Actions",
+  "hqSettings": "HQ Settings",
+  "backups": "Backups",
+  "ordersCount": "{count} Orders",
+  "@ordersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "txCount": "{count} tx",
+  "@txCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsLeft": "{count} left",
+  "@itemsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "requestUnlistedDrug": "Add / Request Unlisted Drug",
+  "customDrugName": "Drug / Product Name",
+  "customDrugCategory": "Category (Optional)",
+  "unassignedSupplierNotice": "Supplier and prices can be assigned later by admin.",
+  "purchaseApproval": "Purchase Approval",
+  "approveAndRestock": "Approve & Restock",
+  "pendingApproval": "Pending Approval",
+  "approved": "Approved",
+  "branchStaffManagement": "Branch Staff Management",
+  "addStaffMember": "Add Staff Member",
+  "managedBySuperAdmin": "Managed by Super Admin",
+  "outOfStockRequest": "Out of Stock Drug Request",
+  "requestDrugForCustomer": "Request Drug for Customer",
+  "requestedDrugName": "Requested Drug Name",
+  "customerWishlistSaved": "Customer drug request saved",
+  "requestNewStock": "Request Restock",
+  "restockAllLowStock": "Restock All Low Stock",
+  "lowStockFilter": "Low Stock",
+  "allProductsFilter": "All Products",
+  "expired": "Expired",
+  "stockAdjusted": "Stock adjusted successfully",
+  "cogs": "Cost of Goods (COGS)",
+  "averageOrderValue": "Avg Order Value",
+  "grossRevenue": "Gross Revenue",
+  "totalDiscounts": "Discounts",
+  "totalTax": "Tax",
+  "totalPurchasesCount": "Purchase Orders",
+  "today": "Today",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "thisMonth": "This Month",
+  "customRange": "Custom Range",
+  "paymentBreakdownSubtitle": "Revenue share and volume across payment channels",
+  "topProductsSubtitle": "Highest grossing products in this period",
+  "margin": "Margin",
+  "salesTrends": "Daily Sales Trends",
+  "salesTrendsSubtitle": "Daily transaction volume and revenue curve",
+  "stockValuationTitle": "Stock Inventory Valuation",
+  "stockCostBasis": "Wholesale Cost Basis",
+  "potentialStockProfit": "Unrealized Stock Profit",
+  "annualLedger": "12-Month Financial Ledger",
+  "annualLedgerSubtitle": "Historical performance and monthly margins",
+  "printReport": "Print Report",
+  "printPreview": "Report Preview",
+  "unitsSold": "Units Sold",
+  "rankMedal": "Rank",
+  "financialLedgerSummary": "Financial Summary",
+  "invoicesCount": "Invoices",
+  "potentialMargin": "Potential Margin",
+  "staffFeedback": "Staff Restock Feedback",
+  "sendRestockFeedback": "Restock Request / Feedback",
+  "feedbackSubmitted": "Restock feedback submitted to branch admin",
+  "branchRestockRequests": "Staff Restock Recommendations",
+  "urgencyHighDemand": "High Demand",
+  "urgencyLowStock": "Low Stock / Out of Stock",
+  "urgencyNormal": "Regular Restock",
+  "suggestedQty": "Suggested Quantity",
+  "staffNotes": "Staff Notes (optional)",
+  "createPurchaseOrderForDrug": "Create Purchase Order",
+  "markOrdered": "Mark Ordered",
+  "dismissFeedback": "Dismiss",
+  "noStaffFeedback": "No pending staff restock recommendations for this branch",
+  "cashierFeedbackSubtitle": "Frontline cashier insights and restock requests",
+  "reportedBy": "Reported by {name}",
+  "@reportedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineModeBannerTitle": "Operating in Offline Mode — Local Storage Active",
+  "offlineModeBannerSubtitle": "All changes are saved locally to SQLite.",
+  "offlinePendingTransactions": "{count, plural, =1{1 transaction queued for sync.} other{{count} transactions queued for sync.}}",
+  "@offlinePendingTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "syncFailedBannerTitle": "Sync Failed — Retries When Connection Is Stable",
+  "networkRestoredBannerTitle": "Network Restored — Synchronizing with Server...",
+  "pendingSyncBannerTitle": "Pending Local Changes Ready to Sync",
+  "reconcilingRecordsSubtitle": "Reconciling pending records and updating stock...",
+  "pendingServerReconciliation": "{count, plural, =1{1 offline transaction pending server reconciliation.} other{{count} offline transactions pending server reconciliation.}}",
+  "@pendingServerReconciliation": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkConnection": "Check Connection",
+  "syncNow": "Sync Now",
+  "supervisorAuthorization": "Supervisor Authorization",
+  "supervisorUsernameOptional": "Supervisor Username (optional)",
+  "supervisorPasswordPin": "Supervisor Password / PIN *",
+  "authorize": "Authorize",
+  "invalidSupervisorPassword": "Invalid local supervisor password or PIN.",
+  "checkForUpdates": "Check for Updates",
+  "checkingForUpdates": "Checking for updates...",
+  "upToDate": "MePharma is up to date",
+  "updateAvailable": "Update Available",
+  "paymentBankTransfer": "Bank transfer",
+  "transactionReference": "Transaction reference",
+  "transactionRefHint": "Enter bank transfer reference number",
+  "transactionRefRequired": "Transaction reference is required for bank transfer",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
+  "localOfflineTransactions": "Local Offline Transactions ({count})",
+  "@localOfflineTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverSyncedTransactions": "Server Synced Transactions ({count})",
+  "@serverSyncedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "localSavedTransactions": "Local Sales Ledger ({count})",
+  "@localSavedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineQueueNotice": "These transactions were saved locally while offline and will sync automatically when online.",
+  "syncingTransactions": "Synchronizing local transactions with server...",
+  "superAdminShort": "Super Admin",
+  "branchAdminShort": "Branch Admin",
+  "staffShort": "Staff",
+  "localModeActive": "Local Mode",
+  "purchaseApprovedNotice": "Purchase request {invoice} has been approved and inventory is updated.",
+  "@purchaseApprovedNotice": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "printedOn": "Printed on {date}",
+  "@printedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "stockOut": "Out of stock",
+  "confirmApprovePurchase": "Are you sure you want to approve this purchase order and add its inventory to branch stock?",
+  "supervisorApprovePurchaseReason": "Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.",
+  "supervisorReturnReason": "Processing refunds and returns requires supervisor override.",
+  "terminalQuotaTitle": "Terminal Seat Limit Reached",
+  "terminalQuotaInfo": "To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.",
+  "understood": "Understood",
+  "supervisorAuthTitle": "Supervisor Authorization",
+  "supervisorPasswordRequired": "Supervisor Password / PIN *",
+  "requestOutOfStockDrug": "Request Out-of-Stock Drug",
+  "diagnosticsCopied": "Diagnostics copied to clipboard",
+  "copyErrorDiagnostics": "Copy Error Diagnostics",
+  "purchasesExpenditure": "Purchases & Procurement Expenditure",
+  "netOperatingCashFlow": "Net Operating Cash Flow (Sales - Purchases)",
+  "purchasesBySupplier": "Purchases by Supplier",
+  "purchasesBySupplierSubtitle": "Procurement and supply spend distribution by supplier",
+  "topPurchasedItems": "Top Purchased Medicines",
+  "topPurchasedItemsSubtitle": "Medicines with the highest procurement spend during this period",
+  "unitsPurchased": "units purchased",
+  "pendingSpend": "Pending PO",
+  "fulfilledSpend": "Fulfilled & Stocked",
+  "salesReturns": "Sales Returns",
+  "returnsSubtitle": "Customer sales refunds and product return history",
+  "newReturn": "New Return",
+  "returnReason": "Return Reason",
+  "refundAmount": "Refund Amount",
+  "noReturns": "No returns recorded yet",
+  "selectSaleToReturn": "Select Invoice to Return",
+  "searchByInvoiceOrReason": "Search by invoice number or reason..."
+}
