@@ -21,6 +21,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get username => 'اسم المستخدم';
 
   @override
+  String get fullName => 'الاسم الكامل';
+
+  @override
+  String get fullNameHint => 'مثال: د. محمد أحمد';
+
+  @override
+  String get usernameForLogin => 'اسم المستخدم (لتسجيل الدخول)';
+
+  @override
   String get password => 'كلمة المرور';
 
   @override

@@ -59,8 +59,8 @@ export default class TenantsController {
     // 3. Seed Default Pharmacy Admin in the tenant schema
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
     await db.rawQuery(
-      `INSERT INTO "${schemaName}".users (username, password, role, is_active)
-       VALUES (?, ?, 'pharmacy_admin', true)
+      `INSERT INTO "${schemaName}".users (name, username, password, role, is_active)
+       VALUES ('System Administrator', ?, ?, 'pharmacy_admin', true)
        ON CONFLICT (username) DO NOTHING;`,
       [adminUsername.toLowerCase(), hashedPassword]
     )

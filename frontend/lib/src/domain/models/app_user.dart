@@ -4,6 +4,7 @@ import '../../data/db/enums.dart';
 class AppUser {
   const AppUser({
     required this.id,
+    this.name,
     required this.username,
     required this.role,
     required this.isActive,
@@ -12,11 +13,15 @@ class AppUser {
   });
 
   final int id;
+  final String? name;
   final String username;
   final UserRole role;
   final bool isActive;
   final DateTime createdAt;
   final int branchId;
+
+  String get displayName =>
+      (name != null && name!.trim().isNotEmpty) ? name!.trim() : username;
 
   bool get isSuperAdmin => role.isSuperAdmin;
   bool get isPharmacyAdmin => role.isPharmacyAdmin;

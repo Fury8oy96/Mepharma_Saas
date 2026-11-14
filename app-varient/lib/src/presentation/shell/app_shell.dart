@@ -89,7 +89,7 @@ class AppShell extends ConsumerWidget {
             isExpanded: isExpanded,
             currentPath: location,
             userRole: user.role,
-            username: user.username,
+            username: user.displayName,
             onToggle: () {
               ref.read(sidebarExpandedProvider.notifier).state = !isExpanded;
             },
@@ -103,7 +103,7 @@ class AppShell extends ConsumerWidget {
               children: [
                 _ModernHeader(
                   activeSection: activeSection,
-                  username: user.username,
+                  username: user.displayName,
                   roleLabel: user.role.isSuperAdmin
                       ? l10n.superAdminRole
                       : (user.role.isBranchAdmin ? l10n.branchAdminRole : l10n.roleStaff),

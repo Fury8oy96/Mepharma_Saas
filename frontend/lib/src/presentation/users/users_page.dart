@@ -28,6 +28,7 @@ class UsersPage extends ConsumerWidget {
       await ref
           .read(userRepositoryProvider)
           .createUser(
+            name: result.name,
             username: result.username,
             password: result.password!,
             role: result.role ?? UserRole.staff,
@@ -91,6 +92,7 @@ class UsersPage extends ConsumerWidget {
           .read(userRepositoryProvider)
           .updateUser(
             user.id,
+            name: result.name,
             password: result.password,
             role: result.role,
             isActive: result.isActive,
@@ -337,30 +339,46 @@ class UsersPage extends ConsumerWidget {
                       return ListTile(
                         leading: CircleAvatar(
                           child: Text(
-                            user.username.isEmpty
+                            user.displayName.isEmpty
                                 ? '?'
-                                : user.username[0].toUpperCase(),
+                                : user.displayName[0].toUpperCase(),
                           ),
                         ),
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              user.username,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                user.displayName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (user.name != null && user.name!.trim().isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '@${user.username}',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                             const SizedBox(width: 8),
                             _Chip(
                               label: roleTitle,
                               color: roleColor,
                             ),
-                            if (!user.isActive)
+                            if (!user.isActive) ...[
+                              const SizedBox(width: 6),
                               _Chip(
                                 label: l10n.inactive,
                                 color: theme.colorScheme.errorContainer,
                               ),
+                            ],
                           ],
                         ),
                         subtitle: Text(
@@ -446,12 +464,14 @@ class _Chip extends StatelessWidget {
 
 class _UserResult {
   const _UserResult({
+    this.name,
     required this.username,
     required this.password,
     this.role,
     this.isActive,
   });
 
+  final String? name;
   final String username;
   final String? password;
   final UserRole? role;
@@ -469,6 +489,7 @@ class _AddUserDialog extends ConsumerStatefulWidget {
 
 class _AddUserDialogState extends ConsumerState<_AddUserDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   UserRole _role = UserRole.staff;
@@ -477,6 +498,7 @@ class _AddUserDialogState extends ConsumerState<_AddUserDialog> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -507,6 +529,7 @@ class _AddUserDialogState extends ConsumerState<_AddUserDialog> {
     }
     Navigator.of(context).pop(
       _UserResult(
+        name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
         username: _usernameController.text.trim(),
         password: _passwordController.text,
         role: widget.isSuperAdmin ? _role : UserRole.staff,
@@ -527,10 +550,19 @@ class _AddUserDialogState extends ConsumerState<_AddUserDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _usernameController,
+                controller: _nameController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: l10n.username,
+                  labelText: l10n.fullName,
+                  hintText: l10n.fullNameHint,
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: l10n.usernameForLogin,
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 validator: (value) {
@@ -632,6 +664,7 @@ class _EditUserDialog extends ConsumerStatefulWidget {
 
 class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   late UserRole _role;
   late bool _isActive;
@@ -639,12 +672,14 @@ class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
   @override
   void initState() {
     super.initState();
+    _nameController.text = widget.user.name ?? '';
     _role = widget.user.role;
     _isActive = widget.user.isActive;
   }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -654,6 +689,8 @@ class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    final nameVal = _nameController.text.trim();
+    final nameChanged = nameVal != (widget.user.name ?? '');
     final newPassword = _passwordController.text.trim();
     final roleChanged = _role != widget.user.role;
     final demoting =
@@ -666,6 +703,7 @@ class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
     }
     Navigator.of(context).pop(
       _UserResult(
+        name: nameChanged ? (nameVal.isEmpty ? '' : nameVal) : null,
         username: widget.user.username,
         password: newPassword.isEmpty ? null : newPassword,
         role: roleChanged ? _role : null,
@@ -678,7 +716,7 @@ class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: Text('${l10n.editUser}: ${widget.user.username}'),
+      title: Text('${l10n.editUser}: ${widget.user.displayName}'),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -686,6 +724,15 @@ class _EditUserDialogState extends ConsumerState<_EditUserDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: l10n.fullName,
+                  hintText: l10n.fullNameHint,
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
               if (widget.isSuperAdmin)
                 DropdownButtonFormField<UserRole>(
                   initialValue: _role,

@@ -9,6 +9,7 @@ export default class StaffController {
     const json = user.toJSON()
     return {
       ...json,
+      name: user.name || null,
       is_active: Boolean(user.isActive),
       created_at: user.createdAt?.toISO?.() || null,
       updated_at: user.updatedAt?.toISO?.() || null,
@@ -63,6 +64,7 @@ export default class StaffController {
     }
     const password = await bcrypt.hash('admin123', 10)
     const created = await User.create({
+      name: 'System Administrator',
       username: 'admin',
       password,
       role: 'pharmacy_admin',
@@ -73,7 +75,7 @@ export default class StaffController {
 
   async store({ request, response, authUser }: HttpContext & { authUser?: any }) {
     if (authUser && !this.ensureUserAdmin(authUser, response)) return
-    const { username, password, role = 'pharmacist', is_active = true } = request.all()
+    const { name, username, password, role = 'pharmacist', is_active = true } = request.all()
 
     if (!username || !password) {
       return response.status(400).json({ error: 'Username and password are required.' })
@@ -93,6 +95,7 @@ export default class StaffController {
 
     const hashedPassword = await bcrypt.hash(String(password).trim(), 10)
     const user = await User.create({
+      name: name && String(name).trim().length > 0 ? String(name).trim() : null,
       username: cleanUsername,
       password: hashedPassword,
       role: normalizedRole as any,
@@ -110,7 +113,11 @@ export default class StaffController {
       return response.status(404).json({ error: 'User not found.' })
     }
 
-    const { username, password, role, is_active } = request.all()
+    const { name, username, password, role, is_active } = request.all()
+
+    if (name !== undefined) {
+      user.name = name && String(name).trim().length > 0 ? String(name).trim() : null
+    }
 
     if (username && typeof username === 'string') {
       const cleanUsername = username.trim().toLowerCase()

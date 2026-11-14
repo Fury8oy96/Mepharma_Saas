@@ -21,6 +21,15 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _usernameMeta = const VerificationMeta(
     'username',
   );
@@ -83,6 +92,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    name,
     username,
     passwordHash,
     role,
@@ -103,6 +113,12 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     }
     if (data.containsKey('username')) {
       context.handle(
@@ -148,6 +164,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
       username: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}username'],
@@ -184,6 +204,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
 
 class User extends DataClass implements Insertable<User> {
   final int id;
+  final String? name;
   final String username;
   final String passwordHash;
   final UserRole role;
@@ -191,6 +212,7 @@ class User extends DataClass implements Insertable<User> {
   final DateTime createdAt;
   const User({
     required this.id,
+    this.name,
     required this.username,
     required this.passwordHash,
     required this.role,
@@ -201,6 +223,9 @@ class User extends DataClass implements Insertable<User> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
     map['username'] = Variable<String>(username);
     map['password_hash'] = Variable<String>(passwordHash);
     {
@@ -214,6 +239,7 @@ class User extends DataClass implements Insertable<User> {
   UsersCompanion toCompanion(bool nullToAbsent) {
     return UsersCompanion(
       id: Value(id),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
       username: Value(username),
       passwordHash: Value(passwordHash),
       role: Value(role),
@@ -229,6 +255,7 @@ class User extends DataClass implements Insertable<User> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return User(
       id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String?>(json['name']),
       username: serializer.fromJson<String>(json['username']),
       passwordHash: serializer.fromJson<String>(json['passwordHash']),
       role: $UsersTable.$converterrole.fromJson(
@@ -243,6 +270,7 @@ class User extends DataClass implements Insertable<User> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String?>(name),
       'username': serializer.toJson<String>(username),
       'passwordHash': serializer.toJson<String>(passwordHash),
       'role': serializer.toJson<String>(
@@ -255,6 +283,7 @@ class User extends DataClass implements Insertable<User> {
 
   User copyWith({
     int? id,
+    Value<String?> name = const Value.absent(),
     String? username,
     String? passwordHash,
     UserRole? role,
@@ -262,6 +291,7 @@ class User extends DataClass implements Insertable<User> {
     DateTime? createdAt,
   }) => User(
     id: id ?? this.id,
+    name: name.present ? name.value : this.name,
     username: username ?? this.username,
     passwordHash: passwordHash ?? this.passwordHash,
     role: role ?? this.role,
@@ -271,6 +301,7 @@ class User extends DataClass implements Insertable<User> {
   User copyWithCompanion(UsersCompanion data) {
     return User(
       id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
       username: data.username.present ? data.username.value : this.username,
       passwordHash: data.passwordHash.present
           ? data.passwordHash.value
@@ -285,6 +316,7 @@ class User extends DataClass implements Insertable<User> {
   String toString() {
     return (StringBuffer('User(')
           ..write('id: $id, ')
+          ..write('name: $name, ')
           ..write('username: $username, ')
           ..write('passwordHash: $passwordHash, ')
           ..write('role: $role, ')
@@ -296,12 +328,13 @@ class User extends DataClass implements Insertable<User> {
 
   @override
   int get hashCode =>
-      Object.hash(id, username, passwordHash, role, isActive, createdAt);
+      Object.hash(id, name, username, passwordHash, role, isActive, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is User &&
           other.id == this.id &&
+          other.name == this.name &&
           other.username == this.username &&
           other.passwordHash == this.passwordHash &&
           other.role == this.role &&
@@ -311,6 +344,7 @@ class User extends DataClass implements Insertable<User> {
 
 class UsersCompanion extends UpdateCompanion<User> {
   final Value<int> id;
+  final Value<String?> name;
   final Value<String> username;
   final Value<String> passwordHash;
   final Value<UserRole> role;
@@ -318,6 +352,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<DateTime> createdAt;
   const UsersCompanion({
     this.id = const Value.absent(),
+    this.name = const Value.absent(),
     this.username = const Value.absent(),
     this.passwordHash = const Value.absent(),
     this.role = const Value.absent(),
@@ -326,6 +361,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   });
   UsersCompanion.insert({
     this.id = const Value.absent(),
+    this.name = const Value.absent(),
     required String username,
     required String passwordHash,
     required UserRole role,
@@ -336,6 +372,7 @@ class UsersCompanion extends UpdateCompanion<User> {
        role = Value(role);
   static Insertable<User> custom({
     Expression<int>? id,
+    Expression<String>? name,
     Expression<String>? username,
     Expression<String>? passwordHash,
     Expression<String>? role,
@@ -344,6 +381,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (name != null) 'name': name,
       if (username != null) 'username': username,
       if (passwordHash != null) 'password_hash': passwordHash,
       if (role != null) 'role': role,
@@ -354,6 +392,7 @@ class UsersCompanion extends UpdateCompanion<User> {
 
   UsersCompanion copyWith({
     Value<int>? id,
+    Value<String?>? name,
     Value<String>? username,
     Value<String>? passwordHash,
     Value<UserRole>? role,
@@ -362,6 +401,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   }) {
     return UsersCompanion(
       id: id ?? this.id,
+      name: name ?? this.name,
       username: username ?? this.username,
       passwordHash: passwordHash ?? this.passwordHash,
       role: role ?? this.role,
@@ -375,6 +415,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
     }
     if (username.present) {
       map['username'] = Variable<String>(username.value);
@@ -400,6 +443,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   String toString() {
     return (StringBuffer('UsersCompanion(')
           ..write('id: $id, ')
+          ..write('name: $name, ')
           ..write('username: $username, ')
           ..write('passwordHash: $passwordHash, ')
           ..write('role: $role, ')
@@ -9754,6 +9798,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$UsersTableCreateCompanionBuilder =
     UsersCompanion Function({
       Value<int> id,
+      Value<String?> name,
       required String username,
       required String passwordHash,
       required UserRole role,
@@ -9763,6 +9808,7 @@ typedef $$UsersTableCreateCompanionBuilder =
 typedef $$UsersTableUpdateCompanionBuilder =
     UsersCompanion Function({
       Value<int> id,
+      Value<String?> name,
       Value<String> username,
       Value<String> passwordHash,
       Value<UserRole> role,
@@ -9924,6 +9970,11 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10144,6 +10195,11 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get username => $composableBuilder(
     column: $table.username,
     builder: (column) => ColumnOrderings(column),
@@ -10181,6 +10237,9 @@ class $$UsersTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<String> get username =>
       $composableBuilder(column: $table.username, builder: (column) => column);
@@ -10413,6 +10472,7 @@ class $$UsersTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> name = const Value.absent(),
                 Value<String> username = const Value.absent(),
                 Value<String> passwordHash = const Value.absent(),
                 Value<UserRole> role = const Value.absent(),
@@ -10420,6 +10480,7 @@ class $$UsersTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
               }) => UsersCompanion(
                 id: id,
+                name: name,
                 username: username,
                 passwordHash: passwordHash,
                 role: role,
@@ -10429,6 +10490,7 @@ class $$UsersTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> name = const Value.absent(),
                 required String username,
                 required String passwordHash,
                 required UserRole role,
@@ -10436,6 +10498,7 @@ class $$UsersTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
               }) => UsersCompanion.insert(
                 id: id,
+                name: name,
                 username: username,
                 passwordHash: passwordHash,
                 role: role,

@@ -8,6 +8,9 @@ export default class User extends BaseModel {
   declare id: number
 
   @column()
+  declare name: string | null
+
+  @column()
   declare username: string
 
   @column({ serializeAs: null })

@@ -75,7 +75,7 @@ class DashboardPage extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.welcomeBack(user?.username ?? ''),
+                          l10n.welcomeBack(user?.displayName ?? ''),
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

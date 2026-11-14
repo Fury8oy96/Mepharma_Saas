@@ -21,6 +21,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get username => 'Username';
 
   @override
+  String get fullName => 'Full Name';
+
+  @override
+  String get fullNameHint => 'e.g. Dr. Mohamed Ahmed';
+
+  @override
+  String get usernameForLogin => 'Username (for sign in)';
+
+  @override
   String get password => 'Password';
 
   @override

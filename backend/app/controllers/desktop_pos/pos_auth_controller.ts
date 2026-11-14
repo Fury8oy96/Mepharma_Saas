@@ -50,6 +50,7 @@ export default class PosAuthController {
       token,
       user: {
         id: user.id,
+        name: user.name || null,
         username: user.username,
         role: user.role,
         is_active: user.isActive,
@@ -86,6 +87,7 @@ export default class PosAuthController {
             authorized: true,
             supervisor: {
               id: user.id,
+              name: user.name || null,
               username: user.username,
               role: user.role,
             },

@@ -96,6 +96,7 @@ export class SchemaManager {
     const queries = [
       `CREATE TABLE IF NOT EXISTS "${schemaName}".users (
         id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
         username VARCHAR(100) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'pharmacist',
@@ -103,6 +104,7 @@ export class SchemaManager {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
+      `ALTER TABLE "${schemaName}".users ADD COLUMN IF NOT EXISTS name VARCHAR(255);`,
 
       `CREATE TABLE IF NOT EXISTS "${schemaName}".categories (
         id SERIAL PRIMARY KEY,

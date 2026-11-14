@@ -122,6 +122,24 @@ abstract class AppLocalizations {
   /// **'Username'**
   String get username;
 
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// No description provided for @fullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Dr. Mohamed Ahmed'**
+  String get fullNameHint;
+
+  /// No description provided for @usernameForLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Username (for sign in)'**
+  String get usernameForLogin;
+
   /// No description provided for @password.
   ///
   /// In en, this message translates to:

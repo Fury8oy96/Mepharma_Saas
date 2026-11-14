@@ -57,6 +57,7 @@ class ApiUserRepository implements UserRepository {
 
     return AppUser(
       id: json['id'] as int,
+      name: json['name'] as String?,
       username: json['username'] as String,
       role: mappedRole,
       isActive: json['is_active'] as bool? ?? json['isActive'] as bool? ?? true,
@@ -97,6 +98,7 @@ class ApiUserRepository implements UserRepository {
 
   @override
   Future<AppUser> createUser({
+    String? name,
     required String username,
     required String password,
     required UserRole role,
@@ -108,11 +110,16 @@ class ApiUserRepository implements UserRepository {
     if (role == UserRole.supervisor) roleName = 'supervisor';
     if (role == UserRole.pharmacist) roleName = 'pharmacist';
 
-    final response = await _client.post('/users', body: {
+    final body = <String, dynamic>{
       'username': username,
       'password': password,
       'role': roleName,
-    });
+    };
+    if (name != null && name.trim().isNotEmpty) {
+      body['name'] = name.trim();
+    }
+
+    final response = await _client.post('/users', body: body);
     final user = _mapUser(jsonDecode(response.body) as Map<String, dynamic>);
     _refreshUsers();
     return user;
@@ -126,12 +133,16 @@ class ApiUserRepository implements UserRepository {
   @override
   Future<AppUser> updateUser(
     int id, {
+    String? name,
     String? username,
     String? password,
     UserRole? role,
     bool? isActive,
   }) async {
     final body = <String, dynamic>{};
+    if (name != null) {
+      body['name'] = name.trim();
+    }
     if (username != null && username.trim().isNotEmpty) {
       body['username'] = username.trim();
     }

@@ -31,6 +31,7 @@ class SqliteAuthRepository implements AuthRepository {
 
     return AppUser(
       id: row.id,
+      name: row.name,
       username: row.username,
       role: row.role,
       isActive: row.isActive,

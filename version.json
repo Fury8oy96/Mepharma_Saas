@@ -1,24 +1,22 @@
 {
-  "version": "2.0.3",
-  "buildNumber": 5,
+  "version": "2.0.4",
+  "buildNumber": 6,
   "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
-  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.03.exe",
-  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.3",
+  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.04.exe",
+  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.4",
   "changelog": {
     "en": [
-      "In-App Background Installer Downloader: Download software updates seamlessly inside the application with real-time percentage progress bar without launching external web browsers or 404 error pages.",
-      "Zero-Downtime Product Update Flow: Automatic detached launch of installer with silent flags (/SP- /NORESTART /CLOSEAPPLICATIONS) for seamless in-place upgrade.",
-      "Installer Database & License Preservation: Upgrades strictly skip setup wizards, preserving existing offline SQLite databases, credentials, and license registrations without destructive reinitialization.",
-      "Comprehensive Purchases Reporting: Added prominent Purchases & Procurement Expenditure KPI Card, Purchases by Supplier breakdown, and Top Purchased Medicines analytics in both online and offline modes.",
-      "Net Operating Cash Flow Metric: Real-time telemetry tracking net operating cash flow (Sales Revenue minus Procurement Spend) across any reporting time window."
+      "User Real Name & Login Separation: Added a dedicated Full Name / Real Name field for staff accounts, separating the displayed real name from the unique login username.",
+      "Omnipresent Real Name Display: The user's real name now displays as the primary identity across user management cards, header profile chips, dashboard greetings, and thermal receipt cashier fields.",
+      "Multi-Tenant Cloud Sync: Added schema migrations and full synchronization for user real names across both online AdonisJS PostgreSQL backend and local SQLite databases.",
+      "MePharma Variant Edition Support: Isolated database and packaging for the open-pricing variant edition."
     ],
     "ar": [
-      "مُحمل التحديثات المباشر داخل التطبيق: تنزيل تحديثات النظام مباشرة في الخلفية داخل التطبيق مع شريط تقدم مباشر دون الحاجة لفتح المتصفح الخارجي أو ظهور خطأ 404.",
-      "ترقية مباشرة وتثبيت سلس: تشغيل مثبت التحديث تلقائياً بهدوء واستبدال الملفات التنفيذية دون مقاطعة أو طلب إعادة تثبيت من الصفر.",
-      "حماية وتأمين بيانات التثبيت والترخيص: تخطي شاشات الإعداد تماماً أثناء الترقية، وحماية قواعد بيانات SQLite المحلية وبيانات الدخول وتراخيص الأجهزة من أي مسح أو إعادة تهيئة.",
-      "لوحة تقارير المشتريات والتوريد المتكاملة: إضافة بطاقة مؤشر مالي رئيسية لتكلفة المشتريات والتوريد، وتوزيع المشتريات حسب الموردين، والأدوية الأكثر توريداً وشراءً في الوضعين المتصل وغير المتصل.",
-      "مؤشر صافي التدفق المالي التشغيلي: قياس فوري لصافي التدفق النقدي (المبيعات - المشتريات) عبر كافة النطاقات الزمنية للتقارير."
+      "فصل الاسم الحقيقي عن اسم الدخول: إضافة حقل مخصص للاسم الحقيقي/الكامل للموظفين مع الاحتفاظ باسم المستخدم حصرياً لتسجيل الدخول والتحقق.",
+      "عرض الاسم الحقيقي في كامل النظام: يظهر الاسم الحقيقي الآن كعنوان أساسي في بطاقات المستخدمين، شارات الجلسة العلوية، رسائل الترحيب باللوحة الرئيسية، واسم الكاشير في فواتير الطباعة الحرارية.",
+      "تزامن سحابي متعدد المنشآت: تحديث مخططات الخادم السحابي وقواعد بيانات SQLite المحلية لدعم مزامنة وحفظ الاسم الحقيقي للمستخدمين بالكامل.",
+      "دعم إصدار MePharma Variant: قاعدة بيانات وحزم تثبيت معزولة بالكامل لإصدار التسعير الحر والمرتجعات المفتوحة."
     ]
   }
 }

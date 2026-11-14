@@ -1032,7 +1032,7 @@ class _PosPageState extends ConsumerState<PosPage> {
       dateTime: DateFormat.yMd(l10n.localeName)
           .add_Hm()
           .format(receipt.createdAt),
-      cashierName: user?.username ?? '',
+      cashierName: user?.displayName ?? '',
       paymentMethod: _paymentMethodLabel(receipt.paymentMethod, l10n),
       transactionReference: receipt.transactionReference,
       lines: [

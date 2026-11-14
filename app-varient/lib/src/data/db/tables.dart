@@ -5,6 +5,8 @@ import 'enums.dart';
 class Users extends Table {
   IntColumn get id => integer().autoIncrement()();
 
+  TextColumn get name => text().nullable()();
+
   TextColumn get username => text().unique()();
 
   TextColumn get passwordHash => text()();

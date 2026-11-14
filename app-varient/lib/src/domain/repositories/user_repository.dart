@@ -9,6 +9,7 @@ abstract interface class UserRepository {
   Future<AppUser?> findById(int id);
 
   Future<AppUser> createUser({
+    String? name,
     required String username,
     required String password,
     required UserRole role,
@@ -20,6 +21,7 @@ abstract interface class UserRepository {
   /// Updates only the provided fields. A null password keeps the old one.
   Future<AppUser> updateUser(
     int id, {
+    String? name,
     String? username,
     String? password,
     UserRole? role,

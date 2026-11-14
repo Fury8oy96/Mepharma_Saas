@@ -36,6 +36,7 @@ class SqliteUserRepository implements UserRepository {
 
   @override
   Future<AppUser> createUser({
+    String? name,
     required String username,
     required String password,
     required UserRole role,
@@ -45,6 +46,9 @@ class SqliteUserRepository implements UserRepository {
         .into(_db.users)
         .insert(
           UsersCompanion.insert(
+            name: (name == null || name.trim().isEmpty)
+                ? const Value.absent()
+                : Value(name.trim()),
             username: username.trim().toLowerCase(),
             passwordHash: hash,
             role: role,
@@ -66,6 +70,7 @@ class SqliteUserRepository implements UserRepository {
   @override
   Future<AppUser> updateUser(
     int id, {
+    String? name,
     String? username,
     String? password,
     UserRole? role,
@@ -74,6 +79,9 @@ class SqliteUserRepository implements UserRepository {
     final hash = password == null ? null : await hashPassword(password);
     await (_db.update(_db.users)..where((u) => u.id.equals(id))).write(
       UsersCompanion(
+        name: name == null
+            ? const Value.absent()
+            : Value(name.trim().isEmpty ? null : name.trim()),
         username: (username == null || username.trim().isEmpty)
             ? const Value.absent()
             : Value(username.trim()),
@@ -98,6 +106,7 @@ class SqliteUserRepository implements UserRepository {
       return;
     }
     await createUser(
+      name: 'System Admin',
       username: AppConstants.defaultAdminUsername,
       password: AppConstants.defaultAdminPassword,
       role: UserRole.admin,
@@ -112,6 +121,7 @@ class SqliteUserRepository implements UserRepository {
   AppUser _map(User row) {
     return AppUser(
       id: row.id,
+      name: row.name,
       username: row.username,
       role: row.role,
       isActive: row.isActive,

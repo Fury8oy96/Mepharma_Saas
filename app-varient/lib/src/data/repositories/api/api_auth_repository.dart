@@ -84,6 +84,7 @@ class ApiAuthRepository implements AuthRepository {
 
       return AppUser(
         id: userId,
+        name: userJson['name'] as String?,
         username: userJson['username'] as String? ?? username,
         role: mappedRole,
         isActive: isActive,

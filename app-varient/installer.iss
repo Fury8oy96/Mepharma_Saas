@@ -1,6 +1,6 @@
 ; Script generated for MePharma Variant
 #define MyAppName "MePharma Variant"
-#define MyAppVersion "2.0.3"
+#define MyAppVersion "2.0.4"
 #define MyAppPublisher "MePharma Systems (Variant Edition)"
 #define MyAppExeName "mepharma_variant.exe"
 

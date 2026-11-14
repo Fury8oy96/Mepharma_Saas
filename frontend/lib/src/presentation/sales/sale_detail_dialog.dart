@@ -86,7 +86,7 @@ class SaleDetailDialog extends ConsumerWidget {
       dateTime: DateFormat.yMd(
         l10n.localeName,
       ).add_Hm().format(detail.sale.createdAt),
-      cashierName: cashier?.username ?? '',
+      cashierName: cashier?.displayName ?? '',
       customerName: detail.sale.customerName,
       paymentMethod: paymentMethodLabel(detail.sale.paymentMethod, l10n),
       lines: [
