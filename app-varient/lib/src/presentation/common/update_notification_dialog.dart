@@ -59,17 +59,28 @@ class _UpdateNotificationDialogState extends State<UpdateNotificationDialog> {
         '${Directory.systemTemp.path}${Platform.pathSeparator}$cleanFilename';
 
     try {
-      // 1. Check if local build installer already exists as direct shortcut
-      final localCandidate = File(
-          'setup${Platform.pathSeparator}Output${Platform.pathSeparator}$cleanFilename');
-      if (await localCandidate.exists()) {
-        setState(() {
-          _progress = 1.0;
-          _installing = true;
-        });
-        await Future.delayed(const Duration(milliseconds: 600));
-        await UpdateCheckerService.launchInstallerAndExit(localCandidate.path);
-        return;
+      // 1. Check if local build installer already exists in known paths
+      final localCandidates = [
+        File('setup${Platform.pathSeparator}Output${Platform.pathSeparator}$cleanFilename'),
+        File('d:${Platform.pathSeparator}mepharma${Platform.pathSeparator}setup${Platform.pathSeparator}Output${Platform.pathSeparator}$cleanFilename'),
+        if (Platform.environment['USERPROFILE'] != null)
+          File('${Platform.environment['USERPROFILE']}${Platform.pathSeparator}Downloads${Platform.pathSeparator}$cleanFilename'),
+        File(tempPath),
+      ];
+
+      for (final candidate in localCandidates) {
+        if (await candidate.exists()) {
+          final stat = await candidate.stat();
+          if (stat.size > 1024 * 1024) {
+            setState(() {
+              _progress = 1.0;
+              _installing = true;
+            });
+            await Future.delayed(const Duration(milliseconds: 600));
+            await UpdateCheckerService.launchInstallerAndExit(candidate.path);
+            return;
+          }
+        }
       }
 
       // 2. Stream download from remote URL with chunked progress
