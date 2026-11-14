@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:win32/win32.dart' as win32;
 
 import '../../domain/models/printer_config.dart';
@@ -178,7 +179,7 @@ class ThermalPrinterService {
     final g = Generator(size, profile);
     final out = BytesBuilder();
     final store = receipt.store;
-    final symbol = store.currencySymbol.isEmpty ? r'$' : store.currencySymbol;
+    final symbol = store.currencySymbol.isEmpty ? 'ج.س' : store.currencySymbol;
 
     String money(int cents) => _sanitize(_money(cents, symbol));
 
@@ -235,6 +236,12 @@ class ThermalPrinterService {
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]));
+    if (receipt.transactionReference != null && receipt.transactionReference!.isNotEmpty) {
+      out.add(g.text(
+        _sanitize('Txn Ref: ${receipt.transactionReference}'),
+        styles: const PosStyles(align: PosAlign.left),
+      ));
+    }
     if (receipt.customerName != null && receipt.customerName!.isNotEmpty) {
       out.add(g.text(
         _sanitize('${labels.customer} ${receipt.customerName}'),
@@ -367,13 +374,24 @@ class ThermalPrinterService {
     return out.toBytes();
   }
 
-  String _money(int cents, String symbol) {
-    final sign = cents < 0 ? '-' : '';
-    final abs = cents.abs();
-    final whole = abs ~/ 100;
-    final fraction = (abs % 100).toString().padLeft(2, '0');
-    return '$sign$symbol$whole.$fraction';
+  @visibleForTesting
+  static String formatMoneyForTest(int amount, String symbol) {
+    final sign = amount < 0 ? '-' : '';
+    final abs = amount.abs();
+    final digits = abs.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        buf.write(',');
+      }
+      buf.write(digits[i]);
+    }
+    final cleanSymbol = symbol.trim();
+    return cleanSymbol.isEmpty ? '$sign$buf' : '$sign$cleanSymbol $buf';
   }
+
+  String _money(int amount, String symbol) =>
+      formatMoneyForTest(amount, symbol);
 
   String _sanitize(String value) {
     if (value.isEmpty) return '';
@@ -391,6 +409,10 @@ class ThermalPrinterService {
         .replaceAll('نقداً', 'Cash')
         .replaceAll('نقد', 'Cash')
         .replaceAll('بطاقة', 'Card')
+        .replaceAll('تحويل بنكي', 'Bank Transfer')
+        .replaceAll('رقم العملية:', 'Txn Ref:')
+        .replaceAll('رقم العملية', 'Txn Ref')
+        .replaceAll('ج.س', 'SDG')
         .replaceAll('على الحساب', 'On Account')
         .replaceAll('المجموع الفرعي', 'Subtotal')
         .replaceAll('المجموع', 'Total')

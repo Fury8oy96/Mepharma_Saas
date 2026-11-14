@@ -47,7 +47,6 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   int? _categoryId;
   int? _supplierId;
   DateTime? _expiryDate;
-  BarcodeSymbologyType _selectedSymbology = BarcodeSymbologyType.ean13;
   bool _saving = false;
 
   bool get _isEditing => widget.product != null;
@@ -95,7 +94,6 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _supplierId = p?.supplierId;
     _expiryDate = p?.expiryDate;
     _expiryController = TextEditingController();
-    _selectedSymbology = BarcodeSymbologyType.detect(p?.barcode ?? p?.sku);
 
     // Auto SKU generation listeners
     _brandNameController.addListener(_updateSku);
@@ -128,18 +126,26 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     final costText = _costController.text;
     final cost = parseCents(costText);
     if (cost > 0) {
-      final marginStr = ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
-      final margin = double.tryParse(marginStr) ?? 0.3;
+      final marginStr = ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0';
+      final margin = double.tryParse(marginStr) ?? 0.0;
       final sellingPrice = (cost * (1 + margin)).round();
       _priceController.text = formatCents(sellingPrice);
     }
   }
 
-  void _generateSystemBarcode() {
-    final barcode = _selectedSymbology.generateInternalCode();
-    setState(() {
-      _barcodeController.text = barcode;
-    });
+  void _generateSystemBarcode() async {
+    final repo = ref.read(productRepositoryProvider);
+    String code = SmartBarcodeEngine.generateUniqueEan13();
+    int attempts = 0;
+    while (await repo.isBarcodeTaken(code, excludeId: widget.product?.id) && attempts < 10) {
+      code = SmartBarcodeEngine.generateUniqueEan13();
+      attempts++;
+    }
+    if (mounted) {
+      setState(() {
+        _barcodeController.text = code;
+      });
+    }
   }
 
   @override
@@ -272,7 +278,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     return AlertDialog(
       title: Text(_isEditing ? l10n.editProduct : l10n.addProduct),
@@ -319,11 +325,15 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                         controller: _skuController,
                         enabled: !_isEditing,
                         decoration: InputDecoration(
-                          labelText: '${l10n.sku} (Brand-Generic-Dose)',
+                          labelText: l10n.localeName.startsWith('ar')
+                              ? '${l10n.sku} (التجاري-العلمي-الجرعة)'
+                              : '${l10n.sku} (Brand-Generic-Dose)',
                           suffixIcon: !_isEditing
                               ? IconButton(
                                   icon: const Icon(Icons.sync, size: 20),
-                                  tooltip: 'Regenerate SKU Formula',
+                                  tooltip: l10n.localeName.startsWith('ar')
+                                      ? 'إعادة توليد رمز SKU'
+                                      : 'Regenerate SKU Formula',
                                   onPressed: _updateSku,
                                 )
                               : null,
@@ -335,42 +345,26 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: DropdownButtonFormField<BarcodeSymbologyType>(
-                        initialValue: _selectedSymbology,
-                        decoration: const InputDecoration(labelText: '1D Symbology'),
-                        items: [
-                          for (final s in BarcodeSymbologyType.values)
-                            DropdownMenuItem<BarcodeSymbologyType>(
-                              value: s,
-                              child: Text(s.name, overflow: TextOverflow.ellipsis),
-                            ),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() {
-                              _selectedSymbology = v;
-                              if (_barcodeController.text.isEmpty) {
-                                _generateSystemBarcode();
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
                       child: TextFormField(
                         controller: _barcodeController,
                         decoration: InputDecoration(
                           labelText: l10n.barcode,
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.auto_awesome, size: 20),
-                            tooltip: 'Generate Barcode',
-                            onPressed: _generateSystemBarcode,
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.only(right: 4, left: 4),
+                            child: FilledButton.tonalIcon(
+                              onPressed: _generateSystemBarcode,
+                              icon: const Icon(Icons.auto_awesome, size: 16),
+                              label: Text(
+                                l10n.localeName.startsWith('ar')
+                                    ? 'توليد تلقائي'
+                                    : 'Auto-Generate',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
                           ),
                         ),
                         onChanged: (_) => setState(() {}),
@@ -391,7 +385,9 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     child: Column(
                       children: [
                         Text(
-                          '1D Barcode Preview (${_selectedSymbology.name})',
+                          l10n.localeName.startsWith('ar')
+                              ? 'معاينة الباركود الذكي (Smart 1D Barcode)'
+                              : 'Smart 1D Barcode Preview',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 8),
@@ -407,15 +403,11 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                                   ? _barcodeController.text.trim()
                                   : _skuController.text.trim();
                               return BarcodeWidget(
-                                barcode: _selectedSymbology.toSafeBarcode(codeData),
+                                barcode: SmartBarcodeEngine.resolveRenderer(codeData),
                                 data: codeData,
                                 width: 240,
                                 height: 48,
                                 style: const TextStyle(fontSize: 10, color: Colors.black),
-                                errorBuilder: (context, error) => Text(
-                                  'Invalid format for ${_selectedSymbology.name}',
-                                  style: const TextStyle(color: Colors.red, fontSize: 11),
-                                ),
                               );
                             },
                           ),

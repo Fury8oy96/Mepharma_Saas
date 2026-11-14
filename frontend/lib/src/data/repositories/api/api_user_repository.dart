@@ -126,11 +126,15 @@ class ApiUserRepository implements UserRepository {
   @override
   Future<AppUser> updateUser(
     int id, {
+    String? username,
     String? password,
     UserRole? role,
     bool? isActive,
   }) async {
     final body = <String, dynamic>{};
+    if (username != null && username.trim().isNotEmpty) {
+      body['username'] = username.trim();
+    }
     if (password != null) body['password'] = password;
     if (role != null) {
       String roleName = role.name;
@@ -156,5 +160,11 @@ class ApiUserRepository implements UserRepository {
     } catch (_) {
       // Safe no-op, server-side seeder is the primary source of truth.
     }
+  }
+
+  @override
+  Future<void> deleteUser(int id) async {
+    await _client.delete('/users/$id');
+    _refreshUsers();
   }
 }

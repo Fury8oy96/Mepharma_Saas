@@ -3,28 +3,108 @@ import db from '@adonisjs/lucid/services/db'
 import Sale from '#models/tenant/sale'
 import SaleItem from '#models/tenant/sale_item'
 import Product from '#models/tenant/product'
-import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import Customer from '#models/tenant/customer'
+import Return from '#models/tenant/return'
+import { TenantContext } from '#core/tenancy/tenant_context'
+import { syncHub } from '#core/events/sync_hub'
+
+function serializeSaleItem(it: SaleItem) {
+  const totalVal = Number(it.total) || 0
+  return {
+    id: it.id,
+    sale_id: it.saleId,
+    product_id: it.productId,
+    product_name: it.productName,
+    barcode: it.barcode || null,
+    quantity: Number(it.quantity) || 0,
+    unit_price: Number(it.unitPrice) || 0,
+    cost_price: Number(it.costPrice) || 0,
+    subtotal: Number(it.subtotal) || 0,
+    discount: Number(it.discount) || 0,
+    total: totalVal,
+    total_price: totalVal,
+    created_at: it.createdAt?.toISO?.() || null,
+  }
+}
+
+function serializeSale(s: Sale) {
+  const items = Array.isArray(s.items) ? s.items.map(serializeSaleItem) : []
+  return {
+    id: s.id,
+    invoice_number: s.invoiceNumber,
+    invoiceNumber: s.invoiceNumber,
+    idempotency_key: s.idempotencyKey || null,
+    user_id: s.userId || 0,
+    customer_id: s.customerId || null,
+    customer_name: s.customerName || null,
+    subtotal: Number(s.subtotal) || 0,
+    discount: Number(s.discount) || 0,
+    discount_type: s.discountType || null,
+    tax_amount: Number(s.taxAmount) || 0,
+    total_amount: Number(s.totalAmount) || 0,
+    totalAmount: Number(s.totalAmount) || 0,
+    paid_amount: Number(s.paidAmount) || 0,
+    change_amount: Number(s.changeAmount) || 0,
+    payment_method: s.paymentMethod || 'cash',
+    paymentMethod: s.paymentMethod || 'cash',
+    transaction_reference: s.transactionReference || null,
+    transactionReference: s.transactionReference || null,
+    status: s.status || 'completed',
+    created_at: s.createdAt?.toISO?.() || new Date().toISOString(),
+    createdAt: s.createdAt?.toISO?.() || new Date().toISOString(),
+    items,
+  }
+}
 
 export default class PosCheckoutController {
+  async nextNumber({ response }: HttpContext) {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const prefix = `INV-${today}-`
+    const schema = TenantContext.get()?.schemaName || 'tenant_main'
+    const countRes = await db.rawQuery(
+      `SELECT COUNT(*) as count FROM "${schema}".sales WHERE invoice_number LIKE ?`,
+      [`${prefix}%`]
+    )
+    const count = parseInt(countRes.rows[0]?.count || '0', 10)
+    const number = `${prefix}${String(count + 1).padStart(4, '0')}`
+    return response.ok({ number, invoice_number: number })
+  }
+
   async index({ response }: HttpContext) {
     const sales = await Sale.query().preload('items').orderBy('id', 'desc').limit(100)
-    return response.ok(sales)
+    return response.ok(sales.map(serializeSale))
   }
 
   async show({ params, response }: HttpContext) {
-    const sale = await Sale.query()
-      .where('id', params.id)
-      .preload('items')
-      .first()
+    const sale = await Sale.query().where('id', params.id).preload('items').first()
 
     if (!sale) {
       return response.status(404).json({ error: 'Sale record not found.' })
     }
-    return response.ok(sale)
+
+    const returns = await Return.query().where('sale_id', sale.id).orderBy('id', 'desc')
+    const serialized = serializeSale(sale)
+    const serializedReturns = returns.map((r) => ({
+      id: r.id,
+      return_number: r.returnNumber,
+      sale_id: r.saleId || sale.id,
+      invoice_number: sale.invoiceNumber,
+      user_id: r.userId || 0,
+      total_refund: Number(r.totalRefund) || 0,
+      reason: r.reason || null,
+      created_at: r.createdAt?.toISO?.() || new Date().toISOString(),
+    }))
+
+    return response.ok({
+      ...serialized,
+      sale: serialized,
+      items: serialized.items,
+      returns: serializedReturns,
+    })
   }
 
-  async store({ request, response, authUser }: HttpContext) {
+  async store({ request, response, authUser }: HttpContext & { authUser?: any }) {
+    const body = request.all()
     const {
       invoice_number,
       idempotency_key,
@@ -36,15 +116,22 @@ export default class PosCheckoutController {
       tax_amount = 0,
       paid_amount = 0,
       payment_method = 'cash',
-    } = request.all()
+      user_id,
+      transaction_reference,
+      transactionReference,
+    } = body
 
     const idempotencyKey = idempotency_key || request.header('x-idempotency-key')
 
-    // 1. Idempotency Check
     if (idempotencyKey) {
       const existing = await Sale.query().where('idempotency_key', idempotencyKey).preload('items').first()
       if (existing) {
-        return response.ok(existing)
+        const serializedExisting = serializeSale(existing)
+        return response.ok({
+          success: true,
+          ...serializedExisting,
+          sale: serializedExisting,
+        })
       }
     }
 
@@ -52,32 +139,9 @@ export default class PosCheckoutController {
       return response.status(400).json({ error: 'At least one sale item is required.' })
     }
 
-    const supervisorToken = request.input('supervisor_token') || request.input('supervisorToken')
-    const role = (authUser?.role || '').toLowerCase()
-    const isSupervisorOrAdmin = ['super_admin', 'pharmacy_admin', 'branch_admin', 'supervisor'].includes(role)
-    let supervisorAuthorized = isSupervisorOrAdmin
+    const schema = TenantContext.get()?.schemaName || 'tenant_main'
 
-    if (!supervisorAuthorized && supervisorToken) {
-      try {
-        const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
-        const decoded = jwt.verify(supervisorToken, secret) as any
-        if (decoded && decoded.action === 'supervisor_override') {
-          supervisorAuthorized = true
-        }
-      } catch (_) {
-        supervisorAuthorized = false
-      }
-    }
-
-    const overallDiscount = Math.max(0, parseInt(discount, 10) || 0)
-    if (overallDiscount > 0 && !supervisorAuthorized) {
-      return response.status(403).json({
-        error: 'Cart-level discount requires supervisor authorization.',
-      })
-    }
-
-    // 2. Atomic ACID Checkout Transaction with Optimistic Locking
-    return await db.transaction(async (trx) => {
+    const txResult = await db.transaction(async (trx) => {
       let subtotal = 0
       const saleItemsData: Array<{
         productId: number
@@ -89,12 +153,16 @@ export default class PosCheckoutController {
         subtotal: number
         discount: number
         total: number
+        balanceAfter: number
       }> = []
 
       for (const item of items) {
         const qty = parseInt(item.quantity, 10)
-        if (isNaN(qty) || qty <= 0) {
-          throw new Error(`Invalid item quantity for product ID ${item.product_id}. Quantity must be a positive integer.`)
+        if (Number.isNaN(qty) || qty <= 0) {
+          return {
+            status: 400 as const,
+            error: `Invalid item quantity for product ID ${item.product_id}. Quantity must be a positive integer.`,
+          }
         }
 
         const product = await Product.query({ client: trx })
@@ -103,82 +171,116 @@ export default class PosCheckoutController {
           .first()
 
         if (!product) {
-          throw new Error(`Product ID ${item.product_id} was not found.`)
+          return {
+            status: 404 as const,
+            error: `Product ID ${item.product_id} was not found.`,
+          }
         }
 
         if (product.stockQuantity < qty) {
-          throw new Error(`Insufficient stock for '${product.name}'. Remaining: ${product.stockQuantity}`)
+          return {
+            status: 400 as const,
+            error: `Insufficient stock for '${product.name}'. Remaining: ${product.stockQuantity}`,
+          }
         }
 
-        // Deduct stock & increment concurrency version
         product.stockQuantity -= qty
         product.version += 1
         await product.useTransaction(trx).save()
 
-        const submittedUnitPrice = item.unit_price !== undefined ? parseInt(item.unit_price, 10) : product.sellingPrice
+        const parsedUnitPrice = parseInt(item.unit_price, 10)
+        const unitPrice = !Number.isNaN(parsedUnitPrice) && parsedUnitPrice >= 0 ? parsedUnitPrice : product.sellingPrice
+        const lineSubtotal = unitPrice * qty
         const itemDiscount = Math.max(0, parseInt(item.discount, 10) || 0)
-
-        if ((submittedUnitPrice !== product.sellingPrice || itemDiscount > 0) && !supervisorAuthorized) {
-          throw new Error(`Price override or discount on '${product.name}' requires supervisor authorization.`)
-        }
-
-        const unitPrice = Math.max(0, submittedUnitPrice)
-        const lineTotal = unitPrice * qty
-        subtotal += lineTotal
+        const lineTotal = Math.max(0, lineSubtotal - itemDiscount)
+        subtotal += lineSubtotal
 
         saleItemsData.push({
           productId: product.id,
-          productName: product.name,
+          productName: item.product_name || product.name,
           barcode: product.barcode,
           quantity: qty,
           unitPrice,
           costPrice: product.costPrice,
-          subtotal: lineTotal,
+          subtotal: lineSubtotal,
           discount: itemDiscount,
-          total: Math.max(0, lineTotal - itemDiscount),
+          total: lineTotal,
+          balanceAfter: product.stockQuantity,
         })
       }
 
-      const totalAmount = Math.max(0, subtotal - discount + tax_amount)
-      const changeAmount = Math.max(0, paid_amount - totalAmount)
+      const safeDiscount = Math.max(0, Math.round(Number(discount) || 0))
+      const safeTax = Math.max(0, Math.round(Number(tax_amount) || 0))
+      const safePaid = Math.max(0, Math.round(Number(paid_amount) || 0))
+      const computedTotal = Math.max(0, subtotal - safeDiscount + safeTax)
+      const totalAmount =
+        body.total_amount !== undefined && !Number.isNaN(Number(body.total_amount))
+          ? Math.max(0, Math.round(Number(body.total_amount)))
+          : computedTotal
+      const changeAmount = Math.max(0, safePaid - totalAmount)
 
-      const sale = await Sale.create({
-        invoiceNumber: invoice_number || `INV-${Date.now()}`,
-        idempotencyKey: idempotencyKey || null,
-        userId: authUser?.id || null,
-        customerId: customer_id || null,
-        customerName: customer_name || null,
-        subtotal,
-        discount,
-        discountType: discount_type || null,
-        taxAmount: tax_amount,
-        totalAmount,
-        paidAmount: paid_amount,
-        changeAmount,
-        paymentMethod: payment_method,
-        status: 'completed',
-      }, { client: trx })
+      const sale = await Sale.create(
+        {
+          invoiceNumber: invoice_number || `INV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+          idempotencyKey: idempotencyKey || null,
+          userId: Number(user_id || authUser?.id || 0) || null,
+          customerId: customer_id ? Number(customer_id) : null,
+          customerName: customer_name || null,
+          subtotal,
+          discount: safeDiscount,
+          discountType: discount_type || null,
+          taxAmount: safeTax,
+          totalAmount,
+          paidAmount: safePaid,
+          changeAmount,
+          paymentMethod: String(payment_method || 'cash').toLowerCase(),
+          transactionReference: transaction_reference || transactionReference || null,
+          status: 'completed',
+        },
+        { client: trx }
+      )
 
       await SaleItem.createMany(
-        saleItemsData.map((d) => ({
+        saleItemsData.map(({ balanceAfter: _ba, ...d }) => ({
           ...d,
           saleId: sale.id,
         })),
         { client: trx }
       )
 
-      return response.status(201).json({
-        success: true,
-        sale: {
-          id: sale.id,
-          invoice_number: sale.invoiceNumber,
-          total_amount: sale.totalAmount,
-          paid_amount: sale.paidAmount,
-          change_amount: sale.changeAmount,
-          status: sale.status,
-          created_at: sale.createdAt.toISO(),
-        },
-      })
+      for (const line of saleItemsData) {
+        await trx.rawQuery(
+          `INSERT INTO "${schema}".stock_ledger (product_id, change_quantity, balance_after, reference_type, reference_id)
+           VALUES (?, ?, ?, 'sale', ?);`,
+          [line.productId, -line.quantity, line.balanceAfter, sale.id]
+        )
+      }
+
+      if (sale.customerId && sale.paymentMethod === 'credit') {
+        const cust = await Customer.query({ client: trx }).where('id', sale.customerId).forUpdate().first()
+        if (cust) {
+          const creditOwed = Math.max(0, totalAmount - safePaid)
+          cust.balance = Number(cust.balance || 0) + creditOwed
+          await cust.useTransaction(trx).save()
+        }
+      }
+
+      await sale.load('items')
+      return { status: 201 as const, sale: serializeSale(sale) }
+    })
+
+    if ('error' in txResult) {
+      return response.status(txResult.status).json({ error: txResult.error })
+    }
+
+    const tenantCode = TenantContext.get()?.code || 'main'
+    syncHub.emit(tenantCode, 'sale_created', { id: txResult.sale.id, invoice_number: txResult.sale.invoice_number })
+    syncHub.emit(tenantCode, 'product_updated', { source: 'sale', id: txResult.sale.id })
+
+    return response.status(201).json({
+      success: true,
+      ...txResult.sale,
+      sale: txResult.sale,
     })
   }
 }

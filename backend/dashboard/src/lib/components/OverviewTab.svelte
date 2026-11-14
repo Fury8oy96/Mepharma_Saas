@@ -1,10 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { apiRequest, subscribeToSSE, addToast } from '../api';
+  import { currencyStore } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
 
   type DatePreset = 'today' | '7d' | '30d';
+  const datePresets: Array<{ val: DatePreset; key: string }> = [
+    { val: 'today', key: 'overview.filterToday' },
+    { val: '7d', key: 'overview.filter7Days' },
+    { val: '30d', key: 'overview.filter30Days' }
+  ];
   let activePreset: DatePreset = 'today';
   let stats: any = null;
   let loading = true;
@@ -12,12 +18,12 @@
   let liveSales = 0;
   let liveSyncQueue = 0;
 
-  function formatCurrency(val: any): string {
+  function formatCurrency(val: any, curr: string = $currencyStore): string {
     const num = Number(val ?? 0);
     return Math.round(num).toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    }) + ' SDG';
+    }) + ' ' + curr;
   }
 
   function getDatePresetLabel(preset: DatePreset, locale: string): string {
@@ -108,12 +114,12 @@
     <!-- Date Range Switcher & Refresh -->
     <div class="hero-controls">
       <div class="segmented-control">
-        {#each [['today', 'overview.filterToday'], ['7d', 'overview.filter7Days'], ['30d', 'overview.filter30Days']] as [val, key]}
+        {#each datePresets as p}
           <button
-            class="segmented-btn {activePreset === val ? 'active' : ''}"
-            on:click={() => { activePreset = val; loadOverview(); }}
+            class="segmented-btn {activePreset === p.val ? 'active' : ''}"
+            on:click={() => { activePreset = p.val; loadOverview(); }}
           >
-            {$t(key)}
+            {$t(p.key)}
           </button>
         {/each}
       </div>
@@ -148,11 +154,11 @@
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.netRevenue')}</span>
-          <h3 class="pillar-value text-primary">{formatCurrency(stats.sales?.revenue)}</h3>
+          <h3 class="pillar-value text-primary">{formatCurrency(stats.sales?.revenue, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Gross: {formatCurrency(stats.sales?.grossRevenue)}</span>
+            <span>{$currentLocale === 'ar' ? 'الإجمالي:' : 'Gross:'} {formatCurrency(stats.sales?.grossRevenue, $currencyStore)}</span>
             {#if (stats.sales?.refunds || 0) > 0}
-              <span class="text-danger">(-{formatCurrency(stats.sales.refunds)} {$t('rep.refunds')})</span>
+              <span class="text-danger">(-{formatCurrency(stats.sales.refunds, $currencyStore)} {$t('rep.refunds')})</span>
             {/if}
           </div>
         </div>
@@ -168,9 +174,9 @@
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.grossProfit')}</span>
-          <h3 class="pillar-value text-success">{formatCurrency(stats.sales?.grossProfit)}</h3>
+          <h3 class="pillar-value text-success">{formatCurrency(stats.sales?.grossProfit, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>{$t('rep.netProfit')} / Return Margin</span>
+            <span>{$t('rep.netProfit')} / {$t('rep.profitMargin')}</span>
           </div>
         </div>
       </div>
@@ -181,13 +187,13 @@
           <div class="pillar-icon-wrap bg-warning-light text-warning">
             {@html icons.shoppingCart}
           </div>
-          <span class="badge badge-warning">AOV: {formatCurrency(stats.sales?.aov)}</span>
+          <span class="badge badge-warning">{$currentLocale === 'ar' ? 'متوسط الفاتورة:' : 'AOV:'} {formatCurrency(stats.sales?.aov, $currencyStore)}</span>
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.costOfGoods')}</span>
-          <h3 class="pillar-value text-warning">{formatCurrency(stats.sales?.costOfGoods)}</h3>
+          <h3 class="pillar-value text-warning">{formatCurrency(stats.sales?.costOfGoods, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Wholesale Inventory Basis</span>
+            <span>{$currentLocale === 'ar' ? 'على أساس تكلفة المخزون' : 'Wholesale Inventory Basis'}</span>
           </div>
         </div>
       </div>
@@ -198,13 +204,13 @@
           <div class="pillar-icon-wrap bg-info-light text-info">
             {@html icons.warehouse}
           </div>
-          <span class="badge badge-info">+{formatCurrency(stats.stock?.potentialMargin)} {$t('rep.netProfit')}</span>
+          <span class="badge badge-info">+{formatCurrency(stats.stock?.potentialMargin, $currencyStore)} {$t('rep.netProfit')}</span>
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('overview.kpi.stockValuation')}</span>
-          <h3 class="pillar-value text-info">{formatCurrency(stats.stock?.retailValue)}</h3>
+          <h3 class="pillar-value text-info">{formatCurrency(stats.stock?.retailValue, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Cost Basis: {formatCurrency(stats.stock?.costValue)}</span>
+            <span>{$currentLocale === 'ar' ? 'التكلفة:' : 'Cost Basis:'} {formatCurrency(stats.stock?.costValue, $currencyStore)}</span>
           </div>
         </div>
       </div>
@@ -244,7 +250,7 @@
         <div class="op-icon bg-info-light text-info">{@html icons.purchases}</div>
         <div class="op-data">
           <span class="op-label">{$t('purch.title')}</span>
-          <div class="op-val">{formatCurrency(stats.purchases?.totalCost)} <small class="text-muted">({stats.purchases?.total || 0} {$t('purch.th.poNumber')})</small></div>
+          <div class="op-val">{formatCurrency(stats.purchases?.totalCost, $currencyStore)} <small class="text-muted">({stats.purchases?.total || 0} {$t('purch.th.poNumber')})</small></div>
         </div>
       </div>
     </div>
@@ -258,7 +264,7 @@
             <h4>{@html icons.trendingUp} {$t('overview.revenueTrend')}</h4>
             <span class="badge badge-neutral">{stats.trends?.length || 0} {$t('overview.dateRange')}</span>
           </div>
-          <span class="mono-tag text-success font-bold">{formatCurrency(stats.sales?.revenue)} Total</span>
+          <span class="mono-tag text-success font-bold">{formatCurrency(stats.sales?.revenue, $currencyStore)} {$t('common.total')}</span>
         </div>
 
         {#if !stats.trends || stats.trends.length === 0}
@@ -269,10 +275,10 @@
             <div class="trend-bars-wrapper">
               {#each stats.trends as day}
                 {@const heightPct = Math.max(8, Math.round((day.revenue / maxRev) * 100))}
-                <div class="bar-column" title="{day.date}: {formatCurrency(day.revenue)} ({day.count} sales)">
+                <div class="bar-column" title="{day.date}: {formatCurrency(day.revenue, $currencyStore)} ({day.count} {$t('overview.salesCount')})">
                   <div class="bar-tooltip">
-                    <strong>{formatCurrency(day.revenue)}</strong>
-                    <span>{day.count} sales</span>
+                    <strong>{formatCurrency(day.revenue, $currencyStore)}</strong>
+                    <span>{day.count} {$t('overview.salesCount')}</span>
                   </div>
                   <div class="bar-track">
                     <div class="bar-fill" style="height: {heightPct}%;"></div>
@@ -291,7 +297,7 @@
           <div class="header-title-wrap">
             <h4>{@html icons.creditCard} {$t('rep.paymentBreakdown')}</h4>
           </div>
-          <span class="badge badge-neutral">{(stats.todayPaymentBreakdown || []).length} Channels</span>
+          <span class="badge badge-neutral">{(stats.todayPaymentBreakdown || []).length} {$t('overview.channels')}</span>
         </div>
 
         <div class="payment-channels-list">
@@ -306,10 +312,10 @@
                   <div class="payment-identity">
                     <span class="channel-dot" style="background: {channelColor}"></span>
                     <span class="channel-name">{channel.method.toUpperCase()}</span>
-                    <span class="channel-count">({channel.count} sales)</span>
+                    <span class="channel-count">({channel.count} {$t('overview.salesCount')})</span>
                   </div>
                   <div class="payment-values">
-                    <span class="channel-total">{formatCurrency(channel.total)}</span>
+                    <span class="channel-total">{formatCurrency(channel.total, $currencyStore)}</span>
                     <span class="channel-pct mono-tag">{pct.toFixed(1)}%</span>
                   </div>
                 </div>
@@ -331,7 +337,7 @@
           <div class="header-title-wrap">
             <h4>{@html icons.award} {$t('rep.topEarners')}</h4>
           </div>
-          <span class="badge badge-success">{(stats.topProducts || []).length} Top SKUs</span>
+          <span class="badge badge-success">{(stats.topProducts || []).length} {$t('overview.topSkus')}</span>
         </div>
 
         <div class="table-responsive">
@@ -339,11 +345,11 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Drug Name</th>
-                <th>Units</th>
-                <th>Revenue</th>
-                <th>Profit</th>
-                <th>Margin</th>
+                <th>{$t('overview.drugName')}</th>
+                <th>{$t('common.units')}</th>
+                <th>{$t('overview.revenue')}</th>
+                <th>{$t('overview.profit')}</th>
+                <th>{$t('overview.margin')}</th>
               </tr>
             </thead>
             <tbody>
@@ -357,8 +363,8 @@
                     </td>
                     <td><strong class="drug-name">{p.name}</strong></td>
                     <td><span class="badge badge-secondary">{p.unitsSold}</span></td>
-                    <td><strong>{formatCurrency(p.revenue)}</strong></td>
-                    <td class="text-success font-medium">+{formatCurrency(p.profit)}</td>
+                    <td><strong>{formatCurrency(p.revenue, $currencyStore)}</strong></td>
+                    <td class="text-success font-medium">+{formatCurrency(p.profit, $currencyStore)}</td>
                     <td>
                       <span class="badge {p.margin_pct >= 25 ? 'badge-success' : 'badge-warning'}">
                         {p.margin_pct}%
@@ -378,7 +384,7 @@
           <div class="header-title-wrap">
             <h4>{@html icons.receipt} {$t('overview.recentSales')}</h4>
           </div>
-          <span class="badge badge-neutral">10 Latest</span>
+          <span class="badge badge-neutral">{$t('overview.latest10')}</span>
         </div>
 
         <div class="invoices-feed">
@@ -393,13 +399,13 @@
                     <span class="customer-tag">{sale.customer_name}</span>
                   </div>
                   <div class="invoice-meta-sub">
-                    <span>Cashier: <strong>{sale.cashier || 'System'}</strong></span>
+                    <span>{$t('overview.cashierLabel')}: <strong>{sale.cashier || 'System'}</strong></span>
                     <span>•</span>
                     <span>{getServerDate(sale.created_at, $currentLocale)}</span>
                   </div>
                 </div>
                 <div class="invoice-right">
-                  <span class="invoice-total">{formatCurrency(sale.total_amount)}</span>
+                  <span class="invoice-total">{formatCurrency(sale.total_amount, $currencyStore)}</span>
                   <span class="badge badge-sm badge-success">{sale.payment_method}</span>
                 </div>
               </div>
@@ -457,18 +463,18 @@
           </div>
           <div class="matrix-item">
             <span class="matrix-label">{$t('overview.databaseStatus')}</span>
-            <span class="matrix-value text-primary font-medium">PostgreSQL 15 Connected</span>
+            <span class="matrix-value text-primary font-medium">{$t('overview.dbConnected')}</span>
           </div>
           <div class="matrix-item">
             <span class="matrix-label">{$t('overview.activeSessions')}</span>
-            <span class="matrix-value font-mono">{stats.users?.active || 0} active / {stats.users?.total || 0} total</span>
+            <span class="matrix-value font-mono">{stats.users?.active || 0} {$t('overview.activeWords')} / {stats.users?.total || 0} {$t('overview.totalWords')}</span>
           </div>
           <div class="matrix-item">
-            <span class="matrix-label">Team Distribution</span>
+            <span class="matrix-label">{$t('overview.teamDist')}</span>
             <span class="matrix-value">
-              <span class="badge badge-sm badge-primary">{stats.users?.admin || 0} Admin</span>
-              <span class="badge badge-sm badge-info">{stats.users?.pharmacist || 0} Pharmacist</span>
-              <span class="badge badge-sm badge-secondary">{stats.users?.staff || 0} Cashier</span>
+              <span class="badge badge-sm badge-primary">{stats.users?.admin || 0} {$t('usr.role.admin')}</span>
+              <span class="badge badge-sm badge-info">{stats.users?.pharmacist || 0} {$t('usr.role.pharmacist')}</span>
+              <span class="badge badge-sm badge-secondary">{stats.users?.staff || 0} {$t('usr.role.cashier')}</span>
             </span>
           </div>
           <div class="matrix-item">
@@ -910,7 +916,7 @@
     border-color: var(--color-primary);
     transform: translateX(3px);
   }
-  body.rtl-mode .invoice-item-row:hover {
+  :global(body.rtl-mode) .invoice-item-row:hover {
     transform: translateX(-3px);
   }
   .invoice-left {

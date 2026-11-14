@@ -157,8 +157,8 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
         isLicenseValid: true,
         pharmacyName: 'Local Pharmacy (Offline)',
         pharmacyAddress: 'Standalone SQLite Database',
-        currency: 'USD',
-        currencySymbol: r'$',
+        currency: 'SDG',
+        currencySymbol: 'ج.س',
         taxRate: 0.0,
         licensePlan: 'offline_standalone',
         validityDaysRemaining: 365,
@@ -254,8 +254,8 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
         pharmacyName: pharm['name']?.toString() ?? 'Pharmacy Branch',
         pharmacyPhone: pharm['phone']?.toString(),
         pharmacyAddress: pharm['address']?.toString(),
-        currency: pharm['currency']?.toString() ?? 'USD',
-        currencySymbol: pharm['currencySymbol']?.toString() ?? r'$',
+        currency: pharm['currency']?.toString() ?? 'SDG',
+        currencySymbol: pharm['currencySymbol']?.toString() ?? 'ج.س',
         taxRate: (pharm['taxRate'] as num?)?.toDouble() ?? 0.0,
         receiptFooter: pharm['receiptFooter']?.toString(),
         licenseExpiresAt: lic['expiresAt']?.toString(),
@@ -302,12 +302,15 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
     String? baseUrl,
     int? branchId,
     String? pharmacyCode,
+    bool? isConfigured,
   }) async {
+    final nextMode = mode ?? state.mode;
     final updated = state.copyWith(
       mode: mode,
       baseUrl: baseUrl,
       branchId: branchId,
       pharmacyCode: pharmacyCode,
+      isConfigured: isConfigured ?? (nextMode == DatabaseMode.local ? true : state.isConfigured),
     );
     state = updated;
     await _manager.saveConfig(updated);
@@ -346,10 +349,16 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 final networkMonitorProvider = ChangeNotifierProvider<NetworkMonitor>((ref) {
-  final initialBaseUrl = ref.watch(apiConfigProvider.select((c) => c.baseUrl));
-  final monitor = NetworkMonitor(baseUrl: initialBaseUrl);
+  final initialConfig = ref.watch(apiConfigProvider.select((c) => (baseUrl: c.baseUrl, mode: c.mode)));
+  final monitor = NetworkMonitor(
+    baseUrl: initialConfig.baseUrl,
+    enabled: initialConfig.mode == DatabaseMode.onlineApi,
+  );
   ref.listen<String>(apiConfigProvider.select((c) => c.baseUrl), (_, newBaseUrl) {
     monitor.updateBaseUrl(newBaseUrl);
+  });
+  ref.listen<DatabaseMode>(apiConfigProvider.select((c) => c.mode), (_, nextMode) {
+    monitor.setEnabled(nextMode == DatabaseMode.onlineApi);
   });
   return monitor;
 });
@@ -725,7 +734,9 @@ final stockValuationProvider = FutureProvider<StockValuation>((ref) {
 
 final syncEventsProvider = StreamProvider<String>((ref) async* {
   final config = ref.watch(apiConfigProvider);
-  if (config.mode != DatabaseMode.onlineApi) {
+  if (config.mode != DatabaseMode.onlineApi ||
+      config.token == null ||
+      config.token!.isEmpty) {
     return;
   }
   final client = ref.watch(apiClientProvider);

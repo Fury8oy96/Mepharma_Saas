@@ -1,38 +1,38 @@
 import { HttpContext } from '@adonisjs/core/http'
 import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import { getJwtSecret } from '#core/security/jwt_secret'
 
 export default class ProviderGateMiddleware {
   async handle(ctx: HttpContext, next: () => Promise<void>) {
     const authHeader = ctx.request.header('authorization')
-    const token = authHeader?.replace(/^Bearer\s+/i, '') || ctx.session?.get('provider_token')
+    const token = authHeader?.replace(/^Bearer\s+/i, '').trim()
 
     if (!token) {
       return ctx.response.status(401).json({
         error: 'Unauthorized',
-        message: 'Authentication token required to access Provider Superadmin Control Plane.',
+        message: 'Missing Bearer token.',
       })
     }
 
     try {
-      const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
-      const decoded = jwt.verify(token, secret) as any
-      ;(ctx as any).authUser = decoded
+      const decoded = jwt.verify(token, getJwtSecret()) as any
+      const role = String(decoded.role || '').toLowerCase()
 
-      const role = (decoded.role || '').toLowerCase()
-      if (role !== 'super_admin') {
+      if (!decoded.isProviderAdmin || !['system_admin', 'super_admin'].includes(role)) {
         return ctx.response.status(403).json({
           error: 'Access Forbidden',
-          message: 'Provider Superadmin privileges required.',
+          message: 'Superadmin control plane access required.',
         })
       }
 
+      ;(ctx as any).authUser = decoded
       return await next()
     } catch {
       return ctx.response.status(401).json({
         error: 'Unauthorized',
-        message: 'Invalid or expired session token.',
+        message: 'Invalid or expired provider administrator token.',
       })
     }
   }
 }
+

@@ -92,12 +92,12 @@
     }
   },
   "confirmDeleteProductMessage": "This will remove the product from inventory. This action cannot be undone.",
-  "adjustStock": "Adjust stock",
-  "stockAdjustment": "Stock adjustment",
-  "adjustmentQuantity": "Quantity change",
-  "adjustmentReason": "Reason",
-  "adjustmentReasonHint": "e.g. damaged, expired, counted",
-  "positiveAddsNegativeRemoves": "Positive adds stock, negative removes stock",
+  "adjustStock": "Adjust Stock",
+  "stockAdjustment": "Stock Adjustment",
+  "adjustmentQuantity": "Adjustment Quantity (+/-)",
+  "adjustmentReason": "Reason (Optional)",
+  "adjustmentReasonHint": "e.g. Inventory audit, damaged items, return to supplier",
+  "positiveAddsNegativeRemoves": "Positive number adds stock, negative removes stock.",
   "currentStock": "Current stock",
   "addCategory": "Add category",
   "editCategory": "Edit category",
@@ -257,7 +257,7 @@
   "purchaseSaved": "Purchase saved",
   "noPurchases": "No purchases yet",
   "purchaseDetail": "Purchase detail",
-  "selectSupplier": "Select supplier",
+  "selectSupplier": "Select Supplier",
   "noPurchaseLines": "No purchase lines yet",
   "purchaseDate": "Purchase date",
   "purchaseTotal": "Purchase total",
@@ -460,7 +460,7 @@
   "brandName": "Brand name",
   "genericName": "Generic name",
   "dose": "Dose / Dosage",
-  "profitMargin": "Profit margin (e.g. 0.3 for 30%)",
+  "profitMargin": "Profit Margin",
   "supplierCompany": "Company",
   "supplierCompanyContact": "Company contact number",
   "serverSettings": "Server Configuration",
@@ -481,7 +481,6 @@
   "totalRetailValue": "Total Retail Value",
   "noRecentSales": "No recent sales recorded.",
   "quickActions": "Quick Actions",
-  "customers": "Customers",
   "hqSettings": "HQ Settings",
   "backups": "Backups",
   "ordersCount": "{count} Orders",
@@ -511,7 +510,6 @@
   "requestUnlistedDrug": "Add / Request Unlisted Drug",
   "customDrugName": "Drug / Product Name",
   "customDrugCategory": "Category (Optional)",
-  "selectSupplier": "Select Supplier",
   "unassignedSupplierNotice": "Supplier and prices can be assigned later by admin.",
   "purchaseApproval": "Purchase Approval",
   "approveAndRestock": "Approve & Restock",
@@ -523,22 +521,14 @@
   "outOfStockRequest": "Out of Stock Drug Request",
   "requestDrugForCustomer": "Request Drug for Customer",
   "requestedDrugName": "Requested Drug Name",
-  "notes": "Notes",
   "customerWishlistSaved": "Customer drug request saved",
   "requestNewStock": "Request Restock",
   "restockAllLowStock": "Restock All Low Stock",
   "lowStockFilter": "Low Stock",
   "allProductsFilter": "All Products",
   "expired": "Expired",
-  "adjustStock": "Adjust Stock",
-  "stockAdjustment": "Stock Adjustment",
   "stockAdjusted": "Stock adjusted successfully",
-  "adjustmentQuantity": "Adjustment Quantity (+/-)",
-  "positiveAddsNegativeRemoves": "Positive number adds stock, negative removes stock.",
-  "adjustmentReason": "Reason (Optional)",
-  "adjustmentReasonHint": "e.g. Inventory audit, damaged items, return to supplier",
   "cogs": "Cost of Goods (COGS)",
-  "profitMargin": "Profit Margin",
   "averageOrderValue": "Avg Order Value",
   "grossRevenue": "Gross Revenue",
   "totalDiscounts": "Discounts",
@@ -620,5 +610,69 @@
   "checkForUpdates": "Check for Updates",
   "checkingForUpdates": "Checking for updates...",
   "upToDate": "MePharma is up to date",
-  "updateAvailable": "Update Available"
+  "updateAvailable": "Update Available",
+  "paymentBankTransfer": "Bank transfer",
+  "transactionReference": "Transaction reference",
+  "transactionRefHint": "Enter bank transfer reference number",
+  "transactionRefRequired": "Transaction reference is required for bank transfer",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
+  "localOfflineTransactions": "Local Offline Transactions ({count})",
+  "@localOfflineTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverSyncedTransactions": "Server Synced Transactions ({count})",
+  "@serverSyncedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "localSavedTransactions": "Local Sales Ledger ({count})",
+  "@localSavedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineQueueNotice": "These transactions were saved locally while offline and will sync automatically when online.",
+  "syncingTransactions": "Synchronizing local transactions with server...",
+  "superAdminShort": "Super Admin",
+  "branchAdminShort": "Branch Admin",
+  "staffShort": "Staff",
+  "localModeActive": "Local Mode",
+  "purchaseApprovedNotice": "Purchase request {invoice} has been approved and inventory is updated.",
+  "@purchaseApprovedNotice": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "printedOn": "Printed on {date}",
+  "@printedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "stockOut": "Out of stock",
+  "confirmApprovePurchase": "Are you sure you want to approve this purchase order and add its inventory to branch stock?",
+  "supervisorApprovePurchaseReason": "Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.",
+  "supervisorReturnReason": "Processing refunds and returns requires supervisor override.",
+  "terminalQuotaTitle": "Terminal Seat Limit Reached",
+  "terminalQuotaInfo": "To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.",
+  "understood": "Understood",
+  "supervisorAuthTitle": "Supervisor Authorization",
+  "supervisorPasswordRequired": "Supervisor Password / PIN *",
+  "requestOutOfStockDrug": "Request Out-of-Stock Drug",
+  "diagnosticsCopied": "Diagnostics copied to clipboard",
+  "copyErrorDiagnostics": "Copy Error Diagnostics"
 }

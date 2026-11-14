@@ -18,6 +18,7 @@ const CustomersController = () => import('#controllers/pharmacy_admin/customers_
 const ReportsController = () => import('#controllers/pharmacy_admin/reports_controller')
 const SettingsController = () => import('#controllers/pharmacy_admin/settings_controller')
 const StaffFeedbackController = () => import('#controllers/pharmacy_admin/staff_feedback_controller')
+const StockAdjustmentsController = () => import('#controllers/pharmacy_admin/stock_adjustments_controller')
 
 const PosAuthController = () => import('#controllers/desktop_pos/pos_auth_controller')
 const PosLicenseController = () => import('#controllers/desktop_pos/pos_license_controller')
@@ -37,54 +38,62 @@ router.get('/api/status', async () => ({ status: 'ok', engine: 'AdonisJS v6 Ente
 router.get('/health', async () => ({ status: 'healthy', timestamp: new Date().toISOString() }))
 router.get('/api/health', async () => ({ status: 'healthy', timestamp: new Date().toISOString() }))
 
+// SSE Event Streams
+router.get('/sync/events', [PosSyncController, 'events'])
+router.get('/api/sync/events', [PosSyncController, 'events'])
+
 /*
 |--------------------------------------------------------------------------
 | 1. PROVIDER CONTROL PLANE ROUTES (Platform Superadmin)
 |--------------------------------------------------------------------------
 */
-router.group(() => {
-  router.post('/auth/login', [SystemAuthController, 'login'])
+router
+  .group(() => {
+    router.post('/auth/login', [SystemAuthController, 'login'])
 
-  router.group(() => {
-    // Tenants & Licenses
-    router.get('/tenants', [TenantsController, 'index'])
-    router.post('/tenants', [TenantsController, 'store'])
-    router.get('/tenants/:id', [TenantsController, 'show'])
-    router.put('/tenants/:id', [TenantsController, 'update'])
-    router.delete('/tenants/:id', [TenantsController, 'destroy'])
+    router
+      .group(() => {
+        // Tenants & Licenses
+        router.get('/tenants', [TenantsController, 'index'])
+        router.post('/tenants', [TenantsController, 'store'])
+        router.get('/tenants/:id', [TenantsController, 'show'])
+        router.put('/tenants/:id', [TenantsController, 'update'])
+        router.delete('/tenants/:id', [TenantsController, 'destroy'])
 
-    // Terminal Seats & Hardware Management
-    router.get('/tenants/:id/terminals', [TenantsController, 'getTerminals'])
-    router.put('/tenants/:id/seats', [TenantsController, 'updateSeats'])
-    router.put('/tenants/:id/terminals/:terminalId', [TenantsController, 'updateTerminal'])
-    router.delete('/tenants/:id/terminals/:terminalId', [TenantsController, 'unlinkTerminal'])
-    router.post('/tenants/:id/terminals/:terminalId/unlink', [TenantsController, 'unlinkTerminal'])
+        // Terminal Seats & Hardware Management
+        router.get('/tenants/:id/terminals', [TenantsController, 'getTerminals'])
+        router.put('/tenants/:id/seats', [TenantsController, 'updateSeats'])
+        router.put('/tenants/:id/terminals/:terminalId', [TenantsController, 'updateTerminal'])
+        router.delete('/tenants/:id/terminals/:terminalId', [TenantsController, 'unlinkTerminal'])
+        router.post('/tenants/:id/terminals/:terminalId/unlink', [TenantsController, 'unlinkTerminal'])
 
-    router.post('/licenses/issue', [LicensesController, 'issue'])
-    router.post('/licenses/verify', [LicensesController, 'verify'])
+        router.post('/licenses/issue', [LicensesController, 'issue'])
+        router.post('/licenses/verify', [LicensesController, 'verify'])
 
-    // Deep Telemetry & System Monitoring
-    router.get('/telemetry', [TelemetryController, 'index'])
+        // Deep Telemetry & System Monitoring
+        router.get('/telemetry', [TelemetryController, 'index'])
 
-    // Enterprise Audit Trail
-    router.get('/audit-logs', [AuditLogsController, 'index'])
+        // Enterprise Audit Trail
+        router.get('/audit-logs', [AuditLogsController, 'index'])
 
-    // Disaster Recovery & Whole-System Backups
-    router.get('/backups', [BackupsController, 'index'])
-    router.post('/backups', [BackupsController, 'create'])
-    router.post('/backups/create', [BackupsController, 'create'])
-    router.post('/backups/:filename/restore', [BackupsController, 'restore'])
-    router.post('/backups/restore', [BackupsController, 'restore'])
-    router.get('/backups/:filename/download', [BackupsController, 'download'])
-    router.get('/backups/download/:filename', [BackupsController, 'download'])
+        // Disaster Recovery & Whole-System Backups
+        router.get('/backups', [BackupsController, 'index'])
+        router.post('/backups', [BackupsController, 'create'])
+        router.post('/backups/create', [BackupsController, 'create'])
+        router.post('/backups/:filename/restore', [BackupsController, 'restore'])
+        router.post('/backups/restore', [BackupsController, 'restore'])
+        router.get('/backups/:filename/download', [BackupsController, 'download'])
+        router.get('/backups/download/:filename', [BackupsController, 'download'])
 
-    // Master Catalog Management
-    router.get('/master-catalog', [MasterCatalogController, 'index'])
-    router.post('/master-catalog', [MasterCatalogController, 'store'])
-    router.put('/master-catalog/:id', [MasterCatalogController, 'update'])
-    router.delete('/master-catalog/:id', [MasterCatalogController, 'destroy'])
-  }).use(middleware.providerGate())
-}).prefix('/provider/api')
+        // Master Catalog Management
+        router.get('/master-catalog', [MasterCatalogController, 'index'])
+        router.post('/master-catalog', [MasterCatalogController, 'store'])
+        router.put('/master-catalog/:id', [MasterCatalogController, 'update'])
+        router.delete('/master-catalog/:id', [MasterCatalogController, 'destroy'])
+      })
+      .use(middleware.providerGate())
+  })
+  .prefix('/provider/api')
 
 /*
 |--------------------------------------------------------------------------
@@ -115,20 +124,20 @@ const registerPharmacyAdminRoutes = (r: typeof router) => {
     // Catalog: Products, Categories, Suppliers
     r.get('/products', [CatalogController, 'getProducts'])
     r.post('/products', [CatalogController, 'storeProduct'])
-    r.get('/products/:id', [CatalogController, 'getProduct'])
-    r.put('/products/:id', [CatalogController, 'updateProduct'])
-    r.delete('/products/:id', [CatalogController, 'deleteProduct'])
+    r.get('/products/:id', [CatalogController, 'getProduct']).where('id', router.matchers.number())
+    r.put('/products/:id', [CatalogController, 'updateProduct']).where('id', router.matchers.number())
+    r.delete('/products/:id', [CatalogController, 'deleteProduct']).where('id', router.matchers.number())
     r.post('/products/merge', [CatalogController, 'mergeProducts'])
 
     r.get('/categories', [CatalogController, 'getCategories'])
     r.post('/categories', [CatalogController, 'storeCategory'])
-    r.put('/categories/:id', [CatalogController, 'updateCategory'])
-    r.delete('/categories/:id', [CatalogController, 'deleteCategory'])
+    r.put('/categories/:id', [CatalogController, 'updateCategory']).where('id', router.matchers.number())
+    r.delete('/categories/:id', [CatalogController, 'deleteCategory']).where('id', router.matchers.number())
 
     r.get('/suppliers', [CatalogController, 'getSuppliers'])
     r.post('/suppliers', [CatalogController, 'storeSupplier'])
-    r.put('/suppliers/:id', [CatalogController, 'updateSupplier'])
-    r.delete('/suppliers/:id', [CatalogController, 'deleteSupplier'])
+    r.put('/suppliers/:id', [CatalogController, 'updateSupplier']).where('id', router.matchers.number())
+    r.delete('/suppliers/:id', [CatalogController, 'deleteSupplier']).where('id', router.matchers.number())
 
     // Procurement / Purchase Orders
     r.get('/purchases/next-number', [ProcurementController, 'nextNumber'])
@@ -144,18 +153,26 @@ const registerPharmacyAdminRoutes = (r: typeof router) => {
     r.post('/staff-feedbacks', [StaffFeedbackController, 'store'])
     r.patch('/staff-feedbacks/:id', [StaffFeedbackController, 'update']).where('id', router.matchers.number())
 
+    // Stock Adjustments
+    r.get('/stock-adjustments', [StockAdjustmentsController, 'index'])
+    r.post('/stock-adjustments', [StockAdjustmentsController, 'store'])
+
     // Sales Ledger
     r.get('/sales', [PosCheckoutController, 'index'])
-    r.get('/sales/:id', [PosCheckoutController, 'show'])
+    r.get('/sales/:id', [PosCheckoutController, 'show']).where('id', router.matchers.number())
 
     // Customers & CRM
     r.get('/customers', [CustomersController, 'index'])
     r.post('/customers', [CustomersController, 'store'])
-    r.get('/customers/:id', [CustomersController, 'show'])
-    r.put('/customers/:id', [CustomersController, 'update'])
-    r.delete('/customers/:id', [CustomersController, 'destroy'])
+    r.get('/customers/:id', [CustomersController, 'show']).where('id', router.matchers.number())
+    r.put('/customers/:id', [CustomersController, 'update']).where('id', router.matchers.number())
+    r.delete('/customers/:id', [CustomersController, 'destroy']).where('id', router.matchers.number())
+    r.get('/customers/:id/balance', [CustomersController, 'getBalance']).where('id', router.matchers.number())
+    r.get('/customers/:id/payments', [CustomersController, 'getPayments']).where('id', router.matchers.number())
+    r.post('/customers/:id/payments', [CustomersController, 'recordPayment']).where('id', router.matchers.number())
 
     r.get('/customer-requests', [CustomersController, 'getRequests'])
+    r.post('/customer-requests', [CustomersController, 'storeRequest'])
     r.post('/customer-requests/:id/notify', [CustomersController, 'notifyRequest'])
     r.post('/customer-requests/:id/fulfill', [CustomersController, 'fulfillRequest'])
 
@@ -195,100 +212,154 @@ registerPharmacyAdminRoutes(router)
 /*
 |--------------------------------------------------------------------------
 | 3. DESKTOP POS API ROUTES (Flutter Windows Client)
-| Strictly for Pharmacists and Supervisors at the counter hardware
 |--------------------------------------------------------------------------
 */
-// 3. DESKTOP POS API ROUTES (Flutter Windows Client)
+router
+  .group(() => {
+    router.post('/pos/activate-license', [PosLicenseController, 'activateLicense'])
+    router.post('/license/activate', [PosLicenseController, 'activateLicense'])
+    router.get('/pos/pharmacy-info', [PosLicenseController, 'info'])
+    router.get('/sync/status', [PosSyncController, 'status'])
+    router.post('/auth/login', [PosAuthController, 'login']).use(middleware.terminalSeat())
+  })
+  .prefix('/api')
 
-// Public POS Licensing & Setup Endpoints
-router.group(() => {
-  router.post('/pos/activate-license', [PosLicenseController, 'activateLicense'])
-  router.post('/license/activate', [PosLicenseController, 'activateLicense'])
-  router.get('/pos/pharmacy-info', [PosLicenseController, 'info'])
-  router.get('/sync/status', [PosSyncController, 'status'])
-  router.post('/auth/login', [PosAuthController, 'login']).use(middleware.terminalSeat())
-  router.post('/auth/verify-supervisor', [PosAuthController, 'verifySupervisor'])
-}).prefix('/api')
+// Authenticated POS Client Operations
+router
+  .group(() => {
+    router.post('/auth/verify-supervisor', [PosAuthController, 'verifySupervisor'])
 
-// Authenticated POS Client Operations (strictly protected by authJwt middleware)
-router.group(() => {
-  // Products catalog for POS
-  router.get('/products/check-sku', [PosProductsController, 'checkSku'])
-  router.get('/products/check-barcode', [PosProductsController, 'checkBarcode'])
-  router.get('/products/count-low-stock', [PosProductsController, 'countLowStock'])
-  router.get('/products/low-stock', [PosProductsController, 'lowStock'])
-  router.get('/products/expiring', [PosProductsController, 'expiring'])
-  router.get('/products', [PosProductsController, 'index'])
-  router.post('/products', [PosProductsController, 'store'])
-  router.get('/products/:id', [PosProductsController, 'show']).where('id', router.matchers.number())
-  router.put('/products/:id', [PosProductsController, 'update']).where('id', router.matchers.number())
-  router.delete('/products/:id', [PosProductsController, 'destroy']).where('id', router.matchers.number())
+    // Users lookup & management
+    router.get('/users/count', [StaffController, 'count'])
+    router.get('/users/username/:username', [StaffController, 'findByUsername'])
+    router.post('/users/ensure-default-admin', [StaffController, 'ensureDefaultAdmin'])
+    router.get('/users', [StaffController, 'index'])
+    router.get('/users/:id', [StaffController, 'show']).where('id', router.matchers.number())
+    router.post('/users', [StaffController, 'store'])
+    router.put('/users/:id', [StaffController, 'update']).where('id', router.matchers.number())
+    router.delete('/users/:id', [StaffController, 'destroy']).where('id', router.matchers.number())
 
-  router.get('/pos/products', [PosProductsController, 'index'])
-  router.post('/pos/products', [PosProductsController, 'store'])
-  router.get('/pos/products/:id', [PosProductsController, 'show']).where('id', router.matchers.number())
-  router.put('/pos/products/:id', [PosProductsController, 'update']).where('id', router.matchers.number())
-  router.delete('/pos/products/:id', [PosProductsController, 'destroy']).where('id', router.matchers.number())
+    // Products catalog for POS
+    router.get('/products/check-sku', [PosProductsController, 'checkSku'])
+    router.get('/products/check-barcode', [PosProductsController, 'checkBarcode'])
+    router.get('/products/count-low-stock', [PosProductsController, 'countLowStock'])
+    router.get('/products/low-stock', [PosProductsController, 'lowStock'])
+    router.get('/products/expiring', [PosProductsController, 'expiring'])
+    router.get('/products/sku/:sku', [PosProductsController, 'findBySku'])
+    router.get('/products/barcode/:barcode', [PosProductsController, 'findByBarcode'])
+    router.get('/products/:productId/adjustments', [StockAdjustmentsController, 'forProduct']).where('productId', router.matchers.number())
+    router.get('/products', [PosProductsController, 'index'])
+    router.post('/products', [PosProductsController, 'store'])
+    router.get('/products/:id', [PosProductsController, 'show']).where('id', router.matchers.number())
+    router.put('/products/:id', [PosProductsController, 'update']).where('id', router.matchers.number())
+    router.delete('/products/:id', [PosProductsController, 'destroy']).where('id', router.matchers.number())
 
-  // Supporting entities for checkout & lookup
-  router.get('/categories', [CatalogController, 'getCategories'])
-  router.get('/customers', [CustomersController, 'index'])
-  router.post('/customers', [CustomersController, 'store'])
-  router.get('/suppliers', [CatalogController, 'getSuppliers'])
+    router.get('/pos/products', [PosProductsController, 'index'])
+    router.post('/pos/products', [PosProductsController, 'store'])
+    router.get('/pos/products/:id', [PosProductsController, 'show']).where('id', router.matchers.number())
+    router.put('/pos/products/:id', [PosProductsController, 'update']).where('id', router.matchers.number())
+    router.delete('/pos/products/:id', [PosProductsController, 'destroy']).where('id', router.matchers.number())
 
-  // Reports for POS Dashboard
-  router.get('/reports/overview', [ReportsController, 'overview'])
-  router.get('/reports/summary', [ReportsController, 'summary'])
-  router.get('/reports/stock-valuation', [ReportsController, 'stockValuation'])
-  router.get('/reports/monthly', [ReportsController, 'monthly'])
-  router.get('/reports/categories', [ReportsController, 'categories'])
-  router.get('/reports/sales', [ReportsController, 'salesChart'])
+    // Stock adjustments
+    router.get('/stock-adjustments', [StockAdjustmentsController, 'index'])
+    router.post('/stock-adjustments', [StockAdjustmentsController, 'store'])
 
-  // Purchases / Procurement
-  router.get('/purchases/next-number', [ProcurementController, 'nextNumber'])
-  router.get('/purchases', [ProcurementController, 'index'])
-  router.post('/purchases', [ProcurementController, 'store'])
-  router.get('/purchases/:id', [ProcurementController, 'show']).where('id', router.matchers.number())
-  router.put('/purchases/:id', [ProcurementController, 'update']).where('id', router.matchers.number())
-  router.put('/purchases/:id/approve', [ProcurementController, 'approve']).where('id', router.matchers.number())
-  router.post('/purchases/:id/approve', [ProcurementController, 'approve']).where('id', router.matchers.number())
+    // Categories & Suppliers
+    router.get('/categories', [CatalogController, 'getCategories'])
+    router.post('/categories', [CatalogController, 'storeCategory'])
+    router.put('/categories/:id', [CatalogController, 'updateCategory']).where('id', router.matchers.number())
+    router.delete('/categories/:id', [CatalogController, 'deleteCategory']).where('id', router.matchers.number())
 
-  // Staff Restock Feedbacks / Recommendations
-  router.get('/staff-feedbacks', [StaffFeedbackController, 'index'])
-  router.post('/staff-feedbacks', [StaffFeedbackController, 'store'])
-  router.patch('/staff-feedbacks/:id', [StaffFeedbackController, 'update']).where('id', router.matchers.number())
+    router.get('/suppliers', [CatalogController, 'getSuppliers'])
+    router.post('/suppliers', [CatalogController, 'storeSupplier'])
+    router.put('/suppliers/:id', [CatalogController, 'updateSupplier']).where('id', router.matchers.number())
+    router.delete('/suppliers/:id', [CatalogController, 'deleteSupplier']).where('id', router.matchers.number())
 
-  // Store Settings
-  router.get('/settings', [SettingsController, 'index'])
-  router.get('/settings/store', [SettingsController, 'getStore'])
-  router.get('/store-settings', [SettingsController, 'getStore'])
-  router.post('/settings', [SettingsController, 'update'])
-  router.post('/settings/store', [SettingsController, 'update'])
+    // Customers & Credit Payments
+    router.get('/customers/check-name', [CustomersController, 'checkName'])
+    router.get('/customers', [CustomersController, 'index'])
+    router.post('/customers', [CustomersController, 'store'])
+    router.get('/customers/:id', [CustomersController, 'show']).where('id', router.matchers.number())
+    router.put('/customers/:id', [CustomersController, 'update']).where('id', router.matchers.number())
+    router.delete('/customers/:id', [CustomersController, 'destroy']).where('id', router.matchers.number())
+    router.get('/customers/:id/balance', [CustomersController, 'getBalance']).where('id', router.matchers.number())
+    router.get('/customers/:id/payments', [CustomersController, 'getPayments']).where('id', router.matchers.number())
+    router.post('/customers/:id/payments', [CustomersController, 'recordPayment']).where('id', router.matchers.number())
+    router.get('/customer-requests', [CustomersController, 'getRequests'])
+    router.post('/customer-requests', [CustomersController, 'storeRequest'])
 
-  // Sales Ledger & Checkout
-  router.get('/sales', [PosCheckoutController, 'index'])
-  router.post('/sales', [PosCheckoutController, 'store'])
-  router.get('/sales/:id', [PosCheckoutController, 'show'])
+    // Reports for POS Dashboard
+    router.get('/reports/overview', [ReportsController, 'overview'])
+    router.get('/reports/summary', [ReportsController, 'summary'])
+    router.get('/reports/stock-valuation', [ReportsController, 'stockValuation'])
+    router.get('/reports/monthly', [ReportsController, 'monthly'])
+    router.get('/reports/categories', [ReportsController, 'categories'])
+    router.get('/reports/sales', [ReportsController, 'salesChart'])
 
-  router.post('/sales-holds', [PosHoldsController, 'index'])
-  router.post('/sales-holds/create', [PosHoldsController, 'store'])
-  router.delete('/sales-holds/:id', [PosHoldsController, 'destroy'])
+    // Purchases / Procurement
+    router.get('/purchases/next-number', [ProcurementController, 'nextNumber'])
+    router.get('/purchases', [ProcurementController, 'index'])
+    router.post('/purchases', [ProcurementController, 'store'])
+    router.get('/purchases/:id', [ProcurementController, 'show']).where('id', router.matchers.number())
+    router.put('/purchases/:id', [ProcurementController, 'update']).where('id', router.matchers.number())
+    router.put('/purchases/:id/approve', [ProcurementController, 'approve']).where('id', router.matchers.number())
+    router.post('/purchases/:id/approve', [ProcurementController, 'approve']).where('id', router.matchers.number())
 
-  router.get('/returns', [PosReturnsController, 'index'])
-  router.post('/returns', [PosReturnsController, 'store'])
+    // Staff Restock Feedbacks / Recommendations
+    router.get('/staff-feedbacks', [StaffFeedbackController, 'index'])
+    router.post('/staff-feedbacks', [StaffFeedbackController, 'store'])
+    router.patch('/staff-feedbacks/:id', [StaffFeedbackController, 'update']).where('id', router.matchers.number())
 
-  router.get('/sync/pull', [PosSyncController, 'pullUpdates'])
-  router.get('/sync/pull-updates', [PosSyncController, 'pullUpdates'])
-  router.post('/sync/push', [PosSyncController, 'pushBatch'])
-  router.post('/sync/push-batch', [PosSyncController, 'pushBatch'])
-}).prefix('/api').use(middleware.authJwt())
+    // Store Settings
+    router.get('/settings', [SettingsController, 'index'])
+    router.get('/settings/store', [SettingsController, 'getStore'])
+    router.get('/settings/:key', [SettingsController, 'showKey'])
+    router.get('/store-settings', [SettingsController, 'getStore'])
+    router.post('/settings', [SettingsController, 'update'])
+    router.post('/settings/store', [SettingsController, 'update'])
+    router.post('/settings/apply-margin', [SettingsController, 'applyMargin'])
 
-// Also register direct /pos license routes on root
+    // Sales Ledger & Checkout
+    router.get('/sales/next-number', [PosCheckoutController, 'nextNumber'])
+    router.get('/sales', [PosCheckoutController, 'index'])
+    router.post('/sales', [PosCheckoutController, 'store'])
+    router.get('/sales/:id', [PosCheckoutController, 'show']).where('id', router.matchers.number())
+    router.get('/sales/:saleId/returns', [PosReturnsController, 'forSale']).where('saleId', router.matchers.number())
+    router.get('/sales/:saleId/return-items', [PosReturnsController, 'returnItemsForSale']).where('saleId', router.matchers.number())
+
+    // Sales Holds
+    router.get('/sales-holds', [PosHoldsController, 'index'])
+    router.post('/sales-holds', [PosHoldsController, 'store'])
+    router.post('/sales-holds/create', [PosHoldsController, 'store'])
+    router.delete('/sales-holds/:id', [PosHoldsController, 'destroy']).where('id', router.matchers.number())
+
+    // Returns
+    router.get('/returns', [PosReturnsController, 'index'])
+    router.post('/returns', [PosReturnsController, 'store'])
+
+    // Delta Sync
+    router.get('/sync/pull', [PosSyncController, 'pullUpdates'])
+    router.get('/sync/pull-updates', [PosSyncController, 'pullUpdates'])
+    router.post('/sync/push', [PosSyncController, 'pushBatch'])
+    router.post('/sync/push-batch', [PosSyncController, 'pushBatch'])
+  })
+  .prefix('/api')
+  .use(middleware.authJwt())
+
+// Root sync & license endpoints (authenticated sync mutations)
+router.get('/sync/status', [PosSyncController, 'status'])
+router
+  .group(() => {
+    router.get('/sync/pull', [PosSyncController, 'pullUpdates'])
+    router.get('/sync/pull-updates', [PosSyncController, 'pullUpdates'])
+    router.post('/sync/push', [PosSyncController, 'pushBatch'])
+    router.post('/sync/push-batch', [PosSyncController, 'pushBatch'])
+  })
+  .use(middleware.authJwt())
+
 router.post('/pos/activate-license', [PosLicenseController, 'activateLicense'])
 router.post('/license/activate', [PosLicenseController, 'activateLicense'])
 router.get('/pos/pharmacy-info', [PosLicenseController, 'info'])
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -298,20 +369,22 @@ router.get('/pos/pharmacy-info', [PosLicenseController, 'info'])
 */
 router.get('*', async ({ request, response }) => {
   const url = request.url()
-  // If request looks like an API call but wasn't matched, return 404 JSON instead of HTML
   if (
     url.startsWith('/api') ||
     url.startsWith('/provider/api') ||
     url.startsWith('/admin/api') ||
     url.includes('/purchases') ||
     url.includes('/staff-feedbacks') ||
+    url.includes('/stock-adjustments') ||
     url.includes('/products') ||
     url.includes('/categories') ||
     url.includes('/suppliers') ||
     url.includes('/reports') ||
     url.includes('/settings') ||
     url.includes('/customers') ||
-    url.includes('/users')
+    url.includes('/users') ||
+    url.includes('/sales-holds') ||
+    url.includes('/returns')
   ) {
     return response.status(404).json({
       error: 'Not Found',

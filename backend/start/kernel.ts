@@ -13,6 +13,7 @@ server.use([
  * Router middleware stack (runs on routes matched by the router)
  */
 router.use([
+  () => import('#middleware/rate_limit_middleware'),
   () => import('@adonisjs/core/bodyparser_middleware'),
   () => import('@adonisjs/session/session_middleware'),
   () => import('@adonisjs/shield/shield_middleware'),

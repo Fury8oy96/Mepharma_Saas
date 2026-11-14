@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:barcode_widget/barcode_widget.dart';
 
 import '../../app/providers.dart';
 import '../../core/services/api_client.dart';
 import '../../core/services/product_csv_service.dart';
+import '../../core/utils/barcode_symbologies.dart';
 import '../../core/utils/money.dart';
 import '../../domain/models/app_category.dart';
 import '../../domain/models/app_product.dart';
@@ -27,12 +29,203 @@ class ProductsPage extends ConsumerStatefulWidget {
 
 class _ProductsPageState extends ConsumerState<ProductsPage> {
   final _searchController = TextEditingController();
+  final _tableHorizontalScrollController = ScrollController();
   bool _filterLowStockOnly = false;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tableHorizontalScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollTableRight() {
+    if (!_tableHorizontalScrollController.hasClients) return;
+    final isRtl = Localizations.localeOf(context).languageCode == 'ar';
+    final delta = isRtl ? -320.0 : 320.0;
+    _tableHorizontalScrollController.animateTo(
+      (_tableHorizontalScrollController.offset + delta).clamp(
+        0.0,
+        _tableHorizontalScrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scrollTableLeft() {
+    if (!_tableHorizontalScrollController.hasClients) return;
+    final isRtl = Localizations.localeOf(context).languageCode == 'ar';
+    final delta = isRtl ? 320.0 : -320.0;
+    _tableHorizontalScrollController.animateTo(
+      (_tableHorizontalScrollController.offset + delta).clamp(
+        0.0,
+        _tableHorizontalScrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _simulateBarcodePrint(AppProduct product) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final barcodeData = (product.barcode != null && product.barcode!.trim().isNotEmpty)
+        ? product.barcode!.trim()
+        : product.sku.trim();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.print_outlined, color: Theme.of(context).colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isArabic ? 'محاكاة طباعة ملصق الباركود' : 'Simulate Barcode Label Print',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      isArabic ? 'خاص بإدارة النظام فقط (Admin Tools)' : 'Admin System Diagnostic Tool',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              product.name,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            'ج.س ${product.sellingPrice}',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      BarcodeWidget(
+                        barcode: SmartBarcodeEngine.resolveRenderer(barcodeData),
+                        data: barcodeData,
+                        width: 260,
+                        height: 60,
+                        style: const TextStyle(fontSize: 11, color: Colors.black, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'SKU: ${product.sku}',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 10),
+                          ),
+                          Text(
+                            product.expiryDate != null
+                                ? 'EXP: ${product.expiryDate.toString().split(' ').first}'
+                                : 'EXP: -',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isArabic
+                      ? 'يمكنك محاكاة إرسال أمر طباعة ملصق الباركود لطابعة الملصقات الحرارية والتأكد من جاهزيته.'
+                      : 'Simulate sending barcode label print job to thermal sticker printer.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.print_outlined, color: Colors.greenAccent, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isArabic
+                                  ? 'تمت محاكاة إرسال ملصق باركود (${product.name}) لطابعة الملصقات بنجاح!'
+                                  : 'Simulated printing barcode label for ${product.name} successfully!',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF1E293B),
+                    ),
+                  );
+              },
+              icon: const Icon(Icons.print_outlined, size: 18),
+              label: Text(isArabic ? 'محاكاة طباعة الملصق' : 'Simulate Label Print'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _openForm({AppProduct? product}) async {
@@ -154,6 +347,197 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             ..showSnackBar(
               SnackBar(
                 content: Text(msg),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+        }
+      }
+    }
+  }
+
+  Future<void> _quickEditSellingPrice(AppProduct product) async {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
+    final currency = ref.read(storeSettingsProvider).valueOrNull?.currencySymbol ?? 'ج.س';
+    final controller = TextEditingController(
+      text: product.sellingPrice.toString(),
+    );
+
+    final newPriceStr = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.price_change_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isArabic ? 'تعديل سعر البيع المباشر' : 'Quick Price Edit',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      product.name,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isArabic ? 'سعر البيع الحالي:' : 'Current Selling Price:',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        formatMoney(product.sellingPrice, symbol: currency),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: isArabic ? 'سعر البيع الجديد' : 'New Selling Price',
+                    suffixText: currency,
+                    prefixIcon: const Icon(Icons.edit_note),
+                    border: const OutlineInputBorder(),
+                    helperText: isArabic
+                        ? 'أدخل السعر كرقم كامل (مثال: 10 أو 100 دون كسور)'
+                        : 'Enter whole integer price (e.g. 10 or 100)',
+                  ),
+                  onFieldSubmitted: (val) {
+                    if (val.trim().isNotEmpty) {
+                      Navigator.of(context).pop(val.trim());
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                final txt = controller.text.trim();
+                if (txt.isNotEmpty) {
+                  Navigator.of(context).pop(txt);
+                }
+              },
+              icon: const Icon(Icons.check, size: 18),
+              label: Text(isArabic ? 'تحديث وحفظ السعر' : 'Update & Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newPriceStr != null && newPriceStr.isNotEmpty && mounted) {
+      var clean = newPriceStr.trim().replaceAll(',', '').replaceAll(' ', '');
+      if (clean.contains('.')) {
+        clean = clean.split('.').first;
+      }
+      final parsed = int.tryParse(clean) ?? tryParseMoney(clean) ?? parseCents(clean);
+      if (parsed < 0) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(l10n.invalidNumber),
+              backgroundColor: Colors.red.shade800,
+            ),
+          );
+        return;
+      }
+      final newSellingPrice = parsed;
+
+      try {
+        await ref.read(productRepositoryProvider).update(
+          product.id,
+          name: product.name,
+          barcode: product.barcode,
+          categoryId: product.categoryId,
+          supplierId: product.supplierId,
+          costPrice: product.costPrice,
+          sellingPrice: newSellingPrice,
+          lowStockThreshold: product.lowStockThreshold,
+          expiryDate: product.expiryDate,
+          description: product.description,
+        );
+        await ref.read(productRepositoryProvider).refresh();
+        ref.invalidate(productListProvider);
+        ref.invalidate(posControllerProvider);
+        ref.invalidate(stockValuationProvider);
+        ref.invalidate(todaySalesProvider);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..clearSnackBars()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  isArabic
+                      ? 'تم تحديث سعر بيع "${product.name}" إلى ${formatMoney(newSellingPrice, symbol: currency)} بنجاح!'
+                      : 'Updated selling price of "${product.name}" to ${formatMoney(newSellingPrice, symbol: currency)}',
+                ),
+                backgroundColor: const Color(0xFF28C76F),
+              ),
+            );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..clearSnackBars()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(l10n.errorOccurred),
                 backgroundColor: Colors.red.shade800,
               ),
             );
@@ -309,7 +693,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final productsAsync = ref.watch(productListProvider);
     final categories = ref.watch(categoryListProvider).valueOrNull ?? const [];
     final suppliers = ref.watch(supplierListProvider).valueOrNull ?? const [];
-    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final currentUser = ref.watch(sessionProvider);
     final isStaff = currentUser?.isStaff ?? false;
     final isSuperAdmin = currentUser?.isSuperAdmin ?? false;
@@ -408,7 +792,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                 ],
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh',
+                  tooltip: l10n.refresh,
                   onPressed: () {
                     ref.read(productRepositoryProvider).refresh();
                   },
@@ -447,23 +831,108 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                             ),
                           ),
                         )
-                      : SingleChildScrollView(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: [
-                                DataColumn(label: Text(l10n.productName)),
-                                DataColumn(label: Text(l10n.sku)),
-                                DataColumn(label: Text(l10n.barcode)),
-                                DataColumn(label: Text(l10n.category)),
-                                DataColumn(label: Text(l10n.supplier)),
-                                DataColumn(label: Text(l10n.costPrice)),
-                                DataColumn(label: Text(l10n.sellingPrice)),
-                                DataColumn(label: Text(l10n.stock)),
-                                DataColumn(label: Text(l10n.expiryDate)),
-                                DataColumn(label: Text(l10n.actions)),
-                              ],
-                              rows: [
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Top Navigation & Action Bar for Horizontal Scroll
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.swap_horiz_rounded, size: 20, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    l10n.localeName.startsWith('ar')
+                                        ? 'شريط التنقل والتمرير الأفقي بين أعمدة الجدول'
+                                        : 'Table Horizontal Navigation Bar',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      l10n.localeName.startsWith('ar')
+                                          ? 'إجمالي: ${filtered.length} منتج'
+                                          : 'Total: ${filtered.length} items',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  FilledButton.tonalIcon(
+                                    onPressed: _scrollTableRight,
+                                    icon: const Icon(Icons.arrow_forward, size: 16),
+                                    label: Text(l10n.localeName.startsWith('ar') ? 'سحب يمين' : 'Scroll Right'),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilledButton.tonalIcon(
+                                    onPressed: _scrollTableLeft,
+                                    icon: const Icon(Icons.arrow_back, size: 16),
+                                    label: Text(l10n.localeName.startsWith('ar') ? 'سحب يسار' : 'Scroll Left'),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Expanded Table with Visible Scrollbar
+                            Expanded(
+                              child: Scrollbar(
+                                controller: _tableHorizontalScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                interactive: true,
+                                thickness: 9.0,
+                                radius: const Radius.circular(5),
+                                child: SingleChildScrollView(
+                                  controller: _tableHorizontalScrollController,
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.vertical,
+                                    physics: const BouncingScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minWidth: 1300),
+                                      child: DataTable(
+                                        columnSpacing: 26,
+                                        horizontalMargin: 16,
+                                        columns: [
+                                          DataColumn(label: Text(l10n.productName)),
+                                          DataColumn(label: Text(l10n.sku)),
+                                          DataColumn(label: Text(l10n.barcode)),
+                                          DataColumn(label: Text(l10n.category)),
+                                          DataColumn(label: Text(l10n.supplier)),
+                                          DataColumn(label: Text(l10n.costPrice)),
+                                          DataColumn(label: Text(l10n.sellingPrice)),
+                                          DataColumn(label: Text(l10n.stock)),
+                                          DataColumn(label: Text(l10n.expiryDate)),
+                                          DataColumn(label: Text(l10n.actions)),
+                                        ],
+                                        rows: [
                                 for (final p in filtered)
                                   DataRow(
                                     color: p.isLowStock
@@ -514,11 +983,50 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                         ),
                                       ),
                                       DataCell(
-                                        Text(
-                                          formatMoney(p.sellingPrice, symbol: currency),
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
+                                        Tooltip(
+                                          message: l10n.localeName.startsWith('ar')
+                                              ? 'انقر لتعديل سعر البيع مباشرة'
+                                              : 'Click to quick-edit selling price',
+                                          child: InkWell(
+                                            onTap: () => _quickEditSellingPrice(p),
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme.primary
+                                                    .withValues(alpha: 0.08),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: theme.colorScheme.primary
+                                                      .withValues(alpha: 0.25),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    formatMoney(
+                                                      p.sellingPrice,
+                                                      symbol: currency,
+                                                    ),
+                                                    style: TextStyle(
+                                                      color: theme.colorScheme.primary,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Icon(
+                                                    Icons.edit_outlined,
+                                                    size: 14,
+                                                    color: theme.colorScheme.primary
+                                                        .withValues(alpha: 0.8),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -564,6 +1072,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                                   ),
                                                 ),
                                               IconButton(
+                                                tooltip: l10n.localeName.startsWith('ar')
+                                                    ? 'محاكاة طباعة ملصق الباركود'
+                                                    : 'Simulate Barcode Label Print',
+                                                icon: const Icon(Icons.print_outlined),
+                                                onPressed: () => _simulateBarcodePrint(p),
+                                              ),
+                                              IconButton(
                                                 tooltip: l10n.edit,
                                                 icon: const Icon(Icons.edit_outlined),
                                                 onPressed: () => _openForm(product: p),
@@ -589,6 +1104,51 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                             ),
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                  // Bottom bar with instructions and arrows
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      border: Border(
+                        top: BorderSide(
+                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.touch_app_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.localeName.startsWith('ar')
+                              ? 'استخدم شريط التمرير أو أزرار الأسهم للتنقل بين كافة تفاصيل وأعمدة الجدول'
+                              : 'Use scrollbar or arrow buttons to navigate table columns smoothly',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton.filledTonal(
+                          onPressed: _scrollTableRight,
+                          icon: const Icon(Icons.arrow_forward_ios, size: 13),
+                          tooltip: l10n.localeName.startsWith('ar') ? 'سحب لليمين' : 'Scroll Right',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton.filledTonal(
+                          onPressed: _scrollTableLeft,
+                          icon: const Icon(Icons.arrow_back_ios_new, size: 13),
+                          tooltip: l10n.localeName.startsWith('ar') ? 'سحب لليسار' : 'Scroll Left',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
                 ),
               ),
             ),

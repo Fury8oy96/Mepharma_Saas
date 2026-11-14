@@ -37,6 +37,7 @@ class SaleReceipt {
     required this.paidAmount,
     required this.changeAmount,
     required this.paymentMethod,
+    this.transactionReference,
     this.customerName,
     this.customerId,
     required this.items,
@@ -53,8 +54,9 @@ class SaleReceipt {
   final int paidAmount;
   final int changeAmount;
 
-  /// Enum name: 'cash', 'card', 'mobileMoney' or 'credit'.
+  /// Enum name: 'cash', 'card', 'bankTransfer', 'credit' or 'mobileMoney'.
   final String paymentMethod;
+  final String? transactionReference;
   final String? customerName;
   final int? customerId;
   final List<SaleLineItem> items;

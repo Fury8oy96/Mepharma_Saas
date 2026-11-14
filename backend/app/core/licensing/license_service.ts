@@ -15,7 +15,14 @@ export interface LicensePayload {
 
 export class LicenseService {
   private static getSecret(): string {
-    return env.get('LICENSE_SECRET') || env.get('APP_KEY') || 'mepharma_default_secret_key'
+    const secret = env.get('LICENSE_SECRET') || env.get('APP_KEY')
+    if (!secret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('CRITICAL: LICENSE_SECRET or APP_KEY must be configured in production.')
+      }
+      return 'mepharma_dev_only_license_secret'
+    }
+    return secret
   }
 
   /**
@@ -32,7 +39,7 @@ export class LicenseService {
   }
 
   /**
-   * Verifies a license token and validates its signature and expiration.
+   * Verifies a license token using constant-time HMAC comparison and validates expiration.
    */
   static verifyLicenseToken(token: string): { valid: boolean; payload?: LicensePayload; error?: string } {
     if (!token || !token.startsWith('LIC-')) {
@@ -50,7 +57,9 @@ export class LicenseService {
       .update(base64Data)
       .digest('hex')
 
-    if (signature !== expectedSig) {
+    const sigBuf = Buffer.from(signature, 'utf8')
+    const expectedBuf = Buffer.from(expectedSig, 'utf8')
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
       return { valid: false, error: 'License cryptographic signature is invalid or tampered with.' }
     }
 
@@ -62,7 +71,7 @@ export class LicenseService {
       const gracePeriodMs = (payload.gracePeriodDays || 7) * 24 * 60 * 60 * 1000
       const now = Date.now()
 
-      if (now > expiry + gracePeriodMs) {
+      if (Number.isNaN(expiry) || now > expiry + gracePeriodMs) {
         return { valid: false, payload, error: 'License has expired and grace period ended.' }
       }
 

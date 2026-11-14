@@ -43,6 +43,7 @@ class PaymentDialog extends StatefulWidget {
 
 class _PaymentDialogState extends State<PaymentDialog> {
   final _receivedController = TextEditingController();
+  final _transactionRefController = TextEditingController();
   PaymentMethod _method = PaymentMethod.cash;
 
   @override
@@ -55,6 +56,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   @override
   void dispose() {
     _receivedController.dispose();
+    _transactionRefController.dispose();
     super.dispose();
   }
 
@@ -67,6 +69,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
     final l10n = AppLocalizations.of(context);
     final symbol = widget.currencySymbol;
     final isCash = _method == PaymentMethod.cash;
+    final isBankTransfer = _method == PaymentMethod.bankTransfer;
     final isCredit = _method == PaymentMethod.credit;
     final received = isCash ? _received : widget.totalCents;
     final change = received > widget.totalCents
@@ -80,7 +83,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ? widget.hasCustomer && !overLimit
         : isCash
             ? received >= widget.totalCents
-            : true;
+            : isBankTransfer
+                ? _transactionRefController.text.trim().isNotEmpty
+                : true;
 
     return AlertDialog(
       title: Text(l10n.payment),
@@ -152,14 +157,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     icon: const Icon(Icons.payments_outlined),
                   ),
                   ButtonSegment(
-                    value: PaymentMethod.card,
-                    label: Text(l10n.paymentCard),
-                    icon: const Icon(Icons.credit_card),
-                  ),
-                  ButtonSegment(
-                    value: PaymentMethod.mobileMoney,
-                    label: Text(l10n.paymentMobileMoney),
-                    icon: const Icon(Icons.phone_android),
+                    value: PaymentMethod.bankTransfer,
+                    label: Text(l10n.paymentBankTransfer),
+                    icon: const Icon(Icons.account_balance_outlined),
                   ),
                   if (widget.allowCredit)
                     ButtonSegment(
@@ -259,6 +259,20 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     ],
                   ),
                 ],
+              ] else if (isBankTransfer) ...[
+                TextField(
+                  controller: _transactionRefController,
+                  autofocus: true,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: '${l10n.transactionReference} *',
+                    hintText: l10n.transactionRefHint,
+                    prefixIcon: const Icon(Icons.receipt_long_outlined),
+                    errorText: _transactionRefController.text.trim().isEmpty
+                        ? l10n.transactionRefRequired
+                        : null,
+                  ),
+                ),
               ],
             ],
           ),
@@ -275,6 +289,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     PaymentInput(
                       method: _method,
                       receivedCents: received,
+                      transactionReference: isBankTransfer
+                          ? _transactionRefController.text.trim()
+                          : null,
                     ),
                   )
               : null,

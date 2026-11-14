@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../core/services/thermal_printer_service.dart';
+import '../../core/utils/barcode_symbologies.dart';
 import '../../core/utils/money.dart';
 import '../../data/db/enums.dart';
 import '../../domain/models/app_product.dart';
@@ -36,9 +38,6 @@ class _PosPageState extends ConsumerState<PosPage> {
   final _searchController = TextEditingController();
   final _discountController = TextEditingController();
 
-  final StringBuffer _globalBarcodeBuffer = StringBuffer();
-  DateTime? _lastGlobalKeyTime;
-
   final _searchBarKey = GlobalKey();
   final _layerLink = LayerLink();
   final Object _searchTapGroupId = Object();
@@ -53,12 +52,10 @@ class _PosPageState extends ConsumerState<PosPage> {
     _barcodeFocus = FocusNode(onKeyEvent: _handleSearchKey);
     _barcodeFocus.addListener(_onBarcodeFocusChanged);
     _barcodeController.addListener(_onBarcodeChanged);
-    HardwareKeyboard.instance.addHandler(_handleGlobalHardwareScan);
   }
 
   @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleGlobalHardwareScan);
     _removeOverlay();
     _barcodeFocus.removeListener(_onBarcodeFocusChanged);
     _barcodeFocus.dispose();
@@ -68,41 +65,6 @@ class _PosPageState extends ConsumerState<PosPage> {
     _discountController.dispose();
     _resultsScrollController.dispose();
     super.dispose();
-  }
-
-  bool _handleGlobalHardwareScan(KeyEvent event) {
-    if (event is! KeyDownEvent) return false;
-
-    final now = DateTime.now();
-    final lastTime = _lastGlobalKeyTime;
-    _lastGlobalKeyTime = now;
-
-    // USB barcode readers transmit bursts under 80ms per character.
-    // If more than 80ms has elapsed, clear buffer as this is manual typing or reset.
-    if (lastTime != null && now.difference(lastTime).inMilliseconds > 80) {
-      _globalBarcodeBuffer.clear();
-    }
-
-    if (event.logicalKey == LogicalKeyboardKey.enter ||
-        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-      final code = _globalBarcodeBuffer.toString().trim();
-      _globalBarcodeBuffer.clear();
-
-      if (code.length >= 3) {
-        if (!_barcodeFocus.hasFocus) {
-          _handleSearchSubmitted(code);
-          return true;
-        }
-      }
-      return false;
-    }
-
-    final char = event.character;
-    if (char != null && char.isNotEmpty && !char.contains(RegExp(r'[\r\n\t]'))) {
-      _globalBarcodeBuffer.write(char);
-    }
-
-    return false;
   }
 
   void _onBarcodeChanged() {
@@ -160,6 +122,9 @@ class _PosPageState extends ConsumerState<PosPage> {
         event.logicalKey == LogicalKeyboardKey.numpadEnter) {
       if (_highlightedIndex >= 0 && _highlightedIndex < _searchResults.length) {
         _selectProduct(_searchResults[_highlightedIndex]);
+        return KeyEventResult.handled;
+      } else if (_barcodeController.text.trim().isNotEmpty) {
+        _handleSearchSubmitted(_barcodeController.text.trim());
         return KeyEventResult.handled;
       }
     }
@@ -287,7 +252,7 @@ class _PosPageState extends ConsumerState<PosPage> {
         final renderBox = _searchBarKey.currentContext?.findRenderObject() as RenderBox?;
         final targetWidth = renderBox?.size.width ?? 520.0;
         final theme = Theme.of(context);
-        final currency = ref.read(currencySymbolProvider).valueOrNull ?? r'$';
+        final currency = ref.read(currencySymbolProvider).valueOrNull ?? 'ج.س';
         final l10n = AppLocalizations.of(context);
         final isArabic = l10n.localeName.startsWith('ar');
 
@@ -716,6 +681,219 @@ class _PosPageState extends ConsumerState<PosPage> {
     await _lookupAndAdd(query);
   }
 
+  Future<void> _openBarcodeSimulationDialog() async {
+    final products = ref.read(productListProvider).valueOrNull ?? const <AppProduct>[];
+    final available = products.where((p) => p.stockQuantity > 0 && !p.isExpired).toList();
+    final isArabic = AppLocalizations.of(context).localeName.startsWith('ar');
+
+    AppProduct sampleProduct;
+    if (available.isNotEmpty) {
+      sampleProduct = available[DateTime.now().microsecond % available.length];
+    } else if (products.isNotEmpty) {
+      sampleProduct = products.first;
+    } else {
+      final now = DateTime.now();
+      sampleProduct = AppProduct(
+        id: 0,
+        sku: 'PAN-PAR-500MG',
+        name: 'Panadol Extra 500mg',
+        costPrice: 80,
+        sellingPrice: 100,
+        stockQuantity: 50,
+        lowStockThreshold: 10,
+        barcode: '2004567891234',
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    final barcodeData = (sampleProduct.barcode != null && sampleProduct.barcode!.trim().isNotEmpty)
+        ? sampleProduct.barcode!.trim()
+        : sampleProduct.sku.trim();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.print_outlined, color: Theme.of(context).colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isArabic ? 'محاكاة طباعة ومسح باركود الدواء' : 'Medicine Barcode Print & Scan Simulation',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      isArabic ? 'خاص بإدارة النظام فقط (Admin Tools)' : 'Admin System Diagnostic Tool',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              sampleProduct.name,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            'ج.س ${sampleProduct.sellingPrice}',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      BarcodeWidget(
+                        barcode: SmartBarcodeEngine.resolveRenderer(barcodeData),
+                        data: barcodeData,
+                        width: 260,
+                        height: 60,
+                        style: const TextStyle(fontSize: 11, color: Colors.black, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'SKU: ${sampleProduct.sku}',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 10),
+                          ),
+                          Text(
+                            'EXP: 2028-12-31',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isArabic
+                      ? 'يمكنك محاكاة طباعة ملصق الباركود على عبوة الدواء افتراضياً، أو محاكاة مسحه وإرساله لشاشة البيع.'
+                      : 'Simulate printing this medicine barcode label, or simulate scanning it into POS.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.print_outlined, color: Colors.greenAccent, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isArabic
+                                  ? 'تمت محاكاة إرسال ملصق باركود (${sampleProduct.name}) لطابعة الملصقات بنجاح!'
+                                  : 'Simulated printing barcode label for ${sampleProduct.name} successfully!',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF1E293B),
+                    ),
+                  );
+              },
+              icon: const Icon(Icons.print_outlined, size: 18),
+              label: Text(isArabic ? 'محاكاة طباعة الملصق' : 'Simulate Label Print'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _barcodeController.text = barcodeData;
+                _handleSearchSubmitted(barcodeData);
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isArabic
+                                  ? 'تمت محاكاة المسح وإضافة (${sampleProduct.name}) إلى الفاتورة!'
+                                  : 'Simulated scan and added ${sampleProduct.name} to invoice!',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF1E293B),
+                    ),
+                  );
+              },
+              icon: const Icon(Icons.qr_code_scanner, size: 18),
+              label: Text(isArabic ? 'محاكاة مسح في الكاشير' : 'Simulate POS Scan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showMessage(String message) {
     if (!mounted) {
       return;
@@ -762,7 +940,7 @@ class _PosPageState extends ConsumerState<PosPage> {
       return;
     }
     final taxRate = ref.read(taxRateProvider).valueOrNull ?? 0;
-    final currency = ref.read(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.read(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     // Balance and credit limit for the selected customer (0 for walk-in).
     var outstanding = 0;
@@ -816,6 +994,7 @@ class _PosPageState extends ConsumerState<PosPage> {
             receivedCents: input.receivedCents,
             taxRatePercent: taxRate,
             userId: userId,
+            transactionReference: input.transactionReference,
           );
       if (mounted) {
         _showMessage(l10n.saleCompleted(receipt.invoiceNumber));
@@ -855,6 +1034,7 @@ class _PosPageState extends ConsumerState<PosPage> {
           .format(receipt.createdAt),
       cashierName: user?.username ?? '',
       paymentMethod: _paymentMethodLabel(receipt.paymentMethod, l10n),
+      transactionReference: receipt.transactionReference,
       lines: [
         for (final item in receipt.items)
           ReceiptLine(
@@ -1041,6 +1221,8 @@ class _PosPageState extends ConsumerState<PosPage> {
         return l10n.paymentCash;
       case 'card':
         return l10n.paymentCard;
+      case 'bankTransfer':
+        return l10n.paymentBankTransfer;
       case 'mobileMoney':
         return l10n.paymentMobileMoney;
       case 'credit':
@@ -1054,7 +1236,7 @@ class _PosPageState extends ConsumerState<PosPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final pos = ref.watch(posControllerProvider);
-    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final productsAsync = ref.watch(productListProvider);
     final products = productsAsync.valueOrNull ?? const <AppProduct>[];
 
@@ -1121,6 +1303,7 @@ class _PosPageState extends ConsumerState<PosPage> {
   }
 
   Widget _toolbar(AppLocalizations l10n, String currency) {
+    final isAdmin = ref.watch(sessionProvider)?.isAdmin ?? false;
     return Row(
       children: [
         Icon(
@@ -1161,7 +1344,24 @@ class _PosPageState extends ConsumerState<PosPage> {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        if (isAdmin) ...[
+          const SizedBox(width: 8),
+          FilledButton.tonalIcon(
+            onPressed: _openBarcodeSimulationDialog,
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+            label: Text(
+              l10n.localeName.startsWith('ar')
+                  ? 'محاكاة طباعة ومسح باركود'
+                  : 'Simulate Barcode',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+        const SizedBox(width: 10),
         OutlinedButton.icon(
           onPressed: _resumeHold,
           icon: const Icon(Icons.pause_circle_outline),
@@ -1242,6 +1442,7 @@ class _PosPageState extends ConsumerState<PosPage> {
                             product: filtered[index],
                             currency: currency,
                             stockLabel: l10n.stock,
+                            outOfStockLabel: l10n.stockOut,
                             onTap: () =>
                                 ref.read(posControllerProvider.notifier).addProduct(filtered[index]),
                           );
@@ -1493,12 +1694,14 @@ class _ProductTile extends StatelessWidget {
     required this.product,
     required this.currency,
     required this.stockLabel,
+    required this.outOfStockLabel,
     required this.onTap,
   });
 
   final AppProduct product;
   final String currency;
   final String stockLabel;
+  final String outOfStockLabel;
   final VoidCallback onTap;
 
   @override
@@ -1567,7 +1770,7 @@ class _ProductTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   FittedBox(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     fit: BoxFit.scaleDown,
                     child: Text(
                       formatMoney(product.sellingPrice, symbol: currency),
@@ -1598,7 +1801,7 @@ class _ProductTile extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            disabled ? 'Out of stock' : '$stockLabel: ${product.stockQuantity}',
+                            disabled ? outOfStockLabel : '$stockLabel: ${product.stockQuantity}',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: stockTextColor,
                               fontWeight: FontWeight.w600,
@@ -1704,7 +1907,7 @@ class _CartItemTile extends StatelessWidget {
                 width: 84,
                 child: Text(
                   formatMoney(item.totalPrice, symbol: currency),
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,

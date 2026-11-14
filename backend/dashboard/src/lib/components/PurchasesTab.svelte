@@ -1,8 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { apiRequest, addToast, subscribeToSSE } from '../api';
+  import { currencyStore } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
+
+  export let openCreateOnMount = false;
+  export let onConsumeAction: () => void = () => {};
 
   let purchases: any[] = [];
   let suppliers: any[] = [];
@@ -74,6 +78,7 @@
       item.product_name = existing.name;
       item.cost_price = existing.cost_price || 0;
     }
+    createForm.items = [...createForm.items];
   }
 
   async function handleCreatePurchase() {
@@ -150,8 +155,12 @@
     }
   }
 
-  onMount(() => {
-    loadData();
+  onMount(async () => {
+    await loadData();
+    if (openCreateOnMount) {
+      openCreateModal();
+      onConsumeAction();
+    }
     const unsub = subscribeToSSE((event) => {
       if (['purchase_created', 'purchase_approved', 'product_created', 'product_updated'].includes(event.event)) {
         loadData();
@@ -369,8 +378,8 @@
     }
   }
 
-  function formatCurrency(val: number) {
-    return Math.round(Number(val || 0)).toLocaleString('en-US') + ' SDG';
+  function formatCurrency(val: number, curr: string = $currencyStore) {
+    return Math.round(Number(val || 0)).toLocaleString('en-US') + ' ' + curr;
   }
 </script>
 
@@ -452,7 +461,7 @@
                     <span class="badge badge-pending">{$currentLocale === 'ar' ? 'مورد غير محدد' : 'Unassigned Supplier'}</span>
                   {/if}
                 </td>
-                <td><strong>{formatCurrency(p.total_amount)}</strong></td>
+                <td><strong>{formatCurrency(p.total_amount, $currencyStore)}</strong></td>
                 <td>
                   {#if p.status === 'approved'}
                     <span class="badge badge-approved">{$t('purch.status.approved')}</span>
@@ -508,17 +517,17 @@
               <tr>
                 <th>{$t('prod.th.product')}</th>
                 <th>{$t('prod.th.stock')}</th>
-                <th>Cost Price</th>
-                <th>Line Total</th>
+                <th>{$t('purch.th.costPrice')}</th>
+                <th>{$t('purch.th.lineTotal')}</th>
               </tr>
             </thead>
             <tbody>
               {#each viewingItems as item}
                 <tr>
-                  <td><strong>{item.product_name || (item.product ? item.product.name : 'Unknown')}</strong></td>
-                  <td>{item.quantity} units</td>
-                  <td>{formatCurrency(item.unit_cost)}</td>
-                  <td><strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1))}</strong></td>
+                  <td><strong>{item.product_name || (item.product ? item.product.name : $t('common.unknown'))}</strong></td>
+                  <td>{item.quantity} {$t('common.units')}</td>
+                  <td>{formatCurrency(item.unit_cost, $currencyStore)}</td>
+                  <td><strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1), $currencyStore)}</strong></td>
                 </tr>
               {/each}
             </tbody>
@@ -557,7 +566,7 @@
 
       <div class="approval-form">
         <div class="form-group">
-          <label for="approve-sup">Assigned Supplier:</label>
+          <label for="approve-sup">{$t('purch.modal.assignedSupplier')}:</label>
           <select id="approve-sup" class="form-select" bind:value={selectedSupplierId}>
             {#each suppliers as s}
               <option value={s.id}>{s.name}</option>
@@ -569,11 +578,11 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Product Name</th>
-                <th>Category</th>
-                <th>Cost</th>
-                <th>Margin %</th>
-                <th>Sell Price</th>
+                <th>{$t('prod.th.product')}</th>
+                <th>{$t('prod.th.category')}</th>
+                <th>{$t('purch.th.costPrice')}</th>
+                <th>{$t('purch.th.margin')}</th>
+                <th>{$t('purch.th.sellPrice')}</th>
               </tr>
             </thead>
             <tbody>
@@ -589,7 +598,7 @@
                   </td>
                   <td><input class="form-input table-input" type="number" bind:value={item.cost_price} on:input={() => handleCostOrMarginChange(item)} /></td>
                   <td><input class="form-input table-input" type="number" bind:value={item.margin_percent} on:input={() => handleCostOrMarginChange(item)} /></td>
-                  <td><strong class="price-highlight">{formatCurrency(item.selling_price)}</strong></td>
+                  <td><strong class="price-highlight">{formatCurrency(item.selling_price, $currencyStore)}</strong></td>
                 </tr>
               {/each}
             </tbody>
@@ -616,7 +625,7 @@
       <div class="modal-header">
         <div>
           <h3>{$t('purch.btn.newPO')}</h3>
-          <p class="sub-text">Directly intake inventory and update wholesale balance</p>
+          <p class="sub-text">{$t('purch.modal.createSub')}</p>
         </div>
         <button class="close-btn" on:click={() => showCreateModal = false}>&times;</button>
       </div>
@@ -624,28 +633,28 @@
       <form on:submit|preventDefault={handleCreatePurchase} class="modal-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="create-po-sup">Assigned Supplier:</label>
+            <label for="create-po-sup">{$t('purch.modal.assignedSupplier')}:</label>
             <select id="create-po-sup" class="form-select" bind:value={createForm.supplier_id}>
-              <option value="">-- Open Market / Unassigned --</option>
+              <option value="">-- {$t('purch.modal.openMarket')} --</option>
               {#each suppliers as s}
                 <option value={s.id}>{s.name}</option>
               {/each}
             </select>
           </div>
           <div class="form-group">
-            <label for="create-po-status">Initial Status:</label>
+            <label for="create-po-status">{$t('purch.modal.initialStatus')}:</label>
             <select id="create-po-status" class="form-select" bind:value={createForm.status}>
-              <option value="approved">Approved (Immediately Restock Inventory)</option>
-              <option value="pending">Pending Staging (Requires Verification)</option>
+              <option value="approved">{$t('purch.modal.statusApproved')}</option>
+              <option value="pending">{$t('purch.modal.statusPending')}</option>
             </select>
           </div>
         </div>
 
         <div class="items-table-section">
           <div class="section-sub-header">
-            <h4>Line Items ({createForm.items.length})</h4>
+            <h4>{$t('purch.modal.lineItems')} ({createForm.items.length})</h4>
             <button type="button" class="btn btn-secondary btn-sm" on:click={addCreateItemRow}>
-              {@html icons.plus} Add Item Row
+              {@html icons.plus} {$t('purch.modal.addItemRow')}
             </button>
           </div>
 
@@ -653,23 +662,35 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Product Selection / Custom Name</th>
-                  <th>Quantity</th>
-                  <th>Unit Cost (SDG)</th>
-                  <th>Total</th>
-                  <th>Action</th>
+                  <th>{$t('purch.modal.productSelectCustom')}</th>
+                  <th>{$t('purch.modal.quantity')}</th>
+                  <th>{$t('purch.modal.unitCost')} ({$currencyStore})</th>
+                  <th>{$t('common.total')}</th>
+                  <th>{$t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {#each createForm.items as item, index}
                   <tr>
                     <td>
-                      <input 
-                        type="text" 
-                        class="form-input table-input" 
-                        placeholder="Drug name or select below"
-                        bind:value={item.product_name}
-                      />
+                      <div class="product-input-wrapper">
+                        <select
+                          class="form-select table-select mb-1"
+                          value={item.product_id || ''}
+                          on:change={(e) => handleProductSelect(item, e.currentTarget.value)}
+                        >
+                          <option value="">{$currentLocale === 'ar' ? '-- اختر دواءً مسجلاً أو اكتب أدناه --' : '-- Catalog Drug (or custom below) --'}</option>
+                          {#each products as p}
+                            <option value={p.id}>{p.name}</option>
+                          {/each}
+                        </select>
+                        <input 
+                          type="text" 
+                          class="form-input table-input" 
+                          placeholder={$t('purch.modal.drugPlaceholder')}
+                          bind:value={item.product_name}
+                        />
+                      </div>
                     </td>
                     <td>
                       <input 
@@ -688,7 +709,7 @@
                       />
                     </td>
                     <td>
-                      <strong>{formatCurrency((item.quantity || 1) * (item.cost_price || 0))}</strong>
+                      <strong>{formatCurrency((item.quantity || 1) * (item.cost_price || 0), $currencyStore)}</strong>
                     </td>
                     <td>
                       <button 
@@ -761,9 +782,9 @@
             <thead>
               <tr>
                 <th style="width: 38%;">{$t('prod.th.product')}</th>
-                <th style="width: 18%;">{$t('prod.th.stock')} (Qty)</th>
-                <th style="width: 20%;">Cost Price (SDG)</th>
-                <th style="width: 16%;">Subtotal</th>
+                <th style="width: 18%;">{$t('purch.modal.quantity')}</th>
+                <th style="width: 20%;">{$t('purch.th.costPrice')} ({$currencyStore})</th>
+                <th style="width: 16%;">{$t('common.subtotal')}</th>
                 <th style="width: 8%; text-align: center;"></th>
               </tr>
             </thead>
@@ -810,7 +831,7 @@
                     />
                   </td>
                   <td>
-                    <strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1))}</strong>
+                    <strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1), $currencyStore)}</strong>
                   </td>
                   <td class="text-center">
                     <button 
@@ -831,7 +852,7 @@
         <div class="edit-footer-bar">
           <div class="grand-total-box">
             <span>{$currentLocale === 'ar' ? 'إجمالي الطلب المحدث:' : 'Updated Total Amount:'}</span>
-            <strong class="total-val">{formatCurrency(editingGrandTotal)}</strong>
+            <strong class="total-val">{formatCurrency(editingGrandTotal, $currencyStore)}</strong>
           </div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" on:click={() => showEditModal = false}>

@@ -105,6 +105,9 @@ class Sales extends Table {
 
   TextColumn get paymentMethod => text().nullable()();
 
+  /// Bank transfer or external transaction reference number (رقم العملية)
+  TextColumn get transactionReference => text().nullable()();
+
   IntColumn get customerId =>
       integer().references(Customers, #id, onDelete: KeyAction.setNull).nullable()();
 
@@ -189,6 +192,9 @@ class Purchases extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   TextColumn get invoiceNumber => text().unique()();
+
+  /// External transaction reference / receipt / bank reference (رقم العملية)
+  TextColumn get transactionReference => text().nullable()();
 
   IntColumn get supplierId => integer().references(Suppliers, #id)();
 

@@ -3,7 +3,7 @@
 ; ==============================================================================
 
 #define MyAppName "MePharma"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "2.0.1"
 #define MyAppPublisher "MePharma Systems"
 #define MyAppURL "https://github.com/Fury8oy96/Mepharma_Saas"
 #define MyAppExeName "mepharma.exe"
@@ -28,7 +28,7 @@ DisableProgramGroupPage=yes
 
 ; Output Configuration
 OutputDir=Output
-OutputBaseFilename=MePharma_Setup_v{#MyAppVersion}
+OutputBaseFilename=MePharma_Setup_2.01
 SetupIconFile={#AppIconPath}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
@@ -51,6 +51,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "startupicon"; Description: "Launch MePharma automatically on Windows startup"; GroupDescription: "Windows Integration"; Flags: unchecked
 
 [Files]
 ; Release bundle (all binaries, Flutter engine, assets, dynamic native libraries)
@@ -60,6 +61,9 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MePharma POS"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startupicon; Flags: uninsdeletevalue
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
@@ -477,10 +481,10 @@ begin
       '  "isLicenseValid": true,' + #13#10 +
       '  "licensePlan": "offline_standalone",' + #13#10 +
       '  "validityDaysRemaining": 365,' + #13#10 +
-      '  "pharmacyName": "Local Pharmacy (Offline)",' + #13#10 +
+      '  "pharmacyName": "MePharma Local",' + #13#10 +
       '  "pharmacyAddress": "Standalone SQLite Database",' + #13#10 +
-      '  "currency": "USD",' + #13#10 +
-      '  "currencySymbol": "$"' + #13#10 +
+      '  "currency": "SDG",' + #13#10 +
+      '  "currencySymbol": "ج.س"' + #13#10 +
       '}';
 
     ConfigPath := ExpandConstant('{app}\api_config.json');

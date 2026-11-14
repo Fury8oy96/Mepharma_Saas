@@ -74,6 +74,8 @@ class AppDatabase extends _$AppDatabase {
         if (from < 5) {
           await m.addColumn(purchases, purchases.status);
           await m.addColumn(purchases, purchases.notes);
+          await m.addColumn(sales, sales.transactionReference);
+          await m.addColumn(purchases, purchases.transactionReference);
         }
       },
     );

@@ -20,8 +20,15 @@ export default defineConfig({
     () => import('@adonisjs/static/static_provider')
   ],
   preloads: [
+    () => import('#start/tenant_db'),
     () => import('#start/routes'),
     () => import('#start/kernel')
+  ],
+  metaFiles: [
+    {
+      pattern: 'public/**',
+      reloadServer: false,
+    }
   ],
   tests: {
     suites: [

@@ -58,6 +58,7 @@ class ApiSaleRepository implements SaleRepository {
       paidAmount: json['paid_amount'] as int? ?? json['paidAmount'] as int? ?? 0,
       changeAmount: json['change_amount'] as int? ?? json['changeAmount'] as int? ?? 0,
       paymentMethod: json['payment_method'] as String? ?? json['paymentMethod'] as String?,
+      transactionReference: json['transaction_reference'] as String? ?? json['transactionReference'] as String?,
       customerId: json['customer_id'] as int? ?? json['customerId'] as int?,
       status: SaleStatus.values.firstWhere(
         (e) => e.name == (json['status'] as String? ?? '').toLowerCase(),
@@ -108,6 +109,7 @@ class ApiSaleRepository implements SaleRepository {
     required int userId,
     String? customerName,
     int? customerId,
+    String? transactionReference,
   }) async {
     final bodyItems = items.map((i) => {
       'product_id': i.productId,
@@ -127,6 +129,7 @@ class ApiSaleRepository implements SaleRepository {
       'paid_amount': paidAmount,
       'change_amount': changeAmount,
       'payment_method': paymentMethod,
+      'transaction_reference': transactionReference,
       'user_id': userId,
       'customer_name': customerName,
       'customer_id': customerId,
@@ -152,6 +155,7 @@ class ApiSaleRepository implements SaleRepository {
       paidAmount: sale.paidAmount,
       changeAmount: sale.changeAmount,
       paymentMethod: sale.paymentMethod ?? 'Cash',
+      transactionReference: sale.transactionReference,
       customerName: sale.customerName,
       customerId: sale.customerId,
       items: items,

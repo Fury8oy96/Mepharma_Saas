@@ -30,34 +30,44 @@ class ApiCustomerRepository implements CustomerRepository {
     return data.map((item) => _mapCustomerWithBalance(item as Map<String, dynamic>)).toList();
   }
 
+  int _asInt(dynamic v, [int fallback = 0]) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? double.tryParse(v)?.toInt() ?? fallback;
+    return fallback;
+  }
+
   Customer _mapCustomer(Map<String, dynamic> json) {
     return Customer(
-      id: json['id'] as int,
-      name: json['name'] as String,
+      id: _asInt(json['id']),
+      name: (json['name'] ?? '').toString(),
       phone: json['phone'] as String?,
       email: json['email'] as String?,
       address: json['address'] as String?,
       notes: json['notes'] as String?,
-      creditLimit: json['credit_limit'] as int? ?? json['creditLimit'] as int? ?? 0,
+      creditLimit: _asInt(json['credit_limit'] ?? json['creditLimit']),
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.now(),
     );
   }
 
   CustomerWithBalance _mapCustomerWithBalance(Map<String, dynamic> json) {
+    final customerMap = json['customer'] is Map<String, dynamic>
+        ? json['customer'] as Map<String, dynamic>
+        : json;
     return CustomerWithBalance(
-      customer: _mapCustomer(json['customer'] as Map<String, dynamic>),
-      outstanding: json['outstanding'] as int? ?? 0,
-      totalPaid: json['total_paid'] as int? ?? json['totalPaid'] as int? ?? 0,
-      totalCredit: json['total_credit'] as int? ?? json['totalCredit'] as int? ?? 0,
+      customer: _mapCustomer(customerMap),
+      outstanding: _asInt(json['outstanding']),
+      totalPaid: _asInt(json['total_paid'] ?? json['totalPaid']),
+      totalCredit: _asInt(json['total_credit'] ?? json['totalCredit']),
     );
   }
 
   CustomerPayment _mapCustomerPayment(Map<String, dynamic> json) {
     return CustomerPayment(
-      id: json['id'] as int,
-      customerId: json['customer_id'] as int? ?? json['customerId'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? json['userId'] as int?,
-      amount: json['amount'] as int? ?? 0,
+      id: _asInt(json['id']),
+      customerId: _asInt(json['customer_id'] ?? json['customerId']),
+      userId: json['user_id'] != null ? _asInt(json['user_id']) : (json['userId'] != null ? _asInt(json['userId']) : null),
+      amount: _asInt(json['amount']),
       note: json['note'] as String?,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? json['createdAt'] as String? ?? '') ?? DateTime.now(),
     );

@@ -195,7 +195,7 @@
               <th>{$t('usr.th.user')}</th>
               <th>{$t('usr.th.role')}</th>
               <th>{$t('usr.th.status')}</th>
-              <th>Branch</th>
+              <th>{$t('usr.th.branch')}</th>
               <th>{$t('prod.th.actions')}</th>
             </tr>
           </thead>
@@ -224,7 +224,7 @@
                     <span>{active ? $t('usr.status.active') : $t('usr.status.inactive')}</span>
                   </button>
                 </td>
-                <td>HQ (Central)</td>
+                <td>{$t('usr.branch.hq')}</td>
                 <td>
                   <div class="row-actions">
                     <button class="btn-icon" on:click={() => openEditModal(u)} title={$t('btn.edit')}>
@@ -261,18 +261,18 @@
           </div>
 
           <div class="form-group">
-            <label for="u-pass">{$t('app.password')} {isEditing ? '(Leave blank to keep existing password)' : '*'}</label>
+            <label for="u-pass">{$t('app.password')} {isEditing ? $t('usr.passHintEdit') : '*'}</label>
             <input id="u-pass" class="form-input" type="password" required={!isEditing} bind:value={userForm.password} placeholder="••••••••" />
           </div>
 
           <div class="form-group">
             <label for="u-role">{$t('usr.th.role')}</label>
             <select id="u-role" class="form-select" bind:value={userForm.role}>
-              <option value="pharmacy_admin">Pharmacy Administrator (Owner / Full Web & POS)</option>
-              <option value="branch_admin">Branch Administrator (POS Administrative Privileges Only)</option>
-              <option value="supervisor">Supervisor / Lead Pharmacist (Approvals)</option>
-              <option value="pharmacist">Staff Pharmacist (POS & Dispensing)</option>
-              <option value="cashier">Cashier (POS Checkout)</option>
+              <option value="pharmacy_admin">{$currentLocale === 'ar' ? 'مدير الصيدلية (صلاحيات الويب ونقطة البيع كاملة)' : 'Pharmacy Administrator (Owner / Full Web & POS)'}</option>
+              <option value="branch_admin">{$currentLocale === 'ar' ? 'مدير الفرع (صلاحيات إدارية لنقطة البيع)' : 'Branch Administrator (POS Administrative Privileges Only)'}</option>
+              <option value="supervisor">{$currentLocale === 'ar' ? 'مشرف / صيدلي أول (اعتماد العمليات)' : 'Supervisor / Lead Pharmacist (Approvals)'}</option>
+              <option value="pharmacist">{$currentLocale === 'ar' ? 'صيدلي (نقطة البيع والصرف)' : 'Staff Pharmacist (POS & Dispensing)'}</option>
+              <option value="cashier">{$currentLocale === 'ar' ? 'كاشير (محاسبة نقطة البيع)' : 'Cashier (POS Checkout)'}</option>
             </select>
           </div>
 

@@ -17,6 +17,7 @@ class AppSale {
     required this.paidAmount,
     required this.changeAmount,
     this.paymentMethod,
+    this.transactionReference,
     required this.status,
     required this.createdAt,
   });
@@ -46,8 +47,12 @@ class AppSale {
   /// Minor units (cents).
   final int changeAmount;
 
-  /// Enum name: 'cash', 'card' or 'mobileMoney'.
+  /// Enum name: 'cash', 'card', 'bankTransfer', 'credit' or 'mobileMoney'.
   final String? paymentMethod;
+
+  /// Bank transfer or transaction reference number (رقم العملية).
+  final String? transactionReference;
+
   final SaleStatus status;
   final DateTime createdAt;
 }

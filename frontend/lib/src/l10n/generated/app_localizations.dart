@@ -2551,6 +2551,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update Available'**
   String get updateAvailable;
+
+  /// No description provided for @paymentBankTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get paymentBankTransfer;
+
+  /// No description provided for @transactionReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction reference'**
+  String get transactionReference;
+
+  /// No description provided for @transactionRefHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter bank transfer reference number'**
+  String get transactionRefHint;
+
+  /// No description provided for @transactionRefRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction reference is required for bank transfer'**
+  String get transactionRefRequired;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @refreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing...'**
+  String get refreshing;
+
+  /// No description provided for @localOfflineTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Offline Transactions ({count})'**
+  String localOfflineTransactions(int count);
+
+  /// No description provided for @serverSyncedTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Synced Transactions ({count})'**
+  String serverSyncedTransactions(int count);
+
+  /// No description provided for @localSavedTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Sales Ledger ({count})'**
+  String localSavedTransactions(int count);
+
+  /// No description provided for @offlineQueueNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'These transactions were saved locally while offline and will sync automatically when online.'**
+  String get offlineQueueNotice;
+
+  /// No description provided for @syncingTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronizing local transactions with server...'**
+  String get syncingTransactions;
+
+  /// No description provided for @superAdminShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Super Admin'**
+  String get superAdminShort;
+
+  /// No description provided for @branchAdminShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Admin'**
+  String get branchAdminShort;
+
+  /// No description provided for @staffShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get staffShort;
+
+  /// No description provided for @localModeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Mode'**
+  String get localModeActive;
+
+  /// No description provided for @purchaseApprovedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase request {invoice} has been approved and inventory is updated.'**
+  String purchaseApprovedNotice(String invoice);
+
+  /// No description provided for @printedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed on {date}'**
+  String printedOn(String date);
+
+  /// No description provided for @stockOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get stockOut;
+
+  /// No description provided for @confirmApprovePurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to approve this purchase order and add its inventory to branch stock?'**
+  String get confirmApprovePurchase;
+
+  /// No description provided for @supervisorApprovePurchaseReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.'**
+  String get supervisorApprovePurchaseReason;
+
+  /// No description provided for @supervisorReturnReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing refunds and returns requires supervisor override.'**
+  String get supervisorReturnReason;
+
+  /// No description provided for @terminalQuotaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal Seat Limit Reached'**
+  String get terminalQuotaTitle;
+
+  /// No description provided for @terminalQuotaInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.'**
+  String get terminalQuotaInfo;
+
+  /// No description provided for @understood.
+  ///
+  /// In en, this message translates to:
+  /// **'Understood'**
+  String get understood;
+
+  /// No description provided for @supervisorAuthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Authorization'**
+  String get supervisorAuthTitle;
+
+  /// No description provided for @supervisorPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Password / PIN *'**
+  String get supervisorPasswordRequired;
+
+  /// No description provided for @requestOutOfStockDrug.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Out-of-Stock Drug'**
+  String get requestOutOfStockDrug;
+
+  /// No description provided for @diagnosticsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics copied to clipboard'**
+  String get diagnosticsCopied;
+
+  /// No description provided for @copyErrorDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Error Diagnostics'**
+  String get copyErrorDiagnostics;
 }
 
 class _AppLocalizationsDelegate

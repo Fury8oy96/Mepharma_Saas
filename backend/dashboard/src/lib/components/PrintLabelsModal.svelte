@@ -1,7 +1,8 @@
 <script lang="ts">
   import { generateBarcodeSVG, BARCODE_SYMBOLOGIES, type BarcodeSymbology } from '../utils/barcode';
   import { icons } from '../utils/icons';
-  import { t } from '../i18n/store';
+  import { currencyStore } from '../currency';
+  import { t, currentLocale } from '../i18n/store';
 
   export let show = false;
   export let selectedProducts: any[] = [];
@@ -297,15 +298,17 @@
     const doc = iframe.contentWindow?.document;
     if (!doc) return;
 
+    const styleOpen = '<st' + 'yle>';
+    const styleClose = '</st' + 'yle>';
     doc.open();
     doc.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Print Labels</title>
-        <style>
+        ${styleOpen}
           ${getPrintCSS(layout)}
-        </style>
+        ${styleClose}
       </head>
       <body>
         <div class="labels-print-container">
@@ -334,7 +337,7 @@
       <div class="modal-header">
         <div>
           <h3>{$t('print.title')}</h3>
-          <p class="sub-text">Customize layout formats, paper densities, and batch quantities</p>
+          <p class="sub-text">{$t('print.subtitle')}</p>
         </div>
         <button class="close-btn" on:click={onClose}>{@html icons.x}</button>
       </div>
@@ -484,7 +487,7 @@
                       on:input={(e) => setQuantity(p.id, parseInt(e.currentTarget.value))}
                     />
                     <button class="btn-qty" on:click={() => updateQuantity(p.id, 1)}>+</button>
-                    <button class="btn-remove-p" on:click={() => removeProduct(p.id)} title="Remove item">
+                    <button class="btn-remove-p" on:click={() => removeProduct(p.id)} title={$t('btn.delete')}>
                       {@html icons.x}
                     </button>
                   </div>
@@ -498,10 +501,10 @@
         <div class="preview-stage">
           <div class="preview-header">
             <div>
-              <span class="preview-title">{$t('print.preview')} ({labelItems.length} labels total)</span>
+              <span class="preview-title">{$t('print.preview')} ({labelItems.length} {$t('print.labelsTotal')})</span>
               {#if layout.startsWith('a4_')}
                 <span class="preview-sheet-calc">
-                  ({Math.ceil(labelItems.length / getPageCapacity(layout))} A4 sheet{Math.ceil(labelItems.length / getPageCapacity(layout)) > 1 ? 's' : ''})
+                  ({Math.ceil(labelItems.length / getPageCapacity(layout))} {$t('print.a4Sheet')})
                 </span>
               {/if}
             </div>
@@ -521,10 +524,10 @@
                   </div>
                   <div class="sticker-footer">
                     {#if showPrice}
-                      <span class="sticker-price">SDG {item.product.selling_price}</span>
+                      <span class="sticker-price">{$currencyStore} {item.product.selling_price}</span>
                     {/if}
                     {#if showExpiry && item.product.expiry_date}
-                      <span class="sticker-exp">EXP: {item.product.expiry_date.split('T')[0]}</span>
+                      <span class="sticker-exp">{$currentLocale === 'ar' ? 'انتهاء:' : 'EXP:'} {item.product.expiry_date.split('T')[0]}</span>
                     {/if}
                   </div>
                 </div>
@@ -565,6 +568,13 @@
     padding-right: 1.5rem;
     max-height: 580px;
     overflow-y: auto;
+  }
+
+  :global(html[dir="rtl"]) .config-sidebar {
+    border-right: none;
+    border-left: 1px solid var(--border-color);
+    padding-right: 0;
+    padding-left: 1.5rem;
   }
 
   .control-section {

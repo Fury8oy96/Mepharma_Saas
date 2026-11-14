@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { apiRequest, addToast } from '../api';
+  import { setCurrencySymbol } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
 
@@ -50,6 +51,7 @@
         showCashier: String(res.showCashier ?? res.show_cashier ?? 'true'),
         showBarcode: String(res.showBarcode ?? res.show_barcode ?? 'true'),
       };
+      setCurrencySymbol(form.currency);
     } catch (err: any) {
       addToast(err.message || $t('toast.error'), 'error');
     } finally {
@@ -66,6 +68,7 @@
         method: 'POST',
         body: JSON.stringify(form)
       });
+      setCurrencySymbol(form.currency);
       addToast($t('toast.success'), 'success');
     } catch (err: any) {
       addToast(err.message || $t('toast.error'), 'error');
@@ -75,7 +78,9 @@
   }
 
   async function handleApplyMarginToAll() {
-    const marginPct = (parseFloat(form.profitMargin) * 100).toFixed(0);
+    const marginDecimal = parseFloat(form.profitMargin) || 0.3;
+    const marginPercentVal = marginDecimal * 100;
+    const marginPct = marginPercentVal.toFixed(0);
     const confirmMsg = $currentLocale === 'ar' 
       ? `هل أنت متأكد من إعادة حساب أسعار البيع لجميع الأدوية في المخزون بنسبة ربح ${marginPct}%؟`
       : `Are you sure you want to recalculate the selling price for ALL active products using the ${marginPct}% margin markup?`;
@@ -88,7 +93,7 @@
     try {
       const res = await apiRequest('/settings/apply-margin', {
         method: 'POST',
-        body: JSON.stringify({ margin: parseFloat(form.profitMargin) || 0.3 })
+        body: JSON.stringify({ margin: marginDecimal, margin_percent: marginPercentVal })
       });
       addToast(res.message || $t('toast.success'), 'success');
     } catch (err: any) {
@@ -120,7 +125,7 @@
           </div>
           <div>
             <h3>{$t('set.pharmacyProfile')}</h3>
-            <p class="card-desc">Public-facing brand information on invoices</p>
+            <p class="card-desc">{$t('set.profileDesc')}</p>
           </div>
         </div>
       </div>
@@ -158,7 +163,7 @@
           </div>
           <div>
             <h3>{$t('set.pricingEngine')}</h3>
-            <p class="card-desc">Automatic markup algorithm and sales taxes</p>
+            <p class="card-desc">{$t('set.pricingDesc')}</p>
           </div>
         </div>
       </div>
@@ -169,7 +174,7 @@
           <div class="input-with-action">
             <input id="set-margin" class="form-input" type="number" step="0.05" min="0" max="2" bind:value={form.profitMargin} />
             <button class="btn btn-secondary btn-sm" disabled={isRecalculating} on:click={handleApplyMarginToAll}>
-              {isRecalculating ? $t('app.syncing') : 'Recalculate All Drugs'}
+              {isRecalculating ? $t('app.syncing') : $t('set.recalcAll')}
             </button>
           </div>
           <span class="field-hint">{$t('set.defaultMarginHint')}</span>
@@ -197,7 +202,7 @@
           </div>
           <div>
             <h3>{$t('set.receiptConfig')}</h3>
-            <p class="card-desc">Interactive thermal receipt styling, typography, paper format, and real-time live preview</p>
+            <p class="card-desc">{$t('set.receiptDesc')}</p>
           </div>
         </div>
         <div class="receipt-badges">
@@ -222,7 +227,7 @@
                 <div class="style-badge-dot"></div>
                 <div class="style-info">
                   <strong>{$t('set.styleModern')}</strong>
-                  <small>Dashed lines, clean spacing</small>
+                  <small>{$t('set.styleModernSub')}</small>
                 </div>
               </button>
 
@@ -234,7 +239,7 @@
                 <div class="style-badge-dot"></div>
                 <div class="style-info">
                   <strong>{$t('set.styleClassic')}</strong>
-                  <small>Double border ===, centered</small>
+                  <small>{$t('set.styleClassicSub')}</small>
                 </div>
               </button>
 
@@ -246,7 +251,7 @@
                 <div class="style-badge-dot"></div>
                 <div class="style-info">
                   <strong>{$t('set.styleMinimal')}</strong>
-                  <small>Subtle dividers, sleek</small>
+                  <small>{$t('set.styleMinimalSub')}</small>
                 </div>
               </button>
 
@@ -258,7 +263,7 @@
                 <div class="style-badge-dot"></div>
                 <div class="style-info">
                   <strong>{$t('set.styleCompact')}</strong>
-                  <small>Paper saver, dense lines</small>
+                  <small>{$t('set.styleCompactSub')}</small>
                 </div>
               </button>
             </div>
@@ -368,13 +373,13 @@
               <!-- Metadata -->
               <div class="slip-meta">
                 <div class="meta-row">
-                  <span>Invoice: <strong>#REC-2026-0042</strong></span>
+                  <span>{$t('set.slip.invoice')}: <strong>#REC-2026-0042</strong></span>
                   <span>11/04/2026 14:30</span>
                 </div>
                 {#if form.showCashier === 'true'}
                   <div class="meta-row">
-                    <span>Cashier: Sarah A.</span>
-                    <span class="seat-badge">Counter #1 (Seat 1)</span>
+                    <span>{$t('set.slip.cashier')}: Sarah A.</span>
+                    <span class="seat-badge">{$currentLocale === 'ar' ? 'نقطة #1' : 'Counter #1 (Seat 1)'}</span>
                   </div>
                 {/if}
               </div>
@@ -386,10 +391,10 @@
               <table class="slip-table">
                 <thead>
                   <tr>
-                    <th class="th-item">ITEM</th>
-                    <th class="th-qty">QTY</th>
-                    <th class="th-price">PRICE</th>
-                    <th class="th-total">TOTAL</th>
+                    <th class="th-item">{$t('set.slip.item')}</th>
+                    <th class="th-qty">{$t('set.slip.qty')}</th>
+                    <th class="th-price">{$t('set.slip.price')}</th>
+                    <th class="th-total">{$t('set.slip.total')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -420,23 +425,23 @@
               <!-- Financial Totals -->
               <div class="slip-totals">
                 <div class="tot-row">
-                  <span>Subtotal</span>
+                  <span>{$t('set.slip.subtotal')}</span>
                   <span>5,100 {form.currency}</span>
                 </div>
                 <div class="tot-row">
-                  <span>VAT ({form.taxRate}%)</span>
+                  <span>{$t('set.slip.vat')} ({form.taxRate}%)</span>
                   <span>{(5100 * (parseFloat(form.taxRate) || 0) / 100).toFixed(0)} {form.currency}</span>
                 </div>
                 <div class="tot-row grand-total">
-                  <span>TOTAL DUE</span>
+                  <span>{$t('set.slip.totalDue')}</span>
                   <span>{(5100 * (1 + (parseFloat(form.taxRate) || 0) / 100)).toFixed(0)} {form.currency}</span>
                 </div>
                 <div class="tot-row payment-info">
-                  <span>Cash Paid</span>
+                  <span>{$t('set.slip.cashPaid')}</span>
                   <span>6,000 {form.currency}</span>
                 </div>
                 <div class="tot-row payment-info">
-                  <span>Change</span>
+                  <span>{$t('set.slip.change')}</span>
                   <span>{(6000 - 5100 * (1 + (parseFloat(form.taxRate) || 0) / 100)).toFixed(0)} {form.currency}</span>
                 </div>
               </div>

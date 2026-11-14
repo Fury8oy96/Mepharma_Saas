@@ -52,6 +52,14 @@ export default class TerminalSeatMiddleware {
         lastSeenAt: DateTime.now(),
       })
     } else {
+      if (!terminal.isActive) {
+        return ctx.response.status(403).json({
+          error: 'Terminal Deactivated',
+          code: 'TERMINAL_DEACTIVATED',
+          message:
+            'This counter terminal has been deactivated or unlinked by your administrator. Please contact support to re-authorize.',
+        })
+      }
       terminal.lastSeenAt = DateTime.now()
       await terminal.save()
     }

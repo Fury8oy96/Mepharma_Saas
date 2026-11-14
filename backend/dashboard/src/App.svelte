@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { 
     tokenStore, 
     userStore, 
@@ -11,6 +11,7 @@
     checkAndRotateSession,
     getDomainTenant
   } from './lib/api';
+  import { refreshCurrencyFromStoreSettings } from './lib/currency';
   import { icons } from './lib/utils/icons';
   import { t, currentLocale, setLocale, updateDocumentDirection } from './lib/i18n/store';
   import { currentTheme, toggleTheme, applyTheme } from './lib/theme/store';
@@ -35,6 +36,23 @@
   const isPharmacyPortal = domainTenant !== null;
 
   let currentTab = isPharmacyPortal ? 'overview' : 'pharmacies';
+  let pendingRouteAction: string | null = null;
+
+  function syncFromHash() {
+    if (typeof window === 'undefined') return;
+    const raw = window.location.hash.replace(/^#\/?/, '');
+    if (!raw) return;
+    const [tabPart, actionPart] = raw.split('/');
+    const validTenantTabs = ['overview', 'products', 'purchases', 'sales', 'categories', 'suppliers', 'customers', 'reports', 'users', 'settings'];
+    const validProviderTabs = ['pharmacies', 'telemetry', 'audit_logs', 'backups'];
+    if (isPharmacyPortal && validTenantTabs.includes(tabPart)) {
+      currentTab = tabPart;
+      pendingRouteAction = actionPart || null;
+    } else if (!isPharmacyPortal && validProviderTabs.includes(tabPart)) {
+      currentTab = tabPart;
+      pendingRouteAction = actionPart || null;
+    }
+  }
 
   // Login Form State
   let loginUsername = isPharmacyPortal ? 'admin' : 'superadmin';
@@ -47,6 +65,8 @@
   onMount(async () => {
     applyTheme($currentTheme);
     updateDocumentDirection($currentLocale);
+    window.addEventListener('hashchange', syncFromHash);
+    syncFromHash();
 
     // If on a pharmacy tenant domain, fetch branch details from /admin/api/info
     if (isPharmacyPortal && domainTenant) {
@@ -56,7 +76,9 @@
         pharmacyInfo = info;
         document.title = `${info.name || domainTenant} - MePharma Pharmacy Admin`;
       } catch (err: any) {
-        pharmacyLoadError = err.message || `Pharmacy branch '${domainTenant}' was not found in the platform registry.`;
+        pharmacyLoadError = err.message || ($currentLocale === 'ar'
+          ? `فرع الصيدلية '${domainTenant}' غير مسجل في سجل المنصة.`
+          : `Pharmacy branch '${domainTenant}' was not found in the platform registry.`);
       }
     } else {
       document.title = 'MePharma - Provider Platform Control Plane';
@@ -75,7 +97,17 @@
         clearSession();
       } else {
         currentTab = isSuper ? 'pharmacies' : 'overview';
+        syncFromHash();
+        if (isPharmacyPortal && !isSuper) {
+          refreshCurrencyFromStoreSettings();
+        }
       }
+    }
+  });
+
+  onDestroy(() => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('hashchange', syncFromHash);
     }
   });
 
@@ -132,7 +164,7 @@
       const it = sec?.items?.find(i => i.id === currentTab);
       if (it) return { title: it.name, section: sec.title };
     }
-    return { title: 'Overview', section: 'Operations & Inventory' };
+    return { title: $t('nav.overview', 'Overview'), section: $t('nav.sec.operations', 'Operations & Inventory') };
   })();
 
   async function handleLogin() {
@@ -158,6 +190,7 @@
         }
         startSession(res.token, res.user);
         currentTab = 'overview';
+        refreshCurrencyFromStoreSettings();
       } else {
         // Exclusively Provider Platform Superadmin login endpoint
         res = await apiRequest('/provider/api/auth/login', {
@@ -195,7 +228,7 @@
     <div class="toast toast-{alert.type} animate-fade-in">
       <span class="toast-icon">
         {#if alert.type === 'success'}{@html icons.check}
-        {:else if alert.type === 'error'}{@html icons.alertTriangle}
+        {:else if alert.type === 'error' || alert.type === 'warning'}{@html icons.alertTriangle}
         {:else}{@html icons.sparkle}{/if}
       </span>
       <span class="toast-text">{alert.message}</span>
@@ -227,9 +260,9 @@
             <h2>{$t('app.name')}</h2>
             <span class="brand-tag">
               {#if isPharmacyPortal}
-                Branch: {domainTenant?.toUpperCase()}
+                {$currentLocale === 'ar' ? `الفرع: ${domainTenant?.toUpperCase()}` : `Branch: ${domainTenant?.toUpperCase()}`}
               {:else}
-                Provider HQ Control Plane
+                {$currentLocale === 'ar' ? 'لوحة تحكم مزود المنصة' : 'Provider HQ Control Plane'}
               {/if}
             </span>
           </div>
@@ -241,7 +274,11 @@
             <span>{pharmacyLoadError}</span>
           </div>
           <div class="portal-error-hint">
-            <p>Please verify that the subdomain matches a registered pharmacy instance, or contact your platform administrator.</p>
+            <p>
+              {$currentLocale === 'ar'
+                ? 'يرجى التحقق من تطابق النطاق الفرعي مع صيدلية مسجلة، أو التواصل مع مدير المنصة.'
+                : 'Please verify that the subdomain matches a registered pharmacy instance, or contact your platform administrator.'}
+            </p>
           </div>
         {:else}
           <div class="login-heading">
@@ -271,7 +308,9 @@
           <form on:submit|preventDefault={handleLogin} class="login-form">
             <div class="form-group">
               <label for="login-username">
-                {isPharmacyPortal ? 'Pharmacy Admin Username' : 'System Admin Username'}
+                {isPharmacyPortal
+                  ? ($currentLocale === 'ar' ? 'اسم مستخدم مدير الصيدلية' : 'Pharmacy Admin Username')
+                  : ($currentLocale === 'ar' ? 'اسم مستخدم مدير المنصة' : 'System Admin Username')}
               </label>
               <input 
                 id="login-username"
@@ -306,9 +345,9 @@
 
           <div class="login-footer-hint">
             {#if isPharmacyPortal}
-              <span>Branch Administrator: <code>admin</code> / <code>admin123</code></span>
+              <span>{$currentLocale === 'ar' ? 'مدير الفرع:' : 'Branch Administrator:'} <code>admin</code> / <code>admin123</code></span>
             {:else}
-              <span>Platform Administrator: <code>superadmin</code> / <code>superadmin123</code></span>
+              <span>{$currentLocale === 'ar' ? 'مدير المنصة:' : 'Platform Administrator:'} <code>superadmin</code> / <code>superadmin123</code></span>
             {/if}
           </div>
         {/if}
@@ -339,7 +378,7 @@
                 <li>
                   <button 
                     class="nav-link {currentTab === item.id ? 'active' : ''}"
-                    on:click={() => currentTab = item.id}
+                    on:click={() => { currentTab = item.id; pendingRouteAction = null; if (window.location.hash) history.replaceState(null, '', window.location.pathname); }}
                   >
                     <span class="nav-icon">{@html item.icon}</span>
                     <span class="nav-title">{item.name}</span>
@@ -383,7 +422,7 @@
           {#if isPharmacyPortal}
             <div class="branch-indicator-pill">
               <span class="pulse-indicator-emerald"></span>
-              <span>{pharmacyInfo?.name || `Branch: ${domainTenant}`}</span>
+              <span>{pharmacyInfo?.name || ($currentLocale === 'ar' ? `الفرع: ${domainTenant}` : `Branch: ${domainTenant}`)}</span>
             </div>
           {/if}
         </div>
@@ -417,9 +456,9 @@
         {#if currentTab === 'overview'}
           <OverviewTab />
         {:else if currentTab === 'products'}
-          <ProductsTab />
+          <ProductsTab openCreateOnMount={pendingRouteAction === 'new'} onConsumeAction={() => pendingRouteAction = null} />
         {:else if currentTab === 'purchases'}
-          <PurchasesTab />
+          <PurchasesTab openCreateOnMount={pendingRouteAction === 'new'} onConsumeAction={() => pendingRouteAction = null} />
         {:else if currentTab === 'sales'}
           <SalesTab />
         {:else if currentTab === 'categories'}
@@ -526,6 +565,12 @@
   }
   .toast-info .toast-icon {
     color: var(--color-primary);
+  }
+  .toast-warning {
+    border-color: var(--color-warning);
+  }
+  .toast-warning .toast-icon {
+    color: var(--color-warning);
   }
 
   /* Login Form */

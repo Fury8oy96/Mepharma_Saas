@@ -32,6 +32,7 @@ abstract interface class PurchaseRepository {
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
     bool autoApprove = true,
+    String? transactionReference,
   });
 
   /// Approves a pending purchase order and ingests stock.

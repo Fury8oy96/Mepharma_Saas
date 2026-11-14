@@ -133,7 +133,7 @@ export default class PosLicenseController {
 
     let settingsMap: Record<string, string> = {}
     try {
-      const settingsRows = await db.rawQuery(`SELECT key, value FROM "${schemaName}".settings;`)
+      const settingsRows = await db.rawQuery(`SELECT key, value FROM ${schemaName}.settings;`)
       for (const row of settingsRows.rows || []) {
         settingsMap[row.key] = row.value
       }
@@ -175,7 +175,7 @@ export default class PosLicenseController {
         currency: settingsMap['currency'] || 'SDG',
         currencySymbol: settingsMap['currency_symbol'] || settingsMap['currency'] || 'SDG',
         taxRate: Number(settingsMap['tax_rate'] || settingsMap['taxRate']) || 0,
-        profitMargin: settingsMap['profit_margin'] || settingsMap['profitMargin'] || '0.3',
+        profitMargin: settingsMap['profit_margin'] || settingsMap['profitMargin'] || '0',
         lowStockThreshold: settingsMap['low_stock_threshold'] || settingsMap['lowStockThreshold'] || '10',
         receiptFooter: settingsMap['receipt_footer'] || settingsMap['receiptFooter'] || 'Thank you for choosing MePharma!',
         receiptStyle: settingsMap['receipt_style'] || 'modern',

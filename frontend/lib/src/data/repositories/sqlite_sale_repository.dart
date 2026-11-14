@@ -44,6 +44,7 @@ class SqliteSaleRepository implements SaleRepository {
     required int userId,
     String? customerName,
     int? customerId,
+    String? transactionReference,
   }) {
     return _db.transaction(() async {
       final invoiceNumber = await generateInvoiceNumber();
@@ -63,6 +64,7 @@ class SqliteSaleRepository implements SaleRepository {
               paidAmount: Value(paidAmount),
               changeAmount: Value(changeAmount),
               paymentMethod: Value(paymentMethod),
+              transactionReference: Value(transactionReference),
               status: SaleStatus.completed,
               createdAt: Value(now),
             ),
@@ -126,6 +128,7 @@ class SqliteSaleRepository implements SaleRepository {
         paidAmount: paidAmount,
         changeAmount: changeAmount,
         paymentMethod: paymentMethod,
+        transactionReference: transactionReference,
         customerName: customerName,
         customerId: customerId,
         items: items,
@@ -203,6 +206,7 @@ class SqliteSaleRepository implements SaleRepository {
       paidAmount: row.paidAmount,
       changeAmount: row.changeAmount,
       paymentMethod: row.paymentMethod,
+      transactionReference: row.transactionReference,
       status: row.status,
       createdAt: row.createdAt,
     );
@@ -241,4 +245,69 @@ class SqliteSaleRepository implements SaleRepository {
 
   @override
   Future<void> refresh() async {}
+
+  /// Idempotently mirrors an already-committed server receipt into local SQLite
+  /// without generating a second invoice number or failing on missing local stock.
+  Future<void> mirrorServerSale(SaleReceipt receipt, {required int userId}) async {
+    await _db.transaction(() async {
+      final existing = await (_db.select(_db.sales)
+            ..where((s) => s.invoiceNumber.equals(receipt.invoiceNumber)))
+          .getSingleOrNull();
+      if (existing != null) {
+        return;
+      }
+
+      final saleId = await _db.into(_db.sales).insert(
+            SalesCompanion.insert(
+              invoiceNumber: receipt.invoiceNumber,
+              userId: userId,
+              customerName: Value(receipt.customerName),
+              customerId: Value(receipt.customerId),
+              subtotal: Value(receipt.subtotal),
+              discount: Value(receipt.discount),
+              discountType: Value(receipt.discountType),
+              taxAmount: Value(receipt.taxAmount),
+              totalAmount: receipt.totalAmount,
+              paidAmount: Value(receipt.paidAmount),
+              changeAmount: Value(receipt.changeAmount),
+              paymentMethod: Value(receipt.paymentMethod),
+              transactionReference: Value(receipt.transactionReference),
+              status: SaleStatus.completed,
+              createdAt: Value(receipt.createdAt),
+            ),
+          );
+
+      for (final item in receipt.items) {
+        await _db.into(_db.saleItems).insert(
+              SaleItemsCompanion.insert(
+                saleId: saleId,
+                productId: Value(item.productId),
+                productName: item.productName,
+                barcode: Value(item.barcode),
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                discount: const Value(0),
+                totalPrice: item.totalPrice,
+              ),
+            );
+
+        final product = await (_db.select(_db.products)
+              ..where((p) => p.id.equals(item.productId)))
+            .getSingleOrNull();
+        if (product != null) {
+          final nextStock = (product.stockQuantity - item.quantity) < 0
+              ? 0
+              : (product.stockQuantity - item.quantity);
+          await (_db.update(_db.products)
+                ..where((p) => p.id.equals(item.productId)))
+              .write(
+            ProductsCompanion(
+              stockQuantity: Value(nextStock),
+              updatedAt: Value(receipt.createdAt),
+            ),
+          );
+        }
+      }
+    });
+  }
 }

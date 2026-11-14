@@ -2531,6 +2531,17 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _transactionReferenceMeta =
+      const VerificationMeta('transactionReference');
+  @override
+  late final GeneratedColumn<String> transactionReference =
+      GeneratedColumn<String>(
+        'transaction_reference',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _customerIdMeta = const VerificationMeta(
     'customerId',
   );
@@ -2591,6 +2602,7 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     paidAmount,
     changeAmount,
     paymentMethod,
+    transactionReference,
     customerId,
     status,
     branchId,
@@ -2692,6 +2704,15 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         ),
       );
     }
+    if (data.containsKey('transaction_reference')) {
+      context.handle(
+        _transactionReferenceMeta,
+        transactionReference.isAcceptableOrUnknown(
+          data['transaction_reference']!,
+          _transactionReferenceMeta,
+        ),
+      );
+    }
     if (data.containsKey('customer_id')) {
       context.handle(
         _customerIdMeta,
@@ -2769,6 +2790,10 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}payment_method'],
       ),
+      transactionReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transaction_reference'],
+      ),
       customerId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}customer_id'],
@@ -2832,6 +2857,9 @@ class Sale extends DataClass implements Insertable<Sale> {
   /// Minor units (cents).
   final int changeAmount;
   final String? paymentMethod;
+
+  /// Bank transfer or external transaction reference number (رقم العملية)
+  final String? transactionReference;
   final int? customerId;
   final SaleStatus status;
 
@@ -2851,6 +2879,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.paidAmount,
     required this.changeAmount,
     this.paymentMethod,
+    this.transactionReference,
     this.customerId,
     required this.status,
     this.branchId,
@@ -2878,6 +2907,9 @@ class Sale extends DataClass implements Insertable<Sale> {
     map['change_amount'] = Variable<int>(changeAmount);
     if (!nullToAbsent || paymentMethod != null) {
       map['payment_method'] = Variable<String>(paymentMethod);
+    }
+    if (!nullToAbsent || transactionReference != null) {
+      map['transaction_reference'] = Variable<String>(transactionReference);
     }
     if (!nullToAbsent || customerId != null) {
       map['customer_id'] = Variable<int>(customerId);
@@ -2914,6 +2946,9 @@ class Sale extends DataClass implements Insertable<Sale> {
       paymentMethod: paymentMethod == null && nullToAbsent
           ? const Value.absent()
           : Value(paymentMethod),
+      transactionReference: transactionReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionReference),
       customerId: customerId == null && nullToAbsent
           ? const Value.absent()
           : Value(customerId),
@@ -2945,6 +2980,9 @@ class Sale extends DataClass implements Insertable<Sale> {
       paidAmount: serializer.fromJson<int>(json['paidAmount']),
       changeAmount: serializer.fromJson<int>(json['changeAmount']),
       paymentMethod: serializer.fromJson<String?>(json['paymentMethod']),
+      transactionReference: serializer.fromJson<String?>(
+        json['transactionReference'],
+      ),
       customerId: serializer.fromJson<int?>(json['customerId']),
       status: $SalesTable.$converterstatus.fromJson(
         serializer.fromJson<String>(json['status']),
@@ -2971,6 +3009,7 @@ class Sale extends DataClass implements Insertable<Sale> {
       'paidAmount': serializer.toJson<int>(paidAmount),
       'changeAmount': serializer.toJson<int>(changeAmount),
       'paymentMethod': serializer.toJson<String?>(paymentMethod),
+      'transactionReference': serializer.toJson<String?>(transactionReference),
       'customerId': serializer.toJson<int?>(customerId),
       'status': serializer.toJson<String>(
         $SalesTable.$converterstatus.toJson(status),
@@ -2993,6 +3032,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     int? paidAmount,
     int? changeAmount,
     Value<String?> paymentMethod = const Value.absent(),
+    Value<String?> transactionReference = const Value.absent(),
     Value<int?> customerId = const Value.absent(),
     SaleStatus? status,
     Value<int?> branchId = const Value.absent(),
@@ -3012,6 +3052,9 @@ class Sale extends DataClass implements Insertable<Sale> {
     paymentMethod: paymentMethod.present
         ? paymentMethod.value
         : this.paymentMethod,
+    transactionReference: transactionReference.present
+        ? transactionReference.value
+        : this.transactionReference,
     customerId: customerId.present ? customerId.value : this.customerId,
     status: status ?? this.status,
     branchId: branchId.present ? branchId.value : this.branchId,
@@ -3045,6 +3088,9 @@ class Sale extends DataClass implements Insertable<Sale> {
       paymentMethod: data.paymentMethod.present
           ? data.paymentMethod.value
           : this.paymentMethod,
+      transactionReference: data.transactionReference.present
+          ? data.transactionReference.value
+          : this.transactionReference,
       customerId: data.customerId.present
           ? data.customerId.value
           : this.customerId,
@@ -3069,6 +3115,7 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('paidAmount: $paidAmount, ')
           ..write('changeAmount: $changeAmount, ')
           ..write('paymentMethod: $paymentMethod, ')
+          ..write('transactionReference: $transactionReference, ')
           ..write('customerId: $customerId, ')
           ..write('status: $status, ')
           ..write('branchId: $branchId, ')
@@ -3091,6 +3138,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     paidAmount,
     changeAmount,
     paymentMethod,
+    transactionReference,
     customerId,
     status,
     branchId,
@@ -3112,6 +3160,7 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.paidAmount == this.paidAmount &&
           other.changeAmount == this.changeAmount &&
           other.paymentMethod == this.paymentMethod &&
+          other.transactionReference == this.transactionReference &&
           other.customerId == this.customerId &&
           other.status == this.status &&
           other.branchId == this.branchId &&
@@ -3131,6 +3180,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<int> paidAmount;
   final Value<int> changeAmount;
   final Value<String?> paymentMethod;
+  final Value<String?> transactionReference;
   final Value<int?> customerId;
   final Value<SaleStatus> status;
   final Value<int?> branchId;
@@ -3148,6 +3198,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.paidAmount = const Value.absent(),
     this.changeAmount = const Value.absent(),
     this.paymentMethod = const Value.absent(),
+    this.transactionReference = const Value.absent(),
     this.customerId = const Value.absent(),
     this.status = const Value.absent(),
     this.branchId = const Value.absent(),
@@ -3166,6 +3217,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.paidAmount = const Value.absent(),
     this.changeAmount = const Value.absent(),
     this.paymentMethod = const Value.absent(),
+    this.transactionReference = const Value.absent(),
     this.customerId = const Value.absent(),
     required SaleStatus status,
     this.branchId = const Value.absent(),
@@ -3187,6 +3239,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<int>? paidAmount,
     Expression<int>? changeAmount,
     Expression<String>? paymentMethod,
+    Expression<String>? transactionReference,
     Expression<int>? customerId,
     Expression<String>? status,
     Expression<int>? branchId,
@@ -3205,6 +3258,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (paidAmount != null) 'paid_amount': paidAmount,
       if (changeAmount != null) 'change_amount': changeAmount,
       if (paymentMethod != null) 'payment_method': paymentMethod,
+      if (transactionReference != null)
+        'transaction_reference': transactionReference,
       if (customerId != null) 'customer_id': customerId,
       if (status != null) 'status': status,
       if (branchId != null) 'branch_id': branchId,
@@ -3225,6 +3280,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<int>? paidAmount,
     Value<int>? changeAmount,
     Value<String?>? paymentMethod,
+    Value<String?>? transactionReference,
     Value<int?>? customerId,
     Value<SaleStatus>? status,
     Value<int?>? branchId,
@@ -3243,6 +3299,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       paidAmount: paidAmount ?? this.paidAmount,
       changeAmount: changeAmount ?? this.changeAmount,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      transactionReference: transactionReference ?? this.transactionReference,
       customerId: customerId ?? this.customerId,
       status: status ?? this.status,
       branchId: branchId ?? this.branchId,
@@ -3291,6 +3348,11 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (paymentMethod.present) {
       map['payment_method'] = Variable<String>(paymentMethod.value);
     }
+    if (transactionReference.present) {
+      map['transaction_reference'] = Variable<String>(
+        transactionReference.value,
+      );
+    }
     if (customerId.present) {
       map['customer_id'] = Variable<int>(customerId.value);
     }
@@ -3323,6 +3385,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('paidAmount: $paidAmount, ')
           ..write('changeAmount: $changeAmount, ')
           ..write('paymentMethod: $paymentMethod, ')
+          ..write('transactionReference: $transactionReference, ')
           ..write('customerId: $customerId, ')
           ..write('status: $status, ')
           ..write('branchId: $branchId, ')
@@ -3990,6 +4053,17 @@ class $PurchasesTable extends Purchases
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _transactionReferenceMeta =
+      const VerificationMeta('transactionReference');
+  @override
+  late final GeneratedColumn<String> transactionReference =
+      GeneratedColumn<String>(
+        'transaction_reference',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _supplierIdMeta = const VerificationMeta(
     'supplierId',
   );
@@ -4073,6 +4147,7 @@ class $PurchasesTable extends Purchases
   List<GeneratedColumn> get $columns => [
     id,
     invoiceNumber,
+    transactionReference,
     supplierId,
     userId,
     totalAmount,
@@ -4106,6 +4181,15 @@ class $PurchasesTable extends Purchases
       );
     } else if (isInserting) {
       context.missing(_invoiceNumberMeta);
+    }
+    if (data.containsKey('transaction_reference')) {
+      context.handle(
+        _transactionReferenceMeta,
+        transactionReference.isAcceptableOrUnknown(
+          data['transaction_reference']!,
+          _transactionReferenceMeta,
+        ),
+      );
     }
     if (data.containsKey('supplier_id')) {
       context.handle(
@@ -4180,6 +4264,10 @@ class $PurchasesTable extends Purchases
         DriftSqlType.string,
         data['${effectivePrefix}invoice_number'],
       )!,
+      transactionReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transaction_reference'],
+      ),
       supplierId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}supplier_id'],
@@ -4220,6 +4308,9 @@ class $PurchasesTable extends Purchases
 class Purchase extends DataClass implements Insertable<Purchase> {
   final int id;
   final String invoiceNumber;
+
+  /// External transaction reference / receipt / bank reference (رقم العملية)
+  final String? transactionReference;
   final int supplierId;
   final int userId;
 
@@ -4232,6 +4323,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   const Purchase({
     required this.id,
     required this.invoiceNumber,
+    this.transactionReference,
     required this.supplierId,
     required this.userId,
     required this.totalAmount,
@@ -4245,6 +4337,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['invoice_number'] = Variable<String>(invoiceNumber);
+    if (!nullToAbsent || transactionReference != null) {
+      map['transaction_reference'] = Variable<String>(transactionReference);
+    }
     map['supplier_id'] = Variable<int>(supplierId);
     map['user_id'] = Variable<int>(userId);
     map['total_amount'] = Variable<int>(totalAmount);
@@ -4261,6 +4356,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     return PurchasesCompanion(
       id: Value(id),
       invoiceNumber: Value(invoiceNumber),
+      transactionReference: transactionReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionReference),
       supplierId: Value(supplierId),
       userId: Value(userId),
       totalAmount: Value(totalAmount),
@@ -4281,6 +4379,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     return Purchase(
       id: serializer.fromJson<int>(json['id']),
       invoiceNumber: serializer.fromJson<String>(json['invoiceNumber']),
+      transactionReference: serializer.fromJson<String?>(
+        json['transactionReference'],
+      ),
       supplierId: serializer.fromJson<int>(json['supplierId']),
       userId: serializer.fromJson<int>(json['userId']),
       totalAmount: serializer.fromJson<int>(json['totalAmount']),
@@ -4296,6 +4397,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'invoiceNumber': serializer.toJson<String>(invoiceNumber),
+      'transactionReference': serializer.toJson<String?>(transactionReference),
       'supplierId': serializer.toJson<int>(supplierId),
       'userId': serializer.toJson<int>(userId),
       'totalAmount': serializer.toJson<int>(totalAmount),
@@ -4309,6 +4411,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   Purchase copyWith({
     int? id,
     String? invoiceNumber,
+    Value<String?> transactionReference = const Value.absent(),
     int? supplierId,
     int? userId,
     int? totalAmount,
@@ -4319,6 +4422,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   }) => Purchase(
     id: id ?? this.id,
     invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+    transactionReference: transactionReference.present
+        ? transactionReference.value
+        : this.transactionReference,
     supplierId: supplierId ?? this.supplierId,
     userId: userId ?? this.userId,
     totalAmount: totalAmount ?? this.totalAmount,
@@ -4333,6 +4439,9 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       invoiceNumber: data.invoiceNumber.present
           ? data.invoiceNumber.value
           : this.invoiceNumber,
+      transactionReference: data.transactionReference.present
+          ? data.transactionReference.value
+          : this.transactionReference,
       supplierId: data.supplierId.present
           ? data.supplierId.value
           : this.supplierId,
@@ -4354,6 +4463,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
     return (StringBuffer('Purchase(')
           ..write('id: $id, ')
           ..write('invoiceNumber: $invoiceNumber, ')
+          ..write('transactionReference: $transactionReference, ')
           ..write('supplierId: $supplierId, ')
           ..write('userId: $userId, ')
           ..write('totalAmount: $totalAmount, ')
@@ -4369,6 +4479,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
   int get hashCode => Object.hash(
     id,
     invoiceNumber,
+    transactionReference,
     supplierId,
     userId,
     totalAmount,
@@ -4383,6 +4494,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
       (other is Purchase &&
           other.id == this.id &&
           other.invoiceNumber == this.invoiceNumber &&
+          other.transactionReference == this.transactionReference &&
           other.supplierId == this.supplierId &&
           other.userId == this.userId &&
           other.totalAmount == this.totalAmount &&
@@ -4395,6 +4507,7 @@ class Purchase extends DataClass implements Insertable<Purchase> {
 class PurchasesCompanion extends UpdateCompanion<Purchase> {
   final Value<int> id;
   final Value<String> invoiceNumber;
+  final Value<String?> transactionReference;
   final Value<int> supplierId;
   final Value<int> userId;
   final Value<int> totalAmount;
@@ -4405,6 +4518,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   const PurchasesCompanion({
     this.id = const Value.absent(),
     this.invoiceNumber = const Value.absent(),
+    this.transactionReference = const Value.absent(),
     this.supplierId = const Value.absent(),
     this.userId = const Value.absent(),
     this.totalAmount = const Value.absent(),
@@ -4416,6 +4530,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   PurchasesCompanion.insert({
     this.id = const Value.absent(),
     required String invoiceNumber,
+    this.transactionReference = const Value.absent(),
     required int supplierId,
     required int userId,
     required int totalAmount,
@@ -4431,6 +4546,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   static Insertable<Purchase> custom({
     Expression<int>? id,
     Expression<String>? invoiceNumber,
+    Expression<String>? transactionReference,
     Expression<int>? supplierId,
     Expression<int>? userId,
     Expression<int>? totalAmount,
@@ -4442,6 +4558,8 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (invoiceNumber != null) 'invoice_number': invoiceNumber,
+      if (transactionReference != null)
+        'transaction_reference': transactionReference,
       if (supplierId != null) 'supplier_id': supplierId,
       if (userId != null) 'user_id': userId,
       if (totalAmount != null) 'total_amount': totalAmount,
@@ -4455,6 +4573,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
   PurchasesCompanion copyWith({
     Value<int>? id,
     Value<String>? invoiceNumber,
+    Value<String?>? transactionReference,
     Value<int>? supplierId,
     Value<int>? userId,
     Value<int>? totalAmount,
@@ -4466,6 +4585,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     return PurchasesCompanion(
       id: id ?? this.id,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      transactionReference: transactionReference ?? this.transactionReference,
       supplierId: supplierId ?? this.supplierId,
       userId: userId ?? this.userId,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -4484,6 +4604,11 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     }
     if (invoiceNumber.present) {
       map['invoice_number'] = Variable<String>(invoiceNumber.value);
+    }
+    if (transactionReference.present) {
+      map['transaction_reference'] = Variable<String>(
+        transactionReference.value,
+      );
     }
     if (supplierId.present) {
       map['supplier_id'] = Variable<int>(supplierId.value);
@@ -4514,6 +4639,7 @@ class PurchasesCompanion extends UpdateCompanion<Purchase> {
     return (StringBuffer('PurchasesCompanion(')
           ..write('id: $id, ')
           ..write('invoiceNumber: $invoiceNumber, ')
+          ..write('transactionReference: $transactionReference, ')
           ..write('supplierId: $supplierId, ')
           ..write('userId: $userId, ')
           ..write('totalAmount: $totalAmount, ')
@@ -12703,6 +12829,7 @@ typedef $$SalesTableCreateCompanionBuilder =
       Value<int> paidAmount,
       Value<int> changeAmount,
       Value<String?> paymentMethod,
+      Value<String?> transactionReference,
       Value<int?> customerId,
       required SaleStatus status,
       Value<int?> branchId,
@@ -12722,6 +12849,7 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<int> paidAmount,
       Value<int> changeAmount,
       Value<String?> paymentMethod,
+      Value<String?> transactionReference,
       Value<int?> customerId,
       Value<SaleStatus> status,
       Value<int?> branchId,
@@ -12865,6 +12993,11 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<String> get paymentMethod => $composableBuilder(
     column: $table.paymentMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13045,6 +13178,11 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -13161,6 +13299,11 @@ class $$SalesTableAnnotationComposer
 
   GeneratedColumn<String> get paymentMethod => $composableBuilder(
     column: $table.paymentMethod,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
     builder: (column) => column,
   );
 
@@ -13315,6 +13458,7 @@ class $$SalesTableTableManager
                 Value<int> paidAmount = const Value.absent(),
                 Value<int> changeAmount = const Value.absent(),
                 Value<String?> paymentMethod = const Value.absent(),
+                Value<String?> transactionReference = const Value.absent(),
                 Value<int?> customerId = const Value.absent(),
                 Value<SaleStatus> status = const Value.absent(),
                 Value<int?> branchId = const Value.absent(),
@@ -13332,6 +13476,7 @@ class $$SalesTableTableManager
                 paidAmount: paidAmount,
                 changeAmount: changeAmount,
                 paymentMethod: paymentMethod,
+                transactionReference: transactionReference,
                 customerId: customerId,
                 status: status,
                 branchId: branchId,
@@ -13351,6 +13496,7 @@ class $$SalesTableTableManager
                 Value<int> paidAmount = const Value.absent(),
                 Value<int> changeAmount = const Value.absent(),
                 Value<String?> paymentMethod = const Value.absent(),
+                Value<String?> transactionReference = const Value.absent(),
                 Value<int?> customerId = const Value.absent(),
                 required SaleStatus status,
                 Value<int?> branchId = const Value.absent(),
@@ -13368,6 +13514,7 @@ class $$SalesTableTableManager
                 paidAmount: paidAmount,
                 changeAmount: changeAmount,
                 paymentMethod: paymentMethod,
+                transactionReference: transactionReference,
                 customerId: customerId,
                 status: status,
                 branchId: branchId,
@@ -14099,6 +14246,7 @@ typedef $$PurchasesTableCreateCompanionBuilder =
     PurchasesCompanion Function({
       Value<int> id,
       required String invoiceNumber,
+      Value<String?> transactionReference,
       required int supplierId,
       required int userId,
       required int totalAmount,
@@ -14111,6 +14259,7 @@ typedef $$PurchasesTableUpdateCompanionBuilder =
     PurchasesCompanion Function({
       Value<int> id,
       Value<String> invoiceNumber,
+      Value<String?> transactionReference,
       Value<int> supplierId,
       Value<int> userId,
       Value<int> totalAmount,
@@ -14193,6 +14342,11 @@ class $$PurchasesTableFilterComposer
 
   ColumnFilters<String> get invoiceNumber => $composableBuilder(
     column: $table.invoiceNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14312,6 +14466,11 @@ class $$PurchasesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get totalAmount => $composableBuilder(
     column: $table.totalAmount,
     builder: (column) => ColumnOrderings(column),
@@ -14398,6 +14557,11 @@ class $$PurchasesTableAnnotationComposer
 
   GeneratedColumn<String> get invoiceNumber => $composableBuilder(
     column: $table.invoiceNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transactionReference => $composableBuilder(
+    column: $table.transactionReference,
     builder: (column) => column,
   );
 
@@ -14526,6 +14690,7 @@ class $$PurchasesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> invoiceNumber = const Value.absent(),
+                Value<String?> transactionReference = const Value.absent(),
                 Value<int> supplierId = const Value.absent(),
                 Value<int> userId = const Value.absent(),
                 Value<int> totalAmount = const Value.absent(),
@@ -14536,6 +14701,7 @@ class $$PurchasesTableTableManager
               }) => PurchasesCompanion(
                 id: id,
                 invoiceNumber: invoiceNumber,
+                transactionReference: transactionReference,
                 supplierId: supplierId,
                 userId: userId,
                 totalAmount: totalAmount,
@@ -14548,6 +14714,7 @@ class $$PurchasesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String invoiceNumber,
+                Value<String?> transactionReference = const Value.absent(),
                 required int supplierId,
                 required int userId,
                 required int totalAmount,
@@ -14558,6 +14725,7 @@ class $$PurchasesTableTableManager
               }) => PurchasesCompanion.insert(
                 id: id,
                 invoiceNumber: invoiceNumber,
+                transactionReference: transactionReference,
                 supplierId: supplierId,
                 userId: userId,
                 totalAmount: totalAmount,

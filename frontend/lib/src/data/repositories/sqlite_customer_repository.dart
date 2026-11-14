@@ -70,6 +70,22 @@ class SqliteCustomerRepository implements CustomerRepository {
     return (await findById(id))!;
   }
 
+  /// Upserts a customer fetched from the remote server, preserving exact server ID.
+  Future<void> upsertMirror(Customer customer) async {
+    await _db.into(_db.customers).insert(
+          CustomersCompanion.insert(
+            id: Value(customer.id),
+            name: customer.name,
+            phone: Value(customer.phone),
+            email: Value(customer.email),
+            address: Value(customer.address),
+            notes: Value(customer.notes),
+            creditLimit: Value(customer.creditLimit),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
   @override
   Future<void> update(
     int id, {

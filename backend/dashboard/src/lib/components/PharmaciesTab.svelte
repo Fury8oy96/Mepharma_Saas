@@ -275,10 +275,10 @@
       </div>
       <div class="card-body">
         <span class="metric-label">{$t('provider.kpi.posTerminals')}</span>
-        <h3 class="metric-val text-warning">{telemetry?.terminals?.total ?? 1} <small class="unit">terminals</small></h3>
+        <h3 class="metric-val text-warning">{telemetry?.terminals?.total ?? 1} <small class="unit">{$currentLocale === 'ar' ? 'نقطة بيع' : 'terminals'}</small></h3>
         <div class="metric-meta">
           <span>{$t('provider.kpi.hwSub')}</span>
-          <span class="status-tag status-active">LOCKED</span>
+          <span class="status-tag status-active">{$currentLocale === 'ar' ? 'مقفل' : 'LOCKED'}</span>
         </div>
       </div>
     </div>
@@ -363,7 +363,7 @@
                     </div>
                     <div>
                       <div class="pharma-name">{tenant.name}</div>
-                      <div class="pharma-sub">ID: #{tenant.id} • Registered {new Date(tenant.createdAt).toLocaleDateString($currentLocale === 'ar' ? 'ar-EG' : 'en-US')}</div>
+                      <div class="pharma-sub">ID: #{tenant.id} • {$currentLocale === 'ar' ? 'مسجلة في' : 'Registered'} {new Date(tenant.createdAt).toLocaleDateString($currentLocale === 'ar' ? 'ar-EG' : 'en-US')}</div>
                     </div>
                   </div>
                 </td>
@@ -421,7 +421,7 @@
                 <td>
                   <div class="license-cell">
                     <code class="license-code" title={tenant.licenseKey}>
-                      {tenant.licenseKey ? tenant.licenseKey.substring(0, 16) + '...' : 'Unlicensed'}
+                      {tenant.licenseKey ? tenant.licenseKey.substring(0, 16) + '...' : ($currentLocale === 'ar' ? 'بدون ترخيص' : 'Unlicensed')}
                     </code>
                     {#if tenant.licenseKey}
                       <button
@@ -523,9 +523,9 @@
           <div class="form-group">
             <label for="pharmacy-plan">{$currentLocale === 'ar' ? 'باقة الاشتراك' : 'Subscription Tier Plan'}</label>
             <select id="pharmacy-plan" class="form-select" bind:value={newPlan}>
-              <option value="starter">Starter (1 terminal seat)</option>
-              <option value="professional">Professional (3 terminal seats)</option>
-              <option value="enterprise">Enterprise (Unlimited terminal seats)</option>
+              <option value="starter">{$currentLocale === 'ar' ? 'الأساسية Starter (جهاز واحد)' : 'Starter (1 terminal seat)'}</option>
+              <option value="professional">{$currentLocale === 'ar' ? 'الاحترافية Professional (3 أجهزة)' : 'Professional (3 terminal seats)'}</option>
+              <option value="enterprise">{$currentLocale === 'ar' ? 'المؤسسية Enterprise (أجهزة غير محدودة)' : 'Enterprise (Unlimited terminal seats)'}</option>
             </select>
           </div>
 

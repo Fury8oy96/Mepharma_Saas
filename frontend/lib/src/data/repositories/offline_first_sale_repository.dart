@@ -56,6 +56,7 @@ class OfflineFirstSaleRepository implements SaleRepository {
     required int userId,
     String? customerName,
     int? customerId,
+    String? transactionReference,
   }) async {
     if (_isOnline) {
       try {
@@ -73,30 +74,22 @@ class OfflineFirstSaleRepository implements SaleRepository {
           userId: userId,
           customerName: customerName,
           customerId: customerId,
+          transactionReference: transactionReference,
         );
 
-        // 2. Mirror into local SQLite in the background and mark as synced
-        unawaited(_localRepo.completeSale(
-          items: items,
-          subtotal: subtotal,
-          discount: discount,
-          discountType: discountType,
-          taxAmount: taxAmount,
-          totalAmount: totalAmount,
-          paidAmount: paidAmount,
-          changeAmount: changeAmount,
-          paymentMethod: paymentMethod,
-          userId: userId,
-          customerName: customerName,
-          customerId: customerId,
-        ).then((localReceipt) async {
-          final key = 'online_synced_${localReceipt.invoiceNumber}';
+        // 2. Mirror into local SQLite idempotently using server invoice number
+        unawaited(_localRepo
+            .mirrorServerSale(receipt, userId: userId)
+            .then((_) async {
+          final key = 'online_synced_${receipt.invoiceNumber}';
           await _syncEngine.db.into(_syncEngine.db.syncQueueEntries).insert(
                 SyncQueueEntriesCompanion(
                   idempotencyKey: Value(key),
                   entityType: const Value('sale'),
                   action: const Value('create'),
-                  payloadJson: Value(jsonEncode({'invoice_number': localReceipt.invoiceNumber})),
+                  payloadJson: Value(
+                    jsonEncode({'invoice_number': receipt.invoiceNumber}),
+                  ),
                   payloadSignature: const Value('online_synced'),
                   createdAt: Value(DateTime.now()),
                   status: const Value('synced'),
@@ -108,9 +101,10 @@ class OfflineFirstSaleRepository implements SaleRepository {
 
         return receipt;
       } catch (e) {
-        // Do NOT call reportFailure here — a single API error does not mean the
-        // network is down; the periodic probe will detect real outages correctly.
-        rethrow;
+        if (!NetworkMonitor.isTransportFailure(e)) {
+          rethrow;
+        }
+        _networkMonitor.reportFailure(e);
       }
     }
 
@@ -128,6 +122,7 @@ class OfflineFirstSaleRepository implements SaleRepository {
       userId: userId,
       customerName: customerName,
       customerId: customerId,
+      transactionReference: transactionReference,
     );
 
     final payload = {
@@ -143,6 +138,7 @@ class OfflineFirstSaleRepository implements SaleRepository {
       'paid_amount': paidAmount,
       'change_amount': changeAmount,
       'payment_method': paymentMethod,
+      'transaction_reference': transactionReference,
       'items': items
           .map((i) => {
                 'product_id': i.productId,

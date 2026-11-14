@@ -34,6 +34,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
     bool autoApprove = true,
+    String? transactionReference,
   }) {
     return _db.transaction(() async {
       final filtered = items.where((i) => i.quantity > 0).toList();
@@ -52,6 +53,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
               totalAmount: totalAmount,
               purchaseDate: purchaseDate,
               status: Value(autoApprove ? 'approved' : 'pending'),
+              transactionReference: Value(transactionReference),
               createdAt: Value(now),
             ),
           );
@@ -184,6 +186,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
     return AppPurchase(
       id: row.id,
       invoiceNumber: row.invoiceNumber,
+      transactionReference: row.transactionReference,
       supplierId: row.supplierId,
       userId: row.userId,
       totalAmount: row.totalAmount,

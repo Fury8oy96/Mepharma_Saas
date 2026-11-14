@@ -1,22 +1,28 @@
 {
-  "version": "1.0.1",
-  "buildNumber": 2,
-  "releaseDate": "2026-11-13",
+  "version": "2.0.1",
+  "buildNumber": 3,
+  "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
-  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_v1.0.1.exe",
-  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v1.0.1",
+  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.01.exe",
+  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.1",
   "changelog": {
     "en": [
-      "Seamless installer upgrade retaining local offline SQLite databases and settings",
-      "Full Arabic localization of offline status banners, connection checks, and role badges",
-      "Defensive security hardening: protected sync endpoints, provider superadmin gate, and price tampering prevention",
-      "Background daily auto-update check with interactive changelog notifications"
+      "Smart 1D Barcode Engine with automatic EAN-13 generation and scanner HID integration",
+      "Direct Bank Transfer payment method with reference transaction tracking",
+      "Automated daily WAL-safe SQLite backups and one-click database restore",
+      "Windows startup auto-launch service via Windows registry integration",
+      "Advanced technical trading indicators (Candlestick chart, Volume histogram, RSI(14))",
+      "Horizontal table scrolling and navigation controls in products inventory",
+      "Backend security hardening: rate-limiting middleware, sync hub, and SQL injection protections"
     ],
     "ar": [
-      "ترقية سلسة لبرنامج التثبيت مع الحفاظ الكامل على قواعد البيانات المحلية والإعدادات",
-      "تعريب شامل لبنر وضع عدم الاتصال وأزرار فحص الاتصال وشارات الأدوار",
-      "تعزيز الأمان الدفاعي: حماية نقاط المزامنة وبوابة السوبر أدمن ومنع التلاعب بالأسعار",
-      "فحص تلقائي يومي للتحديثات في الخلفية مع إشعارات تفاعلية وسجل التغييرات"
+      "محرك الباركود الذكي 1D مع التوليد التلقائي لرموز EAN-13 وتوافق كامل مع قارئات الباركود",
+      "طريقة دفع التحويل البنكي المباشر مع تتبع رقم العملية وإشعار التحويل",
+      "نسخ احتياطي محلي يومي تلقائي لقاعدة البيانات مع إمكانية الاستعادة بنقرة واحدة",
+      "خدمة التشغيل التلقائي مع بدء إقلاع ويندوز عبر سجل النظام (Registry)",
+      "مؤشرات مالية متقدمة في التقارير (شموع يابانية، هستوغرام الحجم، ومؤشر RSI(14))",
+      "شريط تمرير أفقي وأزرار تنقل مرنة في جدول أصناف الأدوية والمخزون",
+      "تعزيز الأمان الخلفي: تقييد معدل الطلبات، مركز المزامنة الآمن، وحماية كاملة ضد حقن SQL"
     ]
   }
 }

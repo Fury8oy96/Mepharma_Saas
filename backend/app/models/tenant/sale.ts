@@ -49,6 +49,9 @@ export default class Sale extends BaseModel {
   declare paymentMethod: string
 
   @column()
+  declare transactionReference: string | null
+
+  @column()
   declare status: 'completed' | 'returned' | 'voided'
 
   @hasMany(() => SaleItem)

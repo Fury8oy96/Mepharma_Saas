@@ -48,3 +48,8 @@ scratch/
 *.log
 graphify-out/
 .gemini/
+
+# Inno Setup & Windows Binaries
+setup/Output/
+*.exe
+*.docx

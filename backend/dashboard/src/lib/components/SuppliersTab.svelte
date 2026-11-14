@@ -169,7 +169,7 @@
           </div>
 
           <div class="form-group">
-            <label for="s-email">Email</label>
+            <label for="s-email">{$t('common.email')}</label>
             <input id="s-email" class="form-input" type="email" bind:value={form.email} />
           </div>
 

@@ -59,10 +59,29 @@
     }
   }
 
-  function handleDownload(filename: string) {
-    const token = localStorage.getItem('mepharma_access_token') || '';
-    const url = `/provider/api/backups/${encodeURIComponent(filename)}/download?token=${encodeURIComponent(token)}`;
-    window.open(url, '_blank');
+  async function handleDownload(filename: string) {
+    try {
+      const token = localStorage.getItem('mepharma_token') || '';
+      const url = `/provider/api/backups/${encodeURIComponent(filename)}/download`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || `Download failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (err: any) {
+      addToast(err.message || $t('toast.error'), 'error');
+    }
   }
 
   function formatTime(isoStr: string): string {
@@ -112,8 +131,8 @@
       {@html icons.shield}
     </div>
     <div class="scope-text">
-      <strong>Whole-System Database Scope:</strong>
-      <span> Each snapshot produces an atomic, self-consistent PostgreSQL 16 dump covering both the root public control plane (tenant registries, cryptographic license tables, audit logs) and all independent branch schema namespaces (<code>tenant_main</code>, <code>tenant_*</code>).</span>
+      <strong>{$t('backup.scopeTitle')}</strong>
+      <span> {$t('backup.scopeBody')} (<code>tenant_main</code>, <code>tenant_*</code>).</span>
     </div>
   </div>
 
@@ -139,8 +158,8 @@
               <th>{$t('backup.th.name')}</th>
               <th>{$t('backup.th.size')}</th>
               <th>{$t('backup.th.date')}</th>
-              <th>Scope</th>
-              <th class="text-right">Actions</th>
+              <th>{$t('backup.th.scope')}</th>
+              <th class="text-right">{$t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -157,7 +176,7 @@
                 </td>
                 <td class="cell-time">{formatTime(b.createdAt)}</td>
                 <td>
-                  <span class="badge badge-role">All Schemas + Public</span>
+                  <span class="badge badge-role">{$t('backup.scopeBadge')}</span>
                 </td>
                 <td class="text-right">
                   <div class="actions-group-row">

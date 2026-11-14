@@ -2,6 +2,8 @@ import { HttpContext } from '@adonisjs/core/http'
 import Setting from '#models/tenant/setting'
 import Terminal from '#models/core/terminal'
 import db from '@adonisjs/lucid/services/db'
+import { TenantContext } from '#core/tenancy/tenant_context'
+import { syncHub } from '#core/events/sync_hub'
 
 export default class SettingsController {
   async index({ response }: HttpContext) {
@@ -13,6 +15,18 @@ export default class SettingsController {
     return response.ok(map)
   }
 
+  async showKey({ params, response }: HttpContext) {
+    const key = String(params.key || '').trim()
+    if (!key) {
+      return response.status(400).json({ error: 'Setting key is required.' })
+    }
+    const item = await Setting.query().where('key', key).first()
+    if (!item) {
+      return response.status(404).json({ error: `Setting '${key}' not found.` })
+    }
+    return response.ok({ key: item.key, value: item.value })
+  }
+
   async getStore({ request, response, tenant }: HttpContext) {
     const list = await Setting.query()
     const rawMap: Record<string, string> = {}
@@ -20,7 +34,6 @@ export default class SettingsController {
       rawMap[item.key] = item.value
     }
 
-    // Dynamic Seat & Branch Number Calculation
     let branchNumber = 1
     const hwId = request.header('x-terminal-hardware-id')
     if (hwId && tenant) {
@@ -29,11 +42,11 @@ export default class SettingsController {
           .where('tenant_id', tenant.id)
           .where('is_active', true)
           .orderBy('id', 'asc')
-        const idx = activeTerminals.findIndex(t => t.hardwareUuid === hwId)
+        const idx = activeTerminals.findIndex((t) => t.hardwareUuid === hwId)
         if (idx >= 0) {
           branchNumber = idx + 1
         }
-      } catch (_) {}
+      } catch {}
     }
 
     const storeName = rawMap['store_name'] || rawMap['name'] || rawMap['pharmacy_name'] || tenant?.name || 'MePharma Central Pharmacy'
@@ -44,7 +57,7 @@ export default class SettingsController {
     const currency = rawMap['currency'] || rawMap['currency_symbol'] || rawMap['currencySymbol'] || 'SDG'
     const currencySymbol = rawMap['currency_symbol'] || rawMap['currency'] || rawMap['currencySymbol'] || 'SDG'
     const lowStockThreshold = rawMap['low_stock_threshold'] || rawMap['lowStockThreshold'] || '10'
-    const profitMargin = rawMap['profit_margin'] || rawMap['profitMargin'] || '0.3'
+    const profitMargin = rawMap['profit_margin'] || rawMap['profitMargin'] || '0'
     const receiptFooter = rawMap['receipt_footer'] || rawMap['receiptFooter'] || 'Thank you for choosing MePharma!'
     const receiptHeader = rawMap['receipt_header'] || rawMap['receiptHeader'] || storeName
     const receiptStyle = rawMap['receipt_style'] || rawMap['receiptStyle'] || 'modern'
@@ -53,7 +66,6 @@ export default class SettingsController {
 
     const unified = {
       ...rawMap,
-      // Dot keys for desktop POS ApiSettingsRepository
       'store.name': storeName,
       'store.address': storeAddress,
       'store.phone': storePhone,
@@ -71,14 +83,13 @@ export default class SettingsController {
       'store.branch_number': String(branchNumber),
       'store.seat_number': String(branchNumber),
 
-      // Snake keys
       store_name: storeName,
       store_address: storeAddress,
       store_phone: storePhone,
       store_tax_id: storeTaxId,
       tax_rate: taxRate,
       currency_symbol: currencySymbol,
-      currency: currency,
+      currency,
       low_stock_threshold: lowStockThreshold,
       profit_margin: profitMargin,
       receipt_footer: receiptFooter,
@@ -89,20 +100,19 @@ export default class SettingsController {
       branch_number: branchNumber,
       seat_number: branchNumber,
 
-      // Camel keys for web dashboard SettingsTab
       name: storeName,
       address: storeAddress,
       phone: storePhone,
       taxNumber: storeTaxId,
-      taxRate: taxRate,
-      lowStockThreshold: lowStockThreshold,
-      profitMargin: profitMargin,
-      receiptFooter: receiptFooter,
-      receiptHeader: receiptHeader,
-      receiptStyle: receiptStyle,
-      receiptFormat: receiptFormat,
-      receiptFont: receiptFont,
-      branchNumber: branchNumber,
+      taxRate,
+      lowStockThreshold,
+      profitMargin,
+      receiptFooter,
+      receiptHeader,
+      receiptStyle,
+      receiptFormat,
+      receiptFont,
+      branchNumber,
       seatNumber: branchNumber,
     }
 
@@ -167,25 +177,43 @@ export default class SettingsController {
         }
       }
     }
+
+    const tenantCode = TenantContext.get()?.code || 'main'
+    syncHub.emit(tenantCode, 'settings_updated', {})
     return response.ok({ success: true, settings: data })
   }
 
   async applyMargin(ctx: HttpContext) {
     const { request, response } = ctx
     const tenant = (ctx as any).tenant
-    const schema = tenant?.schemaName || 'tenant_main'
-    const { margin_percent, category_id } = request.all()
-    const margin = Number(margin_percent) || 20
+    const schema = tenant?.schemaName || TenantContext.get()?.schemaName || 'tenant_main'
+    const body = request.all()
 
-    let query = `UPDATE "${schema}".products SET selling_price = ROUND(cost_price * (1 + ? / 100.0), 2) WHERE cost_price > 0`
-    const bindings: any[] = [margin]
+    let marginPercent = Number(body.margin_percent ?? body.marginPercent)
+    if (Number.isNaN(marginPercent) || marginPercent <= 0) {
+      const decimalMargin = Number(body.margin)
+      if (!Number.isNaN(decimalMargin) && decimalMargin > 0) {
+        marginPercent = decimalMargin <= 1 ? decimalMargin * 100 : decimalMargin
+      } else {
+        marginPercent = 20
+      }
+    }
 
-    if (category_id) {
+    const categoryId = body.category_id ?? body.categoryId ?? null
+    let query = `UPDATE "${schema}".products SET selling_price = ROUND(cost_price * (1 + ? / 100.0))::bigint, version = version + 1 WHERE cost_price > 0`
+    const bindings: any[] = [marginPercent]
+
+    if (categoryId) {
       query += ' AND category_id = ?'
-      bindings.push(category_id)
+      bindings.push(Number(categoryId))
     }
 
     await db.rawQuery(query, bindings)
-    return response.ok({ success: true, message: `Applied ${margin}% margin successfully.` })
+    syncHub.emit(tenant?.code || 'main', 'product_updated', { source: 'apply_margin' })
+    return response.ok({
+      success: true,
+      margin_percent: marginPercent,
+      message: `Applied ${marginPercent}% margin successfully.`,
+    })
   }
 }

@@ -1,11 +1,11 @@
 import { HttpContext } from '@adonisjs/core/http'
 import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import { getJwtSecret } from '#core/security/jwt_secret'
 
 export default class WebDashboardGateMiddleware {
   async handle(ctx: HttpContext, next: () => Promise<void>) {
     const authHeader = ctx.request.header('authorization')
-    const token = authHeader?.replace(/^Bearer\s+/i, '') || ctx.session?.get('auth_token')
+    const token = authHeader?.replace(/^Bearer\s+/i, '').trim() || ctx.session?.get('auth_token')
 
     if (!token) {
       return ctx.response.status(401).json({
@@ -15,8 +15,24 @@ export default class WebDashboardGateMiddleware {
     }
 
     try {
-      const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
-      const decoded = jwt.verify(token, secret) as any
+      const decoded = jwt.verify(token, getJwtSecret()) as any
+
+      if (decoded.isProviderAdmin) {
+        return ctx.response.status(403).json({
+          error: 'Access Forbidden',
+          message: 'Provider tokens cannot access pharmacy admin endpoints.',
+        })
+      }
+
+      const tenant = (ctx as any).tenant
+      if (tenant && decoded.pharmacyCode && decoded.pharmacyCode !== tenant.code) {
+        return ctx.response.status(403).json({
+          error: 'Tenant Mismatch',
+          code: 'TENANT_MISMATCH',
+          message: 'Authentication token belongs to a different pharmacy tenant.',
+        })
+      }
+
       ;(ctx as any).authUser = decoded
 
       // STRICT GATEKEEPING RULE:

@@ -1327,4 +1327,108 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateAvailable => 'يتوفر تحديث جديد';
+
+  @override
+  String get paymentBankTransfer => 'تحويل بنكي';
+
+  @override
+  String get transactionReference => 'رقم العملية';
+
+  @override
+  String get transactionRefHint => 'أدخل رقم العملية أو إشعار التحويل';
+
+  @override
+  String get transactionRefRequired =>
+      'يرجى إدخال رقم العملية لإتمام التحويل البنكي';
+
+  @override
+  String get refresh => 'تحديث';
+
+  @override
+  String get refreshing => 'جاري التحديث...';
+
+  @override
+  String localOfflineTransactions(int count) {
+    return 'المعاملات المحلية غير المتزامنة ($count)';
+  }
+
+  @override
+  String serverSyncedTransactions(int count) {
+    return 'المعاملات المتزامنة مع الخادم ($count)';
+  }
+
+  @override
+  String localSavedTransactions(int count) {
+    return 'سجل المبيعات المحلية ($count)';
+  }
+
+  @override
+  String get offlineQueueNotice =>
+      'تم حفظ هذه المعاملات محلياً أثناء عدم الاتصال وستتم مزامنتها تلقائياً عند عودة الاتصال.';
+
+  @override
+  String get syncingTransactions =>
+      'جاري مزامنة المعاملات المحلية مع الخادم...';
+
+  @override
+  String get superAdminShort => 'المدير';
+
+  @override
+  String get branchAdminShort => 'المدير';
+
+  @override
+  String get staffShort => 'المدير';
+
+  @override
+  String get localModeActive => 'وضع محلي';
+
+  @override
+  String purchaseApprovedNotice(String invoice) {
+    return 'تم اعتماد أمر الشراء $invoice وتحديث المخزون.';
+  }
+
+  @override
+  String printedOn(String date) {
+    return 'تاريخ الطباعة: $date';
+  }
+
+  @override
+  String get stockOut => 'نافد';
+
+  @override
+  String get confirmApprovePurchase =>
+      'هل أنت متأكد من اعتماد أمر الشراء هذا وإضافة أصنافه إلى مخزون الفرع؟';
+
+  @override
+  String get supervisorApprovePurchaseReason =>
+      'اعتماد أوامر الشراء وتحديث المخزون يتطلب تفويض مدير الفرع أو المشرف.';
+
+  @override
+  String get supervisorReturnReason =>
+      'معالجة المرتجعات والاسترداد تتطلب تفويض المشرف.';
+
+  @override
+  String get terminalQuotaTitle => 'تم الوصول للحد الأقصى للأجهزة';
+
+  @override
+  String get terminalQuotaInfo =>
+      'لإضافة المزيد من نقاط البيع أو الحواسيب، يرجى طلب ترقية حد الأجهزة من منصة المزود.';
+
+  @override
+  String get understood => 'حسناً';
+
+  @override
+  String get supervisorAuthTitle => 'تفويض المشرف';
+
+  @override
+  String get supervisorPasswordRequired => 'كلمة مرور / رمز المشرف *';
+
+  @override
+  String get requestOutOfStockDrug => 'طلب دواء غير متوفر';
+
+  @override
+  String get diagnosticsCopied => 'تم نسخ تفاصيل الخطأ إلى الحافظة';
+
+  @override
+  String get copyErrorDiagnostics => 'نسخ تفاصيل الخطأ للتشخيص';
 }

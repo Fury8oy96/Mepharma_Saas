@@ -104,9 +104,9 @@
       </select>
 
       <select class="form-input select-limit" bind:value={selectedLimit} on:change={loadLogs}>
-        <option value={25}>25 rows</option>
-        <option value={50}>50 rows</option>
-        <option value={100}>100 rows</option>
+        <option value={25}>25 {$currentLocale === 'ar' ? 'سجل' : 'rows'}</option>
+        <option value={50}>50 {$currentLocale === 'ar' ? 'سجل' : 'rows'}</option>
+        <option value={100}>100 {$currentLocale === 'ar' ? 'سجل' : 'rows'}</option>
       </select>
 
       <button class="btn btn-primary" on:click={loadLogs}>
@@ -163,7 +163,9 @@
                   <div class="details-summary">
                     {#if typeof log.details === 'object' && log.details !== null}
                       <button class="btn-link" on:click={() => toggleExpand(log.id)}>
-                        {expandedRowId === log.id ? 'Hide JSON' : 'View Payload (' + Object.keys(log.details).length + ' keys)'}
+                        {expandedRowId === log.id
+                          ? ($currentLocale === 'ar' ? 'إخفاء JSON' : 'Hide JSON')
+                          : ($currentLocale === 'ar' ? `عرض التفاصيل (${Object.keys(log.details).length})` : 'View Payload (' + Object.keys(log.details).length + ' keys)')}
                       </button>
                       {#if expandedRowId === log.id}
                         <pre class="json-viewer">{JSON.stringify(log.details, null, 2)}</pre>

@@ -1329,4 +1329,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateAvailable => 'Update Available';
+
+  @override
+  String get paymentBankTransfer => 'Bank transfer';
+
+  @override
+  String get transactionReference => 'Transaction reference';
+
+  @override
+  String get transactionRefHint => 'Enter bank transfer reference number';
+
+  @override
+  String get transactionRefRequired =>
+      'Transaction reference is required for bank transfer';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get refreshing => 'Refreshing...';
+
+  @override
+  String localOfflineTransactions(int count) {
+    return 'Local Offline Transactions ($count)';
+  }
+
+  @override
+  String serverSyncedTransactions(int count) {
+    return 'Server Synced Transactions ($count)';
+  }
+
+  @override
+  String localSavedTransactions(int count) {
+    return 'Local Sales Ledger ($count)';
+  }
+
+  @override
+  String get offlineQueueNotice =>
+      'These transactions were saved locally while offline and will sync automatically when online.';
+
+  @override
+  String get syncingTransactions =>
+      'Synchronizing local transactions with server...';
+
+  @override
+  String get superAdminShort => 'Super Admin';
+
+  @override
+  String get branchAdminShort => 'Branch Admin';
+
+  @override
+  String get staffShort => 'Staff';
+
+  @override
+  String get localModeActive => 'Local Mode';
+
+  @override
+  String purchaseApprovedNotice(String invoice) {
+    return 'Purchase request $invoice has been approved and inventory is updated.';
+  }
+
+  @override
+  String printedOn(String date) {
+    return 'Printed on $date';
+  }
+
+  @override
+  String get stockOut => 'Out of stock';
+
+  @override
+  String get confirmApprovePurchase =>
+      'Are you sure you want to approve this purchase order and add its inventory to branch stock?';
+
+  @override
+  String get supervisorApprovePurchaseReason =>
+      'Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.';
+
+  @override
+  String get supervisorReturnReason =>
+      'Processing refunds and returns requires supervisor override.';
+
+  @override
+  String get terminalQuotaTitle => 'Terminal Seat Limit Reached';
+
+  @override
+  String get terminalQuotaInfo =>
+      'To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.';
+
+  @override
+  String get understood => 'Understood';
+
+  @override
+  String get supervisorAuthTitle => 'Supervisor Authorization';
+
+  @override
+  String get supervisorPasswordRequired => 'Supervisor Password / PIN *';
+
+  @override
+  String get requestOutOfStockDrug => 'Request Out-of-Stock Drug';
+
+  @override
+  String get diagnosticsCopied => 'Diagnostics copied to clipboard';
+
+  @override
+  String get copyErrorDiagnostics => 'Copy Error Diagnostics';
 }

@@ -56,6 +56,7 @@ class ApiPurchaseRepository implements PurchaseRepository {
     return AppPurchase(
       id: id,
       invoiceNumber: json['invoice_number'] as String? ?? json['invoiceNumber'] as String? ?? '',
+      transactionReference: json['transaction_reference'] as String? ?? json['transactionReference'] as String?,
       supplierId: supplierId,
       userId: userId,
       totalAmount: totalAmount,
@@ -118,6 +119,7 @@ class ApiPurchaseRepository implements PurchaseRepository {
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
     bool autoApprove = true,
+    String? transactionReference,
   }) async {
     final bodyItems = items.map((i) => {
       'product_id': (i.productId == 0 || i.productId == null) ? null : i.productId,
@@ -130,6 +132,7 @@ class ApiPurchaseRepository implements PurchaseRepository {
       'supplier_id': supplierId,
       'user_id': userId,
       'purchase_date': purchaseDate.toIso8601String().split('T').first,
+      'transaction_reference': transactionReference,
       'items': bodyItems,
     });
 
