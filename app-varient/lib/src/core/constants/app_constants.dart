@@ -5,7 +5,7 @@ abstract final class AppConstants {
   static const int buildNumber = 5;
   static const String updateCheckUrl = 'https://raw.githubusercontent.com/Fury8oy96/Mepharma_Saas/main/version.json';
 
-  static const String databaseName = 'mepharma';
+  static const String databaseName = 'mepharma_variant';
 
   static const int bcryptCost = 12;
 
