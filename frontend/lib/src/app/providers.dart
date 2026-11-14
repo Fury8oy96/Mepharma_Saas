@@ -549,7 +549,10 @@ final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
 });
 
 final updateCheckerServiceProvider = Provider<UpdateCheckerService>((ref) {
-  return UpdateCheckerService(ref.watch(settingsRepositoryProvider));
+  return UpdateCheckerService(
+    ref.watch(settingsRepositoryProvider),
+    ref.watch(apiConfigProvider),
+  );
 });
 
 /// The currently selected locale (en / ar). Persisted through the settings

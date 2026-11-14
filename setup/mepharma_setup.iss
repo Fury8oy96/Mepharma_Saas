@@ -481,6 +481,7 @@ begin
     end;
 
     ConfigJson := '{' + #13#10 +
+      '  "edition": "standard",' + #13#10 +
       '  "mode": "' + ModeStr + '",' + #13#10 +
       '  "baseUrl": "' + NormalizedUrl + '",' + #13#10 +
       '  "pharmacyDomain": "' + RawDomain + '",' + #13#10 +

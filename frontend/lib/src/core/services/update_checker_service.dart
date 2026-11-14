@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../domain/models/api_config.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../constants/app_constants.dart';
+import 'app_edition_resolver.dart';
 
 class UpdateInfo {
   final String version;
@@ -68,8 +70,9 @@ class UpdateCheckResult {
 
 class UpdateCheckerService {
   final SettingsRepository _settingsRepository;
+  final ApiConfig? _apiConfig;
 
-  UpdateCheckerService(this._settingsRepository);
+  UpdateCheckerService(this._settingsRepository, [this._apiConfig]);
 
   static const String _keyLastCheckedDate = 'update.last_checked_date';
   static const String _keyDismissedVersion = 'update.dismissed_version';
@@ -90,7 +93,12 @@ class UpdateCheckerService {
   Future<UpdateCheckResult> checkForUpdateResult({
     bool force = false,
     String? gitHubToken,
+    String? backendBaseUrl,
   }) async {
+    final edition = AppEditionResolver.resolve(
+      configEdition: _apiConfig?.edition,
+      pharmacyName: _apiConfig?.pharmacyName,
+    );
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     if (!force) {
@@ -100,66 +108,87 @@ class UpdateCheckerService {
       }
     }
 
-    try {
-      final uri = Uri.parse(AppConstants.updateCheckUrl);
-      final headers = <String, String>{
-        'Accept': 'application/json',
-        if (gitHubToken != null && gitHubToken.isNotEmpty)
-          'Authorization': 'token $gitHubToken',
-      };
+    final effectiveBackendUrl = backendBaseUrl ?? _apiConfig?.baseUrl;
+    final candidateUrls = edition.getCandidateManifestUrls(backendBaseUrl: effectiveBackendUrl);
 
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+    String? lastError;
+    for (final candidateUrl in candidateUrls) {
+      try {
+        final uri = Uri.parse(candidateUrl);
+        final headers = <String, String>{
+          'Accept': 'application/json',
+          if (gitHubToken != null && gitHubToken.isNotEmpty && candidateUrl.contains('github'))
+            'Authorization': 'token $gitHubToken',
+        };
 
-      if (response.statusCode != 200) {
-        return UpdateCheckResult(
-          status: UpdateStatus.error,
-          errorMessage: 'HTTP ${response.statusCode} (${response.reasonPhrase ?? "Error"})',
-        );
-      }
-
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final info = UpdateInfo.fromJson(body);
-
-      // Enforce strict edition matching: variant updates only for variant app, standard only for main app
-      if (info.edition != null && info.edition != AppConstants.edition) {
-        debugPrint(
-          'UpdateCheckerService: Edition mismatch. Current app edition is "${AppConstants.edition}", but update payload edition is "${info.edition}". Rejecting cross-edition update.',
-        );
-        return const UpdateCheckResult(status: UpdateStatus.upToDate);
-      }
-
-      // Record check date
-      await _settingsRepository.setValue(_keyLastCheckedDate, today);
-
-      final hasUpdate = isRemoteNewer(info.version, AppConstants.appVersion);
-      if (!hasUpdate) {
-        return const UpdateCheckResult(status: UpdateStatus.upToDate);
-      }
-
-      if (!force) {
-        final dismissed = await _settingsRepository.getValue(_keyDismissedVersion);
-        if (dismissed == info.version) {
-          return const UpdateCheckResult(status: UpdateStatus.dismissed);
+        final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 5));
+        if (response.statusCode != 200) {
+          lastError = 'HTTP ${response.statusCode} from $candidateUrl';
+          continue;
         }
-      }
 
-      return UpdateCheckResult(
-        status: UpdateStatus.updateAvailable,
-        updateInfo: info,
-      );
-    } catch (e) {
-      debugPrint('UpdateCheckerService check error: $e');
-      return UpdateCheckResult(
-        status: UpdateStatus.error,
-        errorMessage: e.toString(),
-      );
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final info = UpdateInfo.fromJson(body);
+
+        // Enforce strict edition matching:
+        // Variant app only accepts 'variant'; Standard app only accepts 'standard'
+        if (info.edition != null && info.edition != edition.editionName) {
+          debugPrint(
+            'UpdateCheckerService: Edition mismatch. Resolved app edition is "${edition.editionName}", but update manifest is for "${info.edition}". Rejecting cross-edition update.',
+          );
+          return const UpdateCheckResult(status: UpdateStatus.upToDate);
+        }
+
+        // Validate installer download URL compatibility with current edition
+        if (!edition.matchesInstallerFilename(info.downloadUrl)) {
+          debugPrint(
+            'UpdateCheckerService: Installer target "${info.downloadUrl}" does not match active edition "${edition.editionName}". Rejecting mismatched package.',
+          );
+          return const UpdateCheckResult(status: UpdateStatus.upToDate);
+        }
+
+        // Record check date
+        await _settingsRepository.setValue(_keyLastCheckedDate, today);
+
+        final hasUpdate = isRemoteNewer(info.version, AppConstants.appVersion);
+        if (!hasUpdate) {
+          return const UpdateCheckResult(status: UpdateStatus.upToDate);
+        }
+
+        if (!force) {
+          final dismissed = await _settingsRepository.getValue(_keyDismissedVersion);
+          if (dismissed == info.version) {
+            return const UpdateCheckResult(status: UpdateStatus.dismissed);
+          }
+        }
+
+        return UpdateCheckResult(
+          status: UpdateStatus.updateAvailable,
+          updateInfo: info,
+        );
+      } catch (e) {
+        lastError = e.toString();
+        continue;
+      }
     }
+
+    debugPrint('UpdateCheckerService check error: $lastError');
+    return UpdateCheckResult(
+      status: UpdateStatus.error,
+      errorMessage: lastError ?? 'Failed to reach update servers',
+    );
   }
 
   /// Checks for available updates.
   /// If [force] is false, throttles checks to once every 24 hours and ignores dismissed versions.
-  Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
-    final result = await checkForUpdateResult(force: force);
+  Future<UpdateInfo?> checkForUpdate({
+    bool force = false,
+    String? backendBaseUrl,
+  }) async {
+    final result = await checkForUpdateResult(
+      force: force,
+      backendBaseUrl: backendBaseUrl,
+    );
     return result.updateInfo;
   }
 
@@ -230,11 +259,14 @@ class UpdateCheckerService {
       throw FileSystemException('Installer not found at path', installerPath);
     }
 
+    final installDir = File(Platform.resolvedExecutable).parent.path;
+
     final args = <String>[
       '/SP-',
       '/NORESTART',
       '/CLOSEAPPLICATIONS',
       '/RESTARTAPPLICATIONS',
+      '/DIR=$installDir',
       if (silent) '/SILENT',
     ];
 

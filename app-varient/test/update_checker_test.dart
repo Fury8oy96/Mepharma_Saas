@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mepharma/src/core/services/app_edition_resolver.dart';
 import 'package:mepharma/src/core/services/update_checker_service.dart';
 
 void main() {
+  setUp(() {
+    AppEditionResolver.resetForTesting();
+  });
+
   group('UpdateCheckerService SemVer Tests', () {
     test('isRemoteNewer detects higher major version', () {
       expect(UpdateCheckerService.isRemoteNewer('2.0.0', '1.0.1'), isTrue);
@@ -26,10 +31,10 @@ void main() {
       final json = {
         'version': '1.0.2',
         'buildNumber': 3,
-        'edition': 'standard',
-        'appName': 'MePharma',
+        'edition': 'variant',
+        'appName': 'MePharma Variant',
         'releaseDate': '2026-11-20',
-        'downloadUrl': 'https://github.com/Fury8oy96/mepharma/releases/download/v1.0.2/setup.exe',
+        'downloadUrl': 'https://github.com/Fury8oy96/mepharma/releases/download/v1.0.2/mepharma_varient.exe',
         'htmlUrl': 'https://github.com/Fury8oy96/mepharma/releases/tag/v1.0.2',
         'changelog': {
           'en': ['Feature A', 'Fix B'],
@@ -40,8 +45,8 @@ void main() {
       final info = UpdateInfo.fromJson(json);
       expect(info.version, equals('1.0.2'));
       expect(info.buildNumber, equals(3));
-      expect(info.edition, equals('standard'));
-      expect(info.appName, equals('MePharma'));
+      expect(info.edition, equals('variant'));
+      expect(info.appName, equals('MePharma Variant'));
       expect(info.releaseDate, equals('2026-11-20'));
       expect(info.changelogEn, contains('Feature A'));
       expect(info.changelogAr, contains('ميزة أ'));
@@ -60,6 +65,30 @@ void main() {
       expect(standardPayload.edition == 'standard', isTrue);
       expect(variantPayload.edition == 'standard', isFalse);
       expect(variantPayload.edition == 'variant', isTrue);
+    });
+  });
+
+  group('AppEditionResolver Tests', () {
+    test('resolves variant from config edition', () {
+      final edition = AppEditionResolver.resolve(configEdition: 'variant');
+      expect(edition.isVariant, isTrue);
+      expect(edition.editionName, equals('variant'));
+      expect(edition.defaultManifestUrl, contains('version-variant.json'));
+      expect(edition.matchesInstallerFilename('mepharma_varient.exe'), isTrue);
+      expect(edition.matchesInstallerFilename('MePharma_Setup_2.04.exe'), isFalse);
+    });
+
+    test('resolves variant from executable path', () {
+      final edition = AppEditionResolver.resolve(executablePath: r'C:\Programs\MePharma Variant\mepharma_variant.exe');
+      expect(edition.isVariant, isTrue);
+    });
+
+    test('resolves candidate manifest URLs including backend server endpoint', () {
+      final edition = AppEditionResolver.resolve(configEdition: 'variant');
+      final urls = edition.getCandidateManifestUrls(backendBaseUrl: 'http://localhost:8000/api');
+      expect(urls.length, equals(2));
+      expect(urls.first, equals('http://localhost:8000/api/updates/manifest?edition=variant'));
+      expect(urls.last, equals(edition.defaultManifestUrl));
     });
   });
 }

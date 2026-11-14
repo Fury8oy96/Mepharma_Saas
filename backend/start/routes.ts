@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
 
@@ -41,6 +43,46 @@ router.get('/api/health', async () => ({ status: 'healthy', timestamp: new Date(
 // SSE Event Streams
 router.get('/sync/events', [PosSyncController, 'events'])
 router.get('/api/sync/events', [PosSyncController, 'events'])
+
+/*
+|--------------------------------------------------------------------------
+| Application Update & Manifest Endpoints (Standard & Variant Editions)
+|--------------------------------------------------------------------------
+*/
+const handleUpdateManifest = async ({ request, response }: any) => {
+  const edition = String(request.input('edition') || 'standard').toLowerCase()
+  const manifestFileName = (edition === 'variant' || edition === 'varient') ? 'version-variant.json' : 'version.json'
+  const projectRootManifest = path.resolve('..', manifestFileName)
+  const localManifest = path.resolve(manifestFileName)
+  const targetPath = fs.existsSync(projectRootManifest) ? projectRootManifest : localManifest
+
+  if (fs.existsSync(targetPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(targetPath, 'utf-8'))
+      return response.ok(data)
+    } catch {
+      return response.internalServerError({ error: 'Failed to parse manifest' })
+    }
+  }
+  return response.notFound({ error: `Manifest for edition "${edition}" not found` })
+}
+
+router.get('/updates/manifest', handleUpdateManifest)
+router.get('/api/updates/manifest', handleUpdateManifest)
+
+const handleUpdateDownload = async ({ params, response }: any) => {
+  const filename = path.basename(params.filename || '')
+  if (!filename) return response.badRequest({ error: 'Filename is required' })
+  const downloadsDir = path.resolve('public', 'downloads')
+  const filePath = path.join(downloadsDir, filename)
+  if (fs.existsSync(filePath)) {
+    return response.download(filePath)
+  }
+  return response.notFound({ error: 'Package file not found' })
+}
+
+router.get('/updates/download/:filename', handleUpdateDownload)
+router.get('/api/updates/download/:filename', handleUpdateDownload)
 
 /*
 |--------------------------------------------------------------------------

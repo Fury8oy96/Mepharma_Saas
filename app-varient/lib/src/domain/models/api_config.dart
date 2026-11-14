@@ -1,3 +1,5 @@
+import '../../core/constants/app_constants.dart';
+
 enum DatabaseMode {
   local,
   onlineApi,
@@ -27,6 +29,7 @@ class ApiConfig {
     this.terminalHardwareId,
     this.terminalName,
     this.seatNumber,
+    this.edition = AppConstants.edition,
   });
 
   final DatabaseMode mode;
@@ -51,6 +54,7 @@ class ApiConfig {
   final String? terminalHardwareId;
   final String? terminalName;
   final int? seatNumber;
+  final String edition;
 
   ApiConfig copyWith({
     DatabaseMode? mode,
@@ -75,6 +79,7 @@ class ApiConfig {
     String? terminalHardwareId,
     String? terminalName,
     int? seatNumber,
+    String? edition,
   }) {
     return ApiConfig(
       mode: mode ?? this.mode,
@@ -99,6 +104,7 @@ class ApiConfig {
       terminalHardwareId: terminalHardwareId ?? this.terminalHardwareId,
       terminalName: terminalName ?? this.terminalName,
       seatNumber: seatNumber ?? this.seatNumber,
+      edition: edition ?? this.edition,
     );
   }
 
@@ -126,6 +132,7 @@ class ApiConfig {
       'terminalHardwareId': terminalHardwareId,
       'terminalName': terminalName,
       'seatNumber': seatNumber,
+      'edition': edition,
     };
   }
 
@@ -162,6 +169,7 @@ class ApiConfig {
       terminalHardwareId: json['terminalHardwareId'] as String?,
       terminalName: json['terminalName'] as String?,
       seatNumber: json['seatNumber'] as int?,
+      edition: json['edition'] as String? ?? AppConstants.edition,
     );
   }
 }

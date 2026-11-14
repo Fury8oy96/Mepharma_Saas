@@ -45,7 +45,20 @@ if (-not $IsccExe) {
 Write-Host "Found ISCC compiler: $IsccExe" -ForegroundColor Green
 
 # 2. Assemble Release Assets & Binaries
-Write-Host "`n[2/5] Synchronizing Variant AOT engine and flutter assets..." -ForegroundColor Yellow
+Write-Host "`n[2/5] Compiling and assembling Variant Flutter release bundle..." -ForegroundColor Yellow
+Push-Location $VariantDir
+try {
+    if (-not (Test-Path $AssembledDir)) {
+        New-Item -ItemType Directory -Path $AssembledDir -Force | Out-Null
+    }
+    & flutter assemble -dTargetPlatform=windows-x64 -dBuildMode=release -dTrackWidgetCreation=false -o $AssembledDir release_bundle_windows-x64_assets
+    if ($LASTEXITCODE -ne 0) {
+        throw "Flutter assemble for Variant failed with exit code $LASTEXITCODE"
+    }
+} finally {
+    Pop-Location
+}
+
 if (-not (Test-Path $ReleaseDataDir)) {
     New-Item -ItemType Directory -Path $ReleaseDataDir -Force | Out-Null
 }

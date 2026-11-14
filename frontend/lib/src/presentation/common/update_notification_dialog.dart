@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../core/services/app_edition_resolver.dart';
 import '../../core/services/update_checker_service.dart';
 
 class UpdateNotificationDialog extends StatefulWidget {
@@ -50,11 +51,23 @@ class _UpdateNotificationDialogState extends State<UpdateNotificationDialog> {
       _totalBytes = 0;
     });
 
+    final edition = AppEditionResolver.resolve();
     final targetUrl = widget.updateInfo.downloadUrl;
     final filename = targetUrl.split('/').last.split('?').first;
     final cleanFilename = filename.endsWith('.exe')
         ? filename
-        : 'MePharma_Setup_${widget.updateInfo.version}.exe';
+        : edition.targetInstallerFilename;
+
+    if (!edition.matchesInstallerFilename(cleanFilename)) {
+      setState(() {
+        _downloading = false;
+        _downloadError = isArabic
+            ? 'خطأ في توافق الحزمة: الحزمة المستهدفة ($cleanFilename) لا تتطابق مع إصدار التطبيق (${edition.displayName}). تم إلغاء التحديث لحماية سلامة النظام.'
+            : 'Package mismatch: The installer ($cleanFilename) does not match active application edition (${edition.displayName}). Update aborted for safety.';
+      });
+      return;
+    }
+
     final tempPath =
         '${Directory.systemTemp.path}${Platform.pathSeparator}$cleanFilename';
 

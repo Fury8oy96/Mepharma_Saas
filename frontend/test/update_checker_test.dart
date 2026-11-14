@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mepharma/src/core/services/app_edition_resolver.dart';
 import 'package:mepharma/src/core/services/update_checker_service.dart';
 
 void main() {
+  setUp(() {
+    AppEditionResolver.resetForTesting();
+  });
+
   group('UpdateCheckerService SemVer Tests', () {
     test('isRemoteNewer detects higher major version', () {
       expect(UpdateCheckerService.isRemoteNewer('2.0.0', '1.0.1'), isTrue);
@@ -60,6 +65,30 @@ void main() {
       expect(standardPayload.edition == 'standard', isTrue);
       expect(variantPayload.edition == 'standard', isFalse);
       expect(variantPayload.edition == 'variant', isTrue);
+    });
+  });
+
+  group('AppEditionResolver Tests', () {
+    test('resolves variant from config edition', () {
+      final edition = AppEditionResolver.resolve(configEdition: 'variant');
+      expect(edition.isVariant, isTrue);
+      expect(edition.editionName, equals('variant'));
+      expect(edition.defaultManifestUrl, contains('version-variant.json'));
+      expect(edition.matchesInstallerFilename('mepharma_varient.exe'), isTrue);
+      expect(edition.matchesInstallerFilename('MePharma_Setup_2.04.exe'), isFalse);
+    });
+
+    test('resolves variant from executable path', () {
+      final edition = AppEditionResolver.resolve(executablePath: r'C:\Programs\MePharma Variant\mepharma_variant.exe');
+      expect(edition.isVariant, isTrue);
+    });
+
+    test('resolves candidate manifest URLs including backend server endpoint', () {
+      final edition = AppEditionResolver.resolve(configEdition: 'variant');
+      final urls = edition.getCandidateManifestUrls(backendBaseUrl: 'http://localhost:8000/api');
+      expect(urls.length, equals(2));
+      expect(urls.first, equals('http://localhost:8000/api/updates/manifest?edition=variant'));
+      expect(urls.last, equals(edition.defaultManifestUrl));
     });
   });
 }
