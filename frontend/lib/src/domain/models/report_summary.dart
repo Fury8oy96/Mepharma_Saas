@@ -16,6 +16,10 @@ class ReportSummary {
     this.totalTax = 0,
     this.totalDiscount = 0,
     this.totalPurchases = 0,
+    this.purchasesBySupplier = const [],
+    this.topPurchasedProducts = const [],
+    this.approvedPurchasesCost = 0,
+    this.pendingPurchasesCost = 0,
   });
 
   final DateTime from;
@@ -33,9 +37,19 @@ class ReportSummary {
   /// Sum of return refunds recorded in the range, minor units (cents).
   final int refunds;
 
-  /// Sum of purchase totals (by purchase date) in the range, minor units.
+  /// Sum of purchase totals in the range, minor units.
   final int purchasesCost;
   final int totalPurchases;
+
+  /// Cost split between approved (stocked) and pending POs.
+  final int approvedPurchasesCost;
+  final int pendingPurchasesCost;
+
+  /// Purchases grouped by supplier.
+  final List<SupplierPurchaseBreakdown> purchasesBySupplier;
+
+  /// Top purchased medicines in the period.
+  final List<ProductPurchases> topPurchasedProducts;
 
   final int totalTax;
   final int totalDiscount;
@@ -55,6 +69,9 @@ class ReportSummary {
 
   /// What customers actually paid, minus refunds.
   int get netRevenue => (revenue - refunds) < 0 ? 0 : (revenue - refunds);
+
+  /// Operational Net Cash Flow: Net Sales Revenue minus Total Purchases Spend.
+  int get netCashFlow => netRevenue - purchasesCost;
 
   /// Margin using the cost price of each sold product (revenue - costOfGoods).
   int get estimatedProfit => revenue - costOfGoods;
@@ -121,4 +138,32 @@ class ProductSales {
 
   int get profit => revenue - cost;
   double get marginPct => revenue > 0 ? (profit / revenue) * 100 : 0.0;
+}
+
+class SupplierPurchaseBreakdown {
+  const SupplierPurchaseBreakdown({
+    this.supplierId,
+    required this.supplierName,
+    required this.purchaseCount,
+    required this.totalCost,
+    this.percentage = 0.0,
+  });
+
+  final int? supplierId;
+  final String supplierName;
+  final int purchaseCount;
+  final int totalCost;
+  final double percentage;
+}
+
+class ProductPurchases {
+  const ProductPurchases({
+    required this.name,
+    required this.quantity,
+    required this.totalCost,
+  });
+
+  final String name;
+  final int quantity;
+  final int totalCost;
 }

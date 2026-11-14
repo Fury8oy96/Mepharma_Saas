@@ -1433,4 +1433,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copyErrorDiagnostics => 'Copy Error Diagnostics';
+
+  @override
+  String get purchasesExpenditure => 'Purchases & Procurement Expenditure';
+
+  @override
+  String get netOperatingCashFlow =>
+      'Net Operating Cash Flow (Sales - Purchases)';
+
+  @override
+  String get purchasesBySupplier => 'Purchases by Supplier';
+
+  @override
+  String get purchasesBySupplierSubtitle =>
+      'Procurement and supply spend distribution by supplier';
+
+  @override
+  String get topPurchasedItems => 'Top Purchased Medicines';
+
+  @override
+  String get topPurchasedItemsSubtitle =>
+      'Medicines with the highest procurement spend during this period';
+
+  @override
+  String get unitsPurchased => 'units purchased';
+
+  @override
+  String get pendingSpend => 'Pending PO';
+
+  @override
+  String get fulfilledSpend => 'Fulfilled & Stocked';
 }

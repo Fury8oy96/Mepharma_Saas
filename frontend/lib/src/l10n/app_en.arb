@@ -674,5 +674,14 @@
   "supervisorPasswordRequired": "Supervisor Password / PIN *",
   "requestOutOfStockDrug": "Request Out-of-Stock Drug",
   "diagnosticsCopied": "Diagnostics copied to clipboard",
-  "copyErrorDiagnostics": "Copy Error Diagnostics"
+  "copyErrorDiagnostics": "Copy Error Diagnostics",
+  "purchasesExpenditure": "Purchases & Procurement Expenditure",
+  "netOperatingCashFlow": "Net Operating Cash Flow (Sales - Purchases)",
+  "purchasesBySupplier": "Purchases by Supplier",
+  "purchasesBySupplierSubtitle": "Procurement and supply spend distribution by supplier",
+  "topPurchasedItems": "Top Purchased Medicines",
+  "topPurchasedItemsSubtitle": "Medicines with the highest procurement spend during this period",
+  "unitsPurchased": "units purchased",
+  "pendingSpend": "Pending PO",
+  "fulfilledSpend": "Fulfilled & Stocked"
 }

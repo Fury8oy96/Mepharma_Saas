@@ -618,5 +618,14 @@
   "supervisorPasswordRequired": "كلمة مرور / رمز المشرف *",
   "requestOutOfStockDrug": "طلب دواء غير متوفر",
   "diagnosticsCopied": "تم نسخ تفاصيل الخطأ إلى الحافظة",
-  "copyErrorDiagnostics": "نسخ تفاصيل الخطأ للتشخيص"
+  "copyErrorDiagnostics": "نسخ تفاصيل الخطأ للتشخيص",
+  "purchasesExpenditure": "تكلفة المشتريات والتوريد",
+  "netOperatingCashFlow": "صافي التدفق المالي (المبيعات - المشتريات)",
+  "purchasesBySupplier": "المشتريات وتكاليف التوريد حسب المورد",
+  "purchasesBySupplierSubtitle": "توزيع مشتريات وتوريد الأدوية والمستلزمات بحسب الشركات والموردين",
+  "topPurchasedItems": "الأدوية الأكثر توريداً وشراءً",
+  "topPurchasedItemsSubtitle": "أعلى الأصناف طلباً وإنفاقاً للتوريد خلال هذه الفترة",
+  "unitsPurchased": "وحدة مورّدة",
+  "pendingSpend": "قيد الاعتماد",
+  "fulfilledSpend": "مكتمل ومورّد"
 }

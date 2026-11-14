@@ -45,6 +45,22 @@ class ApiReportRepository implements ReportRepository {
       profit: (t['profit'] as num?)?.toInt() ?? 0,
     )).toList();
 
+    final supList = data['purchases_by_supplier'] as List? ?? data['purchasesBySupplier'] as List? ?? [];
+    final purchasesBySupplier = supList.map((sp) => SupplierPurchaseBreakdown(
+      supplierId: sp['supplier_id'] as int? ?? sp['supplierId'] as int?,
+      supplierName: sp['supplier_name'] as String? ?? sp['supplierName'] as String? ?? 'Supplier',
+      purchaseCount: sp['purchase_count'] as int? ?? sp['purchaseCount'] as int? ?? sp['count'] as int? ?? 0,
+      totalCost: (sp['total_cost'] as num?)?.toInt() ?? (sp['totalCost'] as num?)?.toInt() ?? (sp['total'] as num?)?.toInt() ?? 0,
+      percentage: (sp['percentage'] as num?)?.toDouble() ?? 0.0,
+    )).toList();
+
+    final topPurchasedList = data['top_purchased_products'] as List? ?? data['topPurchasedProducts'] as List? ?? [];
+    final topPurchasedProducts = topPurchasedList.map((tp) => ProductPurchases(
+      name: tp['name'] as String? ?? '',
+      quantity: tp['quantity'] as int? ?? 0,
+      totalCost: (tp['total_cost'] as num?)?.toInt() ?? (tp['totalCost'] as num?)?.toInt() ?? 0,
+    )).toList();
+
     return ReportSummary(
       from: from,
       to: to,
@@ -54,6 +70,10 @@ class ApiReportRepository implements ReportRepository {
       refunds: (data['refunds'] as num?)?.toInt() ?? 0,
       purchasesCost: (data['purchases_cost'] as num?)?.toInt() ?? (data['purchasesCost'] as num?)?.toInt() ?? 0,
       totalPurchases: (data['total_purchases'] as num?)?.toInt() ?? (data['totalPurchases'] as num?)?.toInt() ?? 0,
+      approvedPurchasesCost: (data['approved_purchases_cost'] as num?)?.toInt() ?? (data['approvedPurchasesCost'] as num?)?.toInt() ?? 0,
+      pendingPurchasesCost: (data['pending_purchases_cost'] as num?)?.toInt() ?? (data['pendingPurchasesCost'] as num?)?.toInt() ?? 0,
+      purchasesBySupplier: purchasesBySupplier,
+      topPurchasedProducts: topPurchasedProducts,
       lowStockCount: data['low_stock_count'] as int? ?? data['lowStockCount'] as int? ?? 0,
       costOfGoods: (data['cost_of_goods'] as num?)?.toInt() ?? (data['costOfGoods'] as num?)?.toInt() ?? 0,
       totalTax: (data['total_tax'] as num?)?.toInt() ?? (data['totalTax'] as num?)?.toInt() ?? 0,

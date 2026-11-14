@@ -1,26 +1,24 @@
 {
-  "version": "2.0.2",
-  "buildNumber": 4,
+  "version": "2.0.3",
+  "buildNumber": 5,
   "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
-  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.02.exe",
-  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.2",
+  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.03.exe",
+  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.3",
   "changelog": {
     "en": [
-      "Governed Dynamic Pricing Engine: Selling price is auto-calculated using governed formula (Selling Price = Cost + [Cost × Margin]). Manual selling price input removed with dynamic real-time recalculation on cost changes.",
-      "Strict Procurement Stocking Pipeline: Enforced workflow Order Items -> Create Purchase (Pending) -> Admin Approval -> Stock Ingestion with dynamic price recalculation. All stock bypasses strictly rejected.",
-      "Offline Role Governance: Restricts purchase creation and stock approvals strictly to Admins in offline mode; Cashiers/Staff can request item extensions/restocks.",
-      "Staff Restock Extension Requests: Categorized requests by demand urgency ('sells too good / high demand', 'new low stock / urgent', 'normal') with one-click PO conversion for Admins.",
-      "Unlisted Medicine Catalog Ingestion: Purchases of unlisted medicines automatically create catalog entries with governed selling prices upon approval.",
-      "Inventory Security Locking: Selling prices in the inventory table locked to governed system profit margin with informative tooltips."
+      "In-App Background Installer Downloader: Download software updates seamlessly inside the application with real-time percentage progress bar without launching external web browsers or 404 error pages.",
+      "Zero-Downtime Product Update Flow: Automatic detached launch of installer with silent flags (/SP- /NORESTART /CLOSEAPPLICATIONS) for seamless in-place upgrade.",
+      "Installer Database & License Preservation: Upgrades strictly skip setup wizards, preserving existing offline SQLite databases, credentials, and license registrations without destructive reinitialization.",
+      "Comprehensive Purchases Reporting: Added prominent Purchases & Procurement Expenditure KPI Card, Purchases by Supplier breakdown, and Top Purchased Medicines analytics in both online and offline modes.",
+      "Net Operating Cash Flow Metric: Real-time telemetry tracking net operating cash flow (Sales Revenue minus Procurement Spend) across any reporting time window."
     ],
     "ar": [
-      "محرك التسعير الديناميكي الحاكم: احتساب سعر البيع تلقائياً بناءً على المعادلة (سعر البيع = سعر الشراء + [سعر الشراء × نسبة الهامش]). إزالة حقل الإدخال اليدوي مع التحديث اللحظي للأسعار.",
-      "مسار المشتريات والتوريد الصارم: إلزام مسار (طلب الأصناف -> إنشاء أمر الشراء قيد الانتظار -> اعتماد المدير -> توريد المخزون مع إعادة حساب الأسعار الحاكمة). رفض أي مسار تجاوز آخر.",
-      "حوكمة الصلاحيات في وضع عدم الاتصال: حصر إنشاء أوامر الشراء واعتمادها على المديرين فقط، مع إتاحة طلب تزويد الأصناف والنواقص للموظفين والكاشير.",
-      "نظام طلبات تزويد الأصناف والنواقص: تصنيف الطلبات حسب درجة الطلب (مبيعات سريعة / طلب مرتفع، نفاد مخزون / عاجل، طلب اعتيادي) مع إمكانية تحويلها لأمر شراء بنقرة واحدة.",
-      "إدراج الأدوية غير المسجلة تلقائياً: إنشاء سجلات للأدوية الجديدة غير المدرجة تلقائياً في دليل المنتجات بالأسعار الحاكمة فور اعتماد الشراء.",
-      "حماية وحوكمة أسعار المخزون: قفل تعديل أسعار البيع اليدوي المباشر في جدول المخزون وربطها بهامش الربح الحاكم مع تلميحات توضيحية."
+      "مُحمل التحديثات المباشر داخل التطبيق: تنزيل تحديثات النظام مباشرة في الخلفية داخل التطبيق مع شريط تقدم مباشر دون الحاجة لفتح المتصفح الخارجي أو ظهور خطأ 404.",
+      "ترقية مباشرة وتثبيت سلس: تشغيل مثبت التحديث تلقائياً بهدوء واستبدال الملفات التنفيذية دون مقاطعة أو طلب إعادة تثبيت من الصفر.",
+      "حماية وتأمين بيانات التثبيت والترخيص: تخطي شاشات الإعداد تماماً أثناء الترقية، وحماية قواعد بيانات SQLite المحلية وبيانات الدخول وتراخيص الأجهزة من أي مسح أو إعادة تهيئة.",
+      "لوحة تقارير المشتريات والتوريد المتكاملة: إضافة بطاقة مؤشر مالي رئيسية لتكلفة المشتريات والتوريد، وتوزيع المشتريات حسب الموردين، والأدوية الأكثر توريداً وشراءً في الوضعين المتصل وغير المتصل.",
+      "مؤشر صافي التدفق المالي التشغيلي: قياس فوري لصافي التدفق النقدي (المبيعات - المشتريات) عبر كافة النطاقات الزمنية للتقارير."
     ]
   }
 }

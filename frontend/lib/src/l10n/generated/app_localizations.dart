@@ -2725,6 +2725,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy Error Diagnostics'**
   String get copyErrorDiagnostics;
+
+  /// No description provided for @purchasesExpenditure.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases & Procurement Expenditure'**
+  String get purchasesExpenditure;
+
+  /// No description provided for @netOperatingCashFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Operating Cash Flow (Sales - Purchases)'**
+  String get netOperatingCashFlow;
+
+  /// No description provided for @purchasesBySupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases by Supplier'**
+  String get purchasesBySupplier;
+
+  /// No description provided for @purchasesBySupplierSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Procurement and supply spend distribution by supplier'**
+  String get purchasesBySupplierSubtitle;
+
+  /// No description provided for @topPurchasedItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Purchased Medicines'**
+  String get topPurchasedItems;
+
+  /// No description provided for @topPurchasedItemsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines with the highest procurement spend during this period'**
+  String get topPurchasedItemsSubtitle;
+
+  /// No description provided for @unitsPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'units purchased'**
+  String get unitsPurchased;
+
+  /// No description provided for @pendingSpend.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending PO'**
+  String get pendingSpend;
+
+  /// No description provided for @fulfilledSpend.
+  ///
+  /// In en, this message translates to:
+  /// **'Fulfilled & Stocked'**
+  String get fulfilledSpend;
 }
 
 class _AppLocalizationsDelegate

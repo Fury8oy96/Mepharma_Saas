@@ -68,6 +68,87 @@ class SqliteReportRepository implements ReportRepository {
     final purchasesCost = purchaseRow.read(_db.purchases.totalAmount.sum()) ?? 0;
     final totalPurchases = purchaseRow.read(_db.purchases.id.count()) ?? 0;
 
+    // Approved vs Pending purchases cost
+    final approvedRow = await (_db.selectOnly(_db.purchases)
+          ..addColumns([_db.purchases.totalAmount.sum()])
+          ..where(
+            _db.purchases.status.equals('approved') &
+                _db.purchases.purchaseDate.isBiggerOrEqualValue(from) &
+                _db.purchases.purchaseDate.isSmallerOrEqualValue(to),
+          ))
+          .getSingle();
+    final approvedPurchasesCost =
+        approvedRow.read(_db.purchases.totalAmount.sum()) ?? 0;
+    final pendingPurchasesCost = purchasesCost - approvedPurchasesCost;
+
+    // Purchases by Supplier
+    final supplierPurchaseRows = await (_db.selectOnly(_db.purchases)
+          ..addColumns([
+            _db.purchases.supplierId,
+            _db.suppliers.name,
+            _db.purchases.id.count(),
+            _db.purchases.totalAmount.sum(),
+          ])
+          ..join([
+            leftOuterJoin(
+              _db.suppliers,
+              _db.suppliers.id.equalsExp(_db.purchases.supplierId),
+            ),
+          ])
+          ..where(
+            _db.purchases.purchaseDate.isBiggerOrEqualValue(from) &
+                _db.purchases.purchaseDate.isSmallerOrEqualValue(to),
+          )
+          ..groupBy([_db.purchases.supplierId, _db.suppliers.name])
+          ..orderBy([OrderingTerm.desc(_db.purchases.totalAmount.sum())]))
+        .get();
+
+    final purchasesBySupplier = [
+      for (final r in supplierPurchaseRows)
+        () {
+          final cost = r.read(_db.purchases.totalAmount.sum()) ?? 0;
+          final pct = purchasesCost > 0 ? (cost / purchasesCost) * 100 : 0.0;
+          return SupplierPurchaseBreakdown(
+            supplierId: r.read(_db.purchases.supplierId),
+            supplierName: r.read(_db.suppliers.name) ?? 'Supplier',
+            purchaseCount: r.read(_db.purchases.id.count()) ?? 0,
+            totalCost: cost,
+            percentage: double.parse(pct.toStringAsFixed(1)),
+          );
+        }(),
+    ];
+
+    // Top Purchased Products
+    final topPurchasedRows = await (_db.selectOnly(_db.purchaseItems)
+          ..addColumns([
+            _db.purchaseItems.productName,
+            _db.purchaseItems.quantity.sum(),
+            _db.purchaseItems.totalCost.sum(),
+          ])
+          ..join([
+            innerJoin(
+              _db.purchases,
+              _db.purchases.id.equalsExp(_db.purchaseItems.purchaseId),
+            ),
+          ])
+          ..where(
+            _db.purchases.purchaseDate.isBiggerOrEqualValue(from) &
+                _db.purchases.purchaseDate.isSmallerOrEqualValue(to),
+          )
+          ..groupBy([_db.purchaseItems.productName])
+          ..orderBy([OrderingTerm.desc(_db.purchaseItems.totalCost.sum())])
+          ..limit(10))
+        .get();
+
+    final topPurchasedProducts = [
+      for (final r in topPurchasedRows)
+        ProductPurchases(
+          name: r.read(_db.purchaseItems.productName) ?? '',
+          quantity: r.read(_db.purchaseItems.quantity.sum()) ?? 0,
+          totalCost: r.read(_db.purchaseItems.totalCost.sum()) ?? 0,
+        ),
+    ];
+
     final cogs = await _costOfGoods(completed, salesRange);
 
     final lowRow = await (_db.selectOnly(_db.products)
@@ -212,6 +293,10 @@ class SqliteReportRepository implements ReportRepository {
       salesByPayment: salesByPayment,
       topProducts: topProducts,
       trends: trends,
+      approvedPurchasesCost: approvedPurchasesCost,
+      pendingPurchasesCost: pendingPurchasesCost,
+      purchasesBySupplier: purchasesBySupplier,
+      topPurchasedProducts: topPurchasedProducts,
     );
   }
 

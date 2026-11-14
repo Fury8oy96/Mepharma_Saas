@@ -144,6 +144,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     buffer.writeln(csvLine([l10n.profitMargin, '${summary.profitMarginPct.toStringAsFixed(1)}%']));
     buffer.writeln(csvLine([l10n.averageOrderValue, formatMoney(summary.averageOrderValue, symbol: symbol)]));
     buffer.writeln(csvLine([l10n.purchasesCost, formatMoney(summary.purchasesCost, symbol: symbol)]));
+    buffer.writeln(csvLine([l10n.netOperatingCashFlow, formatMoney(summary.netCashFlow, symbol: symbol)]));
     buffer.writeln(csvLine([l10n.lowStockItems, '${summary.lowStockCount}']));
     buffer.writeln();
     buffer.writeln(csvLine([l10n.salesByPayment]));
@@ -170,6 +171,35 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           '${row.marginPct.toStringAsFixed(1)}%',
         ]),
       );
+    }
+    if (summary.purchasesBySupplier.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln(csvLine([l10n.purchasesBySupplier]));
+      buffer.writeln(csvLine([l10n.supplier, l10n.totalPurchasesCount, l10n.total, '%']));
+      for (final row in summary.purchasesBySupplier) {
+        buffer.writeln(
+          csvLine([
+            row.supplierName,
+            '${row.purchaseCount}',
+            formatMoney(row.totalCost, symbol: symbol),
+            '${row.percentage.toStringAsFixed(1)}%',
+          ]),
+        );
+      }
+    }
+    if (summary.topPurchasedProducts.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln(csvLine([l10n.topPurchasedItems]));
+      buffer.writeln(csvLine([l10n.productName, l10n.unitsPurchased, l10n.total]));
+      for (final row in summary.topPurchasedProducts) {
+        buffer.writeln(
+          csvLine([
+            row.name,
+            '${row.quantity}',
+            formatMoney(row.totalCost, symbol: symbol),
+          ]),
+        );
+      }
     }
     return buffer.toString();
   }
@@ -365,6 +395,36 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                       ),
                       const SizedBox(height: 24),
 
+                      // Procurement & Purchases Analytics: Purchases by Supplier & Top Purchased Medicines
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth > 900) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: _SupplierPurchasesCard(summary: summary, symbol: symbol),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 6,
+                                  child: _TopPurchasedProductsCard(summary: summary, symbol: symbol),
+                                ),
+                              ],
+                            );
+                          }
+                          return Column(
+                            children: [
+                              _SupplierPurchasesCard(summary: summary, symbol: symbol),
+                              const SizedBox(height: 16),
+                              _TopPurchasedProductsCard(summary: summary, symbol: symbol),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
                       // Category Profitability Matrix & 12-Month Ledger
                       _DepthSection(from: _from, to: _to),
                       const SizedBox(height: 32),
@@ -453,24 +513,30 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             signalColor: summary.estimatedProfit >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455),
           ),
           _ExecutiveCardData(
-            title: l10n.cogs,
-            value: formatMoney(summary.costOfGoods, symbol: symbol),
-            subtitle: '${l10n.purchasesCost}: ${formatMoney(summary.purchasesCost, symbol: symbol)}',
-            icon: Icons.inventory_2_outlined,
+            title: l10n.purchasesExpenditure,
+            value: formatMoney(summary.purchasesCost, symbol: symbol),
+            subtitle: '${l10n.cogs}: ${formatMoney(summary.costOfGoods, symbol: symbol)}',
+            icon: Icons.local_shipping_outlined,
             color: const Color(0xFFFF9F43), // Amber
-            badgeText: '${l10n.averageOrderValue}: ${formatMoney(summary.averageOrderValue, symbol: symbol)}',
+            badgeText: '${summary.totalPurchases} ${l10n.totalPurchasesCount}',
             badgeColor: const Color(0xFFFF9F43),
-            tickerCode: 'EXP // COGS',
-            technicalSignal: 'STABLE RANGE',
-            signalColor: const Color(0xFFFF9F43),
+            tickerCode: 'PROC // SPEND',
+            technicalSignal: summary.pendingPurchasesCost > 0
+                ? '${l10n.pendingSpend}: ${formatMoney(summary.pendingPurchasesCost, symbol: symbol)}'
+                : l10n.fulfilledSpend,
+            signalColor: summary.pendingPurchasesCost > 0 ? const Color(0xFFFF9F43) : const Color(0xFF28C76F),
           ),
           _ExecutiveCardData(
             title: l10n.stockValuationTitle,
-            value: formatMoney(valuation?.retailValue ?? 0, symbol: symbol),
-            subtitle: '${l10n.stockCostBasis}: ${formatMoney(valuation?.costValue ?? 0, symbol: symbol)}',
+            value: valuation != null ? formatMoney(valuation.retailValue, symbol: symbol) : '...',
+            subtitle: valuation != null
+                ? '${l10n.stockCostBasis}: ${formatMoney(valuation.costValue, symbol: symbol)}'
+                : '${l10n.stockCostBasis}: ...',
             icon: Icons.storefront_outlined,
             color: const Color(0xFF00CFE8), // Info Cyan
-            badgeText: '${valuation?.potentialMarginPct.toStringAsFixed(1) ?? '0.0'}% ${l10n.margin}',
+            badgeText: valuation != null
+                ? '${valuation.potentialMarginPct.toStringAsFixed(1)}% ${l10n.margin}'
+                : null,
             badgeColor: const Color(0xFF00CFE8),
             tickerCode: 'NAV // STOCK',
             technicalSignal: 'CAPITAL GROWTH ↗',
@@ -643,6 +709,12 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     String symbol,
   ) {
     final items = [
+      (
+        Icons.account_balance_wallet_outlined,
+        l10n.netOperatingCashFlow,
+        formatMoney(summary.netCashFlow, symbol: symbol),
+        summary.netCashFlow >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455),
+      ),
       (Icons.discount_outlined, l10n.totalDiscounts, formatMoney(summary.totalDiscount, symbol: symbol), theme.colorScheme.onSurface),
       (Icons.receipt_outlined, l10n.totalTax, formatMoney(summary.totalTax, symbol: symbol), theme.colorScheme.onSurface),
       (Icons.assignment_return_outlined, l10n.refunds, formatMoney(summary.refunds, symbol: symbol), const Color(0xFFEA5455)),
@@ -1478,6 +1550,251 @@ class _TopProductsCard extends StatelessWidget {
   }
 }
 
+class _SupplierPurchasesCard extends StatelessWidget {
+  const _SupplierPurchasesCard({required this.summary, required this.symbol});
+
+  final ReportSummary summary;
+  final String symbol;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.business_outlined, size: 20, color: Color(0xFFFF9F43)),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.purchasesBySupplier,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.purchasesBySupplierSubtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (summary.purchasesBySupplier.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text(l10n.noPurchases, style: theme.textTheme.bodySmall)),
+              )
+            else
+              for (final row in summary.purchasesBySupplier) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.domain, size: 16, color: Color(0xFFFF9F43)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              row.supplierName,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${row.purchaseCount} ${l10n.totalPurchasesCount}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            formatMoney(row.totalCost, symbol: symbol),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              '${row.percentage.toStringAsFixed(1)}%',
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFF9F43),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (row.percentage / 100).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF9F43)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopPurchasedProductsCard extends StatelessWidget {
+  const _TopPurchasedProductsCard({required this.summary, required this.symbol});
+
+  final ReportSummary summary;
+  final String symbol;
+
+  Color _rankColor(int index) {
+    if (index == 0) return const Color(0xFFFFD700); // Gold
+    if (index == 1) return const Color(0xFFC0C0C0); // Silver
+    if (index == 2) return const Color(0xFFCD7F32); // Bronze
+    return const Color(0xFFFF9F43);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.inventory_outlined, size: 20, color: Color(0xFFFF9F43)),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.topPurchasedItems,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.topPurchasedItemsSubtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (summary.topPurchasedProducts.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text(l10n.noPurchases, style: theme.textTheme.bodySmall)),
+              )
+            else
+              for (int i = 0; i < summary.topPurchasedProducts.length; i++) ...[
+                () {
+                  final prod = summary.topPurchasedProducts[i];
+                  final rColor = _rankColor(i);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: rColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '#${i + 1}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: rColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            prod.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${prod.quantity} ${l10n.unitsPurchased}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          formatMoney(prod.totalCost, symbol: symbol),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Color(0xFFFF9F43),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }(),
+                if (i < summary.topPurchasedProducts.length - 1)
+                  Divider(height: 12, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DepthSection extends ConsumerWidget {
   const _DepthSection({required this.from, required this.to});
 
@@ -1917,6 +2234,9 @@ class _PrintReportDialog extends ConsumerWidget {
                         _rowMetric(l10n.profitMargin, '${summary.profitMarginPct.toStringAsFixed(1)}%', isBold: true),
                         _rowMetric(l10n.averageOrderValue, formatMoney(summary.averageOrderValue, symbol: symbol)),
                         _rowMetric(l10n.salesCount, '${summary.salesCount} ${l10n.invoicesCount}'),
+                        const Divider(height: 16),
+                        _rowMetric(l10n.purchasesExpenditure, formatMoney(summary.purchasesCost, symbol: symbol)),
+                        _rowMetric(l10n.netOperatingCashFlow, formatMoney(summary.netCashFlow, symbol: symbol), isBold: true, color: summary.netCashFlow >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455)),
                         if (valuation != null) ...[
                           const Divider(height: 16),
                           _rowMetric(l10n.stockValuationTitle, formatMoney(valuation!.retailValue, symbol: symbol), isBold: true),

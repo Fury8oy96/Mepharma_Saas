@@ -164,7 +164,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
         );
         await _db.into(_db.stockAdjustments).insert(
               StockAdjustmentsCompanion.insert(
-                productId: targetProductId!,
+                productId: targetProductId,
                 adjustmentQuantity: item.quantity,
                 reason: const Value('Purchase'),
                 reference: Value('purchase:$purchaseId'),

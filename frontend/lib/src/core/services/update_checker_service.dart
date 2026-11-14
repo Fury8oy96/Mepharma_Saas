@@ -163,4 +163,73 @@ class UpdateCheckerService {
       debugPrint('Failed to launch URL: $e');
     }
   }
+
+  /// Downloads the update installer in the background with progress reporting.
+  static Future<File> downloadInstaller({
+    required String downloadUrl,
+    required String savePath,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', Uri.parse(downloadUrl));
+      final response = await client.send(request);
+
+      if (response.statusCode != 200) {
+        throw HttpException(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase ?? "Error"}',
+          uri: Uri.parse(downloadUrl),
+        );
+      }
+
+      final totalBytes = response.contentLength ?? 0;
+      var receivedBytes = 0;
+
+      final file = File(savePath);
+      final sink = file.openWrite();
+
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        receivedBytes += chunk.length;
+        if (onProgress != null) {
+          onProgress(receivedBytes, totalBytes);
+        }
+      }
+
+      await sink.flush();
+      await sink.close();
+
+      return file;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Launches the downloaded installer in background update mode and closes the running app.
+  static Future<void> launchInstallerAndExit(
+    String installerPath, {
+    bool silent = true,
+  }) async {
+    if (!Platform.isWindows) return;
+    final file = File(installerPath);
+    if (!await file.exists()) {
+      throw FileSystemException('Installer not found at path', installerPath);
+    }
+
+    final args = <String>[
+      '/SP-',
+      '/NORESTART',
+      '/CLOSEAPPLICATIONS',
+      '/RESTARTAPPLICATIONS',
+      if (silent) '/SILENT',
+    ];
+
+    await Process.start(
+      installerPath,
+      args,
+      mode: ProcessStartMode.detached,
+    );
+
+    exit(0);
+  }
 }

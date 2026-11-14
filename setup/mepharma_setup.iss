@@ -3,7 +3,7 @@
 ; ==============================================================================
 
 #define MyAppName "MePharma"
-#define MyAppVersion "2.0.2"
+#define MyAppVersion "2.0.3"
 #define MyAppPublisher "MePharma Systems"
 #define MyAppURL "https://github.com/Fury8oy96/Mepharma_Saas"
 #define MyAppExeName "mepharma.exe"
@@ -28,7 +28,7 @@ DisableProgramGroupPage=yes
 
 ; Output Configuration
 OutputDir=Output
-OutputBaseFilename=MePharma_Setup_2.02
+OutputBaseFilename=MePharma_Setup_2.03
 SetupIconFile={#AppIconPath}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
@@ -38,7 +38,7 @@ SolidCompression=yes
 WizardStyle=modern
 DisableWelcomePage=no
 CloseApplications=yes
-RestartApplications=no
+RestartApplications=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
@@ -84,6 +84,7 @@ var
   LicenseKeyEdit: TNewEdit;
   LicenseKeyHintLabel: TLabel;
   OnlineNoteLabel: TLabel;
+  IsUpgradeMode: Boolean;
 
 procedure ModeRadioOnClick(Sender: TObject);
 begin
@@ -95,8 +96,8 @@ begin
   LicenseKeyHintLabel.Enabled := OnlineModeRadio.Checked;
   OnlineNoteLabel.Visible := OnlineModeRadio.Checked;
 
-  // When Standalone Local SQLite is selected, default CleanInstall to True to guarantee an empty, clean DB
-  if LocalModeRadio.Checked then
+  // When Standalone Local SQLite is selected on fresh installation, default CleanInstall to True
+  if LocalModeRadio.Checked and not IsUpgradeMode then
   begin
     CleanInstallCheckBox.Checked := True;
   end;
@@ -323,13 +324,12 @@ end;
 
 procedure InitializeWizard;
 var
-  IsUpdateInstall: Boolean;
   ExistingDir: String;
 begin
+  IsUpgradeMode := RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
+                   RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1');
   CreateEnvironmentPage;
-  IsUpdateInstall := RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
-                     RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1');
-  if IsUpdateInstall then
+  if IsUpgradeMode then
   begin
     WizardForm.Caption := 'Update - ' + '{#MyAppName}';
     ExistingDir := GetExistingInstallDir;
@@ -338,6 +338,16 @@ begin
       WizardForm.DirEdit.Text := ExistingDir;
     end;
     LoadExistingConfig;
+  end;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  // If this is an upgrade/update, skip the database & environment selection page
+  if IsUpgradeMode and (PageID = EnvironmentPage.ID) then
+  begin
+    Result := True;
   end;
 end;
 
@@ -488,10 +498,14 @@ begin
       '}';
 
     ConfigPath := ExpandConstant('{app}\api_config.json');
-    SaveStringToFile(ConfigPath, ConfigJson, False);
+    // On update/upgrade, preserve existing api_config.json if already present
+    if not IsUpgradeMode or not FileExists(ConfigPath) then
+    begin
+      SaveStringToFile(ConfigPath, ConfigJson, False);
+    end;
 
-    // If clean installation was selected OR local offline mode is chosen, purge previous local SQLite database
-    if CleanInstallCheckBox.Checked or LocalModeRadio.Checked then
+    // Purge database ONLY if clean install was explicitly checked AND this is not an update!
+    if CleanInstallCheckBox.Checked and not IsUpgradeMode then
     begin
       DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite'));
       DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-shm'));

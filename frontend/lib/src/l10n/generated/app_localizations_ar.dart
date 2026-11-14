@@ -1431,4 +1431,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get copyErrorDiagnostics => 'نسخ تفاصيل الخطأ للتشخيص';
+
+  @override
+  String get purchasesExpenditure => 'تكلفة المشتريات والتوريد';
+
+  @override
+  String get netOperatingCashFlow =>
+      'صافي التدفق المالي (المبيعات - المشتريات)';
+
+  @override
+  String get purchasesBySupplier => 'المشتريات وتكاليف التوريد حسب المورد';
+
+  @override
+  String get purchasesBySupplierSubtitle =>
+      'توزيع مشتريات وتوريد الأدوية والمستلزمات بحسب الشركات والموردين';
+
+  @override
+  String get topPurchasedItems => 'الأدوية الأكثر توريداً وشراءً';
+
+  @override
+  String get topPurchasedItemsSubtitle =>
+      'أعلى الأصناف طلباً وإنفاقاً للتوريد خلال هذه الفترة';
+
+  @override
+  String get unitsPurchased => 'وحدة مورّدة';
+
+  @override
+  String get pendingSpend => 'قيد الاعتماد';
+
+  @override
+  String get fulfilledSpend => 'مكتمل ومورّد';
 }

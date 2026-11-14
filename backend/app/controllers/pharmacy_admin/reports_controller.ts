@@ -39,6 +39,10 @@ export default class ReportsController {
     const purchasesCost = Number(purchasesSumRes[0]?.$extras?.sum) || 0
     const totalPurchases = Number(purchasesCountRes[0]?.$extras?.count) || 0
 
+    const approvedPurchasesRes = await purchasesQuery.clone().where('status', 'approved').sum('total_amount as sum')
+    const approvedPurchasesCost = Number(approvedPurchasesRes[0]?.$extras?.sum) || 0
+    const pendingPurchasesCost = purchasesCost - approvedPurchasesCost
+
     const lowStockRes = await Product.query().whereRaw('stock_quantity <= low_stock_threshold').count('* as count')
     const lowStockCount = Number(lowStockRes[0]?.$extras?.count) || 0
 
@@ -142,6 +146,67 @@ export default class ReportsController {
       cost: Number(row.cost) || 0,
     }))
 
+    const purchaseParams: any[] = []
+    let purchaseWhere = '1=1'
+    if (from) {
+      purchaseWhere += ' AND p.created_at >= ?'
+      purchaseParams.push(from)
+    }
+    if (to) {
+      purchaseWhere += ' AND p.created_at <= ?'
+      purchaseParams.push(to)
+    }
+
+    const supplierPurchasesRes = await db.rawQuery(
+      `
+      SELECT
+        p.supplier_id,
+        COALESCE(s.name, 'Default Supplier') as supplier_name,
+        COUNT(p.id)::int as count,
+        COALESCE(SUM(p.total_amount), 0)::numeric as total
+      FROM "${schema}".purchases p
+      LEFT JOIN "${schema}".suppliers s ON p.supplier_id = s.id
+      WHERE ${purchaseWhere}
+      GROUP BY p.supplier_id, s.name
+      ORDER BY total DESC;
+      `,
+      purchaseParams
+    )
+
+    const purchasesBySupplier = (supplierPurchasesRes.rows || []).map((row: any) => {
+      const tot = Number(row.total) || 0
+      const pct = purchasesCost > 0 ? Math.round((tot / purchasesCost) * 1000) / 10 : 0
+      return {
+        supplier_id: row.supplier_id ? Number(row.supplier_id) : null,
+        supplier_name: row.supplier_name,
+        purchase_count: Number(row.count) || 0,
+        total_cost: tot,
+        percentage: pct,
+      }
+    })
+
+    const topPurchasedRes = await db.rawQuery(
+      `
+      SELECT
+        pi.product_name as name,
+        COALESCE(SUM(pi.quantity), 0)::int as quantity,
+        COALESCE(SUM(pi.subtotal), 0)::numeric as total_cost
+      FROM "${schema}".purchase_items pi
+      JOIN "${schema}".purchases p ON pi.purchase_id = p.id
+      WHERE ${purchaseWhere}
+      GROUP BY pi.product_name
+      ORDER BY total_cost DESC
+      LIMIT 10;
+      `,
+      purchaseParams
+    )
+
+    const topPurchasedProducts = (topPurchasedRes.rows || []).map((row: any) => ({
+      name: row.name,
+      quantity: Number(row.quantity) || 0,
+      total_cost: Number(row.total_cost) || 0,
+    }))
+
     // Separate sales revenue & COGS CTEs so daily sales revenue is never distorted by line items
     const trendsRes = await db.rawQuery(
       `
@@ -199,6 +264,10 @@ export default class ReportsController {
       refunds,
       purchases_cost: purchasesCost,
       total_purchases: totalPurchases,
+      approved_purchases_cost: approvedPurchasesCost,
+      pending_purchases_cost: pendingPurchasesCost,
+      purchases_by_supplier: purchasesBySupplier,
+      top_purchased_products: topPurchasedProducts,
       low_stock_count: lowStockCount,
       lowStockProducts: lowStockCount,
       cost_of_goods: costOfGoods,
