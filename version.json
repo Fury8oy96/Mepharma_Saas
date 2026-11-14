@@ -1,28 +1,26 @@
 {
-  "version": "2.0.1",
-  "buildNumber": 3,
+  "version": "2.0.2",
+  "buildNumber": 4,
   "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
-  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.01.exe",
-  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.1",
+  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/MePharma_Setup_2.02.exe",
+  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.2",
   "changelog": {
     "en": [
-      "Smart 1D Barcode Engine with automatic EAN-13 generation and scanner HID integration",
-      "Direct Bank Transfer payment method with reference transaction tracking",
-      "Automated daily WAL-safe SQLite backups and one-click database restore",
-      "Windows startup auto-launch service via Windows registry integration",
-      "Advanced technical trading indicators (Candlestick chart, Volume histogram, RSI(14))",
-      "Horizontal table scrolling and navigation controls in products inventory",
-      "Backend security hardening: rate-limiting middleware, sync hub, and SQL injection protections"
+      "Governed Dynamic Pricing Engine: Selling price is auto-calculated using governed formula (Selling Price = Cost + [Cost × Margin]). Manual selling price input removed with dynamic real-time recalculation on cost changes.",
+      "Strict Procurement Stocking Pipeline: Enforced workflow Order Items -> Create Purchase (Pending) -> Admin Approval -> Stock Ingestion with dynamic price recalculation. All stock bypasses strictly rejected.",
+      "Offline Role Governance: Restricts purchase creation and stock approvals strictly to Admins in offline mode; Cashiers/Staff can request item extensions/restocks.",
+      "Staff Restock Extension Requests: Categorized requests by demand urgency ('sells too good / high demand', 'new low stock / urgent', 'normal') with one-click PO conversion for Admins.",
+      "Unlisted Medicine Catalog Ingestion: Purchases of unlisted medicines automatically create catalog entries with governed selling prices upon approval.",
+      "Inventory Security Locking: Selling prices in the inventory table locked to governed system profit margin with informative tooltips."
     ],
     "ar": [
-      "محرك الباركود الذكي 1D مع التوليد التلقائي لرموز EAN-13 وتوافق كامل مع قارئات الباركود",
-      "طريقة دفع التحويل البنكي المباشر مع تتبع رقم العملية وإشعار التحويل",
-      "نسخ احتياطي محلي يومي تلقائي لقاعدة البيانات مع إمكانية الاستعادة بنقرة واحدة",
-      "خدمة التشغيل التلقائي مع بدء إقلاع ويندوز عبر سجل النظام (Registry)",
-      "مؤشرات مالية متقدمة في التقارير (شموع يابانية، هستوغرام الحجم، ومؤشر RSI(14))",
-      "شريط تمرير أفقي وأزرار تنقل مرنة في جدول أصناف الأدوية والمخزون",
-      "تعزيز الأمان الخلفي: تقييد معدل الطلبات، مركز المزامنة الآمن، وحماية كاملة ضد حقن SQL"
+      "محرك التسعير الديناميكي الحاكم: احتساب سعر البيع تلقائياً بناءً على المعادلة (سعر البيع = سعر الشراء + [سعر الشراء × نسبة الهامش]). إزالة حقل الإدخال اليدوي مع التحديث اللحظي للأسعار.",
+      "مسار المشتريات والتوريد الصارم: إلزام مسار (طلب الأصناف -> إنشاء أمر الشراء قيد الانتظار -> اعتماد المدير -> توريد المخزون مع إعادة حساب الأسعار الحاكمة). رفض أي مسار تجاوز آخر.",
+      "حوكمة الصلاحيات في وضع عدم الاتصال: حصر إنشاء أوامر الشراء واعتمادها على المديرين فقط، مع إتاحة طلب تزويد الأصناف والنواقص للموظفين والكاشير.",
+      "نظام طلبات تزويد الأصناف والنواقص: تصنيف الطلبات حسب درجة الطلب (مبيعات سريعة / طلب مرتفع، نفاد مخزون / عاجل، طلب اعتيادي) مع إمكانية تحويلها لأمر شراء بنقرة واحدة.",
+      "إدراج الأدوية غير المسجلة تلقائياً: إنشاء سجلات للأدوية الجديدة غير المدرجة تلقائياً في دليل المنتجات بالأسعار الحاكمة فور اعتماد الشراء.",
+      "حماية وحوكمة أسعار المخزون: قفل تعديل أسعار البيع اليدوي المباشر في جدول المخزون وربطها بهامش الربح الحاكم مع تلميحات توضيحية."
     ]
   }
 }

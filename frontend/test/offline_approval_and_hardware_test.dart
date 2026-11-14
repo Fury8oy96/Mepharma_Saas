@@ -82,6 +82,42 @@ void main() {
       final approvedProduct = (await products.findById(product.id))!;
       expect(approvedProduct.stockQuantity, equals(25));
       expect(approvedProduct.costPrice, equals(2100));
+      // Governed Selling Price = 2100 + (2100 * 0.3) = 2730
+      expect(approvedProduct.sellingPrice, equals(2730));
+    });
+
+    test('approvePurchase auto-creates unlisted product and applies governed margin pricing', () async {
+      final supplier = await suppliers.create(name: 'Global Supply');
+      final admin = (await users.watchUsers().first).first;
+
+      final po = await purchases.createPurchase(
+        userId: admin.id,
+        supplierId: supplier.id,
+        purchaseDate: DateTime.now(),
+        autoApprove: false,
+        items: [
+          const PurchaseLineInput(
+            productId: null,
+            productName: 'Cataflam 50mg',
+            quantity: 30,
+            costPrice: 1000,
+          ),
+        ],
+      );
+
+      // Verify not yet in product catalog
+      final beforeApproval = (await products.getAll()).where((p) => p.name == 'Cataflam 50mg');
+      expect(beforeApproval.isEmpty, isTrue);
+
+      // Approve purchase
+      await purchases.approvePurchase(po.id);
+
+      // Verify product is now auto-created with stock and governed price (1000 + 300 = 1300)
+      final afterApproval = (await products.getAll()).where((p) => p.name == 'Cataflam 50mg').firstOrNull;
+      expect(afterApproval, isNotNull);
+      expect(afterApproval!.stockQuantity, equals(30));
+      expect(afterApproval.costPrice, equals(1000));
+      expect(afterApproval.sellingPrice, equals(1300));
     });
 
     test('wipeAndReset purges all operational data and restores clean default admin', () async {

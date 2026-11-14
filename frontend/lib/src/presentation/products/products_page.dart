@@ -8,6 +8,7 @@ import '../../core/services/api_client.dart';
 import '../../core/services/product_csv_service.dart';
 import '../../core/utils/barcode_symbologies.dart';
 import '../../core/utils/money.dart';
+import '../../core/utils/pricing_engine.dart';
 import '../../domain/models/app_category.dart';
 import '../../domain/models/app_product.dart';
 import '../../domain/models/app_supplier.dart';
@@ -355,196 +356,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     }
   }
 
-  Future<void> _quickEditSellingPrice(AppProduct product) async {
-    final l10n = AppLocalizations.of(context);
-    final isArabic = l10n.localeName.startsWith('ar');
-    final currency = ref.read(storeSettingsProvider).valueOrNull?.currencySymbol ?? 'ج.س';
-    final controller = TextEditingController(
-      text: product.sellingPrice.toString(),
-    );
 
-    final newPriceStr = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.price_change_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isArabic ? 'تعديل سعر البيع المباشر' : 'Quick Price Edit',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 380,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isArabic ? 'سعر البيع الحالي:' : 'Current Selling Price:',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      Text(
-                        formatMoney(product.sellingPrice, symbol: currency),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: controller,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: isArabic ? 'سعر البيع الجديد' : 'New Selling Price',
-                    suffixText: currency,
-                    prefixIcon: const Icon(Icons.edit_note),
-                    border: const OutlineInputBorder(),
-                    helperText: isArabic
-                        ? 'أدخل السعر كرقم كامل (مثال: 10 أو 100 دون كسور)'
-                        : 'Enter whole integer price (e.g. 10 or 100)',
-                  ),
-                  onFieldSubmitted: (val) {
-                    if (val.trim().isNotEmpty) {
-                      Navigator.of(context).pop(val.trim());
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                final txt = controller.text.trim();
-                if (txt.isNotEmpty) {
-                  Navigator.of(context).pop(txt);
-                }
-              },
-              icon: const Icon(Icons.check, size: 18),
-              label: Text(isArabic ? 'تحديث وحفظ السعر' : 'Update & Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (newPriceStr != null && newPriceStr.isNotEmpty && mounted) {
-      var clean = newPriceStr.trim().replaceAll(',', '').replaceAll(' ', '');
-      if (clean.contains('.')) {
-        clean = clean.split('.').first;
-      }
-      final parsed = int.tryParse(clean) ?? tryParseMoney(clean) ?? parseCents(clean);
-      if (parsed < 0) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(l10n.invalidNumber),
-              backgroundColor: Colors.red.shade800,
-            ),
-          );
-        return;
-      }
-      final newSellingPrice = parsed;
-
-      try {
-        await ref.read(productRepositoryProvider).update(
-          product.id,
-          name: product.name,
-          barcode: product.barcode,
-          categoryId: product.categoryId,
-          supplierId: product.supplierId,
-          costPrice: product.costPrice,
-          sellingPrice: newSellingPrice,
-          lowStockThreshold: product.lowStockThreshold,
-          expiryDate: product.expiryDate,
-          description: product.description,
-        );
-        await ref.read(productRepositoryProvider).refresh();
-        ref.invalidate(productListProvider);
-        ref.invalidate(posControllerProvider);
-        ref.invalidate(stockValuationProvider);
-        ref.invalidate(todaySalesProvider);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  isArabic
-                      ? 'تم تحديث سعر بيع "${product.name}" إلى ${formatMoney(newSellingPrice, symbol: currency)} بنجاح!'
-                      : 'Updated selling price of "${product.name}" to ${formatMoney(newSellingPrice, symbol: currency)}',
-                ),
-                backgroundColor: const Color(0xFF28C76F),
-              ),
-            );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(l10n.errorOccurred),
-                backgroundColor: Colors.red.shade800,
-              ),
-            );
-        }
-      }
-    }
-  }
 
   Future<void> _export() async {
     final l10n = AppLocalizations.of(context);
@@ -601,11 +413,18 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     var updated = 0;
     var skipped = 0;
 
+    final marginStr = ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
+    final margin = double.tryParse(marginStr) ?? 0.3;
+
     for (final row in result.rows) {
       try {
         final existing = await productRepo.findBySku(row.sku);
         final category = await _resolveCategory(categoryRepo, row.categoryName);
         final supplier = await _resolveSupplier(supplierRepo, row.supplierName);
+        final effectiveSellingPrice = (row.sellingPrice > row.costPrice)
+            ? row.sellingPrice
+            : PricingEngine.calculateSellingPrice(row.costPrice, margin);
+
         if (existing == null) {
           await productRepo.create(
             sku: row.sku,
@@ -614,7 +433,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             categoryId: category?.id,
             supplierId: supplier?.id,
             costPrice: row.costPrice,
-            sellingPrice: row.sellingPrice,
+            sellingPrice: effectiveSellingPrice,
             stockQuantity: row.stockQuantity,
             lowStockThreshold: row.lowStockThreshold,
             expiryDate: row.expiryDate,
@@ -629,7 +448,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             categoryId: category?.id,
             supplierId: supplier?.id,
             costPrice: row.costPrice,
-            sellingPrice: row.sellingPrice,
+            sellingPrice: effectiveSellingPrice,
             lowStockThreshold: row.lowStockThreshold,
             expiryDate: row.expiryDate,
             description: row.description,
@@ -985,47 +804,43 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                       DataCell(
                                         Tooltip(
                                           message: l10n.localeName.startsWith('ar')
-                                              ? 'انقر لتعديل سعر البيع مباشرة'
-                                              : 'Click to quick-edit selling price',
-                                          child: InkWell(
-                                            onTap: () => _quickEditSellingPrice(p),
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
-                                              ),
-                                              decoration: BoxDecoration(
+                                              ? 'سعر البيع محكوم بنظام هامش الربح التلقائي'
+                                              : 'Governed dynamic pricing (Margin-based)',
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: theme.colorScheme.primary
+                                                  .withValues(alpha: 0.08),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
                                                 color: theme.colorScheme.primary
-                                                    .withValues(alpha: 0.08),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: theme.colorScheme.primary
-                                                      .withValues(alpha: 0.25),
+                                                    .withValues(alpha: 0.25),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  formatMoney(
+                                                    p.sellingPrice,
+                                                    symbol: currency,
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: theme.colorScheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    formatMoney(
-                                                      p.sellingPrice,
-                                                      symbol: currency,
-                                                    ),
-                                                    style: TextStyle(
-                                                      color: theme.colorScheme.primary,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.edit_outlined,
-                                                    size: 14,
-                                                    color: theme.colorScheme.primary
-                                                        .withValues(alpha: 0.8),
-                                                  ),
-                                                ],
-                                              ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.lock_outline,
+                                                  size: 13,
+                                                  color: theme.colorScheme.primary
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),

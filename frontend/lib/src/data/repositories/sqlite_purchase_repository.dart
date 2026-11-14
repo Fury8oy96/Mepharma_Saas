@@ -1,5 +1,8 @@
 import 'package:drift/drift.dart';
 
+import '../../core/constants/app_constants.dart';
+import '../../core/utils/pricing_engine.dart';
+import '../../core/utils/sku_generator.dart';
 import '../../domain/models/app_purchase.dart';
 import '../../domain/repositories/purchase_repository.dart';
 import '../db/app_database.dart';
@@ -25,6 +28,14 @@ class SqlitePurchaseRepository implements PurchaseRepository {
       }
     }
     return '$prefix${seq.toString().padLeft(4, '0')}';
+  }
+
+  Future<double> _getProfitMargin() async {
+    final row = await (_db.select(_db.settings)
+          ..where((s) => s.key.equals(AppConstants.settingProfitMargin)))
+        .getSingleOrNull();
+    final raw = double.tryParse(row?.value ?? '0.3') ?? 0.3;
+    return raw;
   }
 
   @override
@@ -69,36 +80,106 @@ class SqlitePurchaseRepository implements PurchaseRepository {
                 totalCost: item.totalCost,
               ),
             );
+      }
 
-        if (autoApprove && item.productId != null && item.productId! > 0) {
-          final product = await (_db.select(_db.products)
-                ..where((p) => p.id.equals(item.productId!)))
-              .getSingleOrNull();
-          if (product != null) {
-            await (_db.update(_db.products)
-                  ..where((p) => p.id.equals(item.productId!)))
-                .write(
-              ProductsCompanion(
-                stockQuantity: Value(product.stockQuantity + item.quantity),
-                costPrice: Value(item.costPrice),
-                updatedAt: Value(now),
-              ),
-            );
-            await _db.into(_db.stockAdjustments).insert(
-                  StockAdjustmentsCompanion.insert(
-                    productId: item.productId!,
-                    adjustmentQuantity: item.quantity,
-                    reason: const Value('Purchase'),
-                    reference: Value('purchase:$purchaseId'),
-                    userId: Value(userId),
-                  ),
-                );
-          }
-        }
+      if (autoApprove) {
+        await _executeApprovalInternal(purchaseId, invoiceNumber, userId, now);
       }
 
       return (await getPurchaseDetail(purchaseId)).purchase;
     });
+  }
+
+  Future<void> _executeApprovalInternal(
+    int purchaseId,
+    String invoiceNumber,
+    int userId,
+    DateTime now,
+  ) async {
+    final items = await (_db.select(_db.purchaseItems)
+          ..where((i) => i.purchaseId.equals(purchaseId)))
+        .get();
+    final margin = await _getProfitMargin();
+
+    for (final item in items) {
+      int? targetProductId = item.productId;
+
+      // Handle unlisted product: check catalog by name or auto-register with governed price
+      if (targetProductId == null || targetProductId <= 0) {
+        final existing = await (_db.select(_db.products)
+              ..where((p) => p.name.equals(item.productName)))
+            .getSingleOrNull();
+        if (existing != null) {
+          targetProductId = existing.id;
+        } else {
+          final calculatedSelling =
+              PricingEngine.calculateSellingPrice(item.costPrice, margin);
+          final generatedSku =
+              SkuGenerator.generate(brandName: item.productName);
+          targetProductId = await _db.into(_db.products).insert(
+                ProductsCompanion.insert(
+                  sku: generatedSku,
+                  name: item.productName,
+                  costPrice: Value(item.costPrice),
+                  sellingPrice: Value(calculatedSelling),
+                  stockQuantity: Value(item.quantity),
+                  lowStockThreshold: const Value(10),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
+                ),
+              );
+          await (_db.update(_db.purchaseItems)
+                ..where((pi) => pi.id.equals(item.id)))
+              .write(
+            PurchaseItemsCompanion(productId: Value(targetProductId)),
+          );
+          await _db.into(_db.stockAdjustments).insert(
+                StockAdjustmentsCompanion.insert(
+                  productId: targetProductId,
+                  adjustmentQuantity: item.quantity,
+                  reason: const Value('Purchase'),
+                  reference: Value('purchase:$purchaseId'),
+                  userId: Value(userId),
+                ),
+              );
+          continue;
+        }
+      }
+
+      final product = await (_db.select(_db.products)
+            ..where((p) => p.id.equals(targetProductId!)))
+          .getSingleOrNull();
+      if (product != null) {
+        final newSellingPrice =
+            PricingEngine.calculateSellingPrice(item.costPrice, margin);
+        await (_db.update(_db.products)
+              ..where((p) => p.id.equals(targetProductId!)))
+            .write(
+          ProductsCompanion(
+            stockQuantity: Value(product.stockQuantity + item.quantity),
+            costPrice: Value(item.costPrice),
+            sellingPrice: Value(newSellingPrice),
+            updatedAt: Value(now),
+          ),
+        );
+        await _db.into(_db.stockAdjustments).insert(
+              StockAdjustmentsCompanion.insert(
+                productId: targetProductId!,
+                adjustmentQuantity: item.quantity,
+                reason: const Value('Purchase'),
+                reference: Value('purchase:$purchaseId'),
+                userId: Value(userId),
+              ),
+            );
+      }
+    }
+
+    await (_db.update(_db.purchases)..where((p) => p.id.equals(purchaseId)))
+        .write(
+      const PurchasesCompanion(
+        status: Value('approved'),
+      ),
+    );
   }
 
   @override
@@ -113,44 +194,12 @@ class SqlitePurchaseRepository implements PurchaseRepository {
       if (purchaseRow.status == 'approved') {
         return;
       }
-
-      final items = await (_db.select(_db.purchaseItems)
-            ..where((i) => i.purchaseId.equals(id)))
-          .get();
       final now = DateTime.now();
-
-      for (final item in items) {
-        if (item.productId != null && item.productId! > 0) {
-          final product = await (_db.select(_db.products)
-                ..where((p) => p.id.equals(item.productId!)))
-              .getSingleOrNull();
-          if (product != null) {
-            await (_db.update(_db.products)
-                  ..where((p) => p.id.equals(item.productId!)))
-                .write(
-              ProductsCompanion(
-                stockQuantity: Value(product.stockQuantity + item.quantity),
-                costPrice: Value(item.costPrice),
-                updatedAt: Value(now),
-              ),
-            );
-            await _db.into(_db.stockAdjustments).insert(
-                  StockAdjustmentsCompanion.insert(
-                    productId: item.productId!,
-                    adjustmentQuantity: item.quantity,
-                    reason: Value('Purchase order #${purchaseRow.invoiceNumber} approved'),
-                    reference: Value('purchase:$id'),
-                    userId: Value(purchaseRow.userId),
-                  ),
-                );
-          }
-        }
-      }
-
-      await (_db.update(_db.purchases)..where((p) => p.id.equals(id))).write(
-        const PurchasesCompanion(
-          status: Value('approved'),
-        ),
+      await _executeApprovalInternal(
+        id,
+        purchaseRow.invoiceNumber,
+        purchaseRow.userId,
+        now,
       );
     });
   }

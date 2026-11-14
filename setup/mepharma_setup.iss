@@ -3,7 +3,7 @@
 ; ==============================================================================
 
 #define MyAppName "MePharma"
-#define MyAppVersion "2.0.1"
+#define MyAppVersion "2.0.2"
 #define MyAppPublisher "MePharma Systems"
 #define MyAppURL "https://github.com/Fury8oy96/Mepharma_Saas"
 #define MyAppExeName "mepharma.exe"
@@ -28,7 +28,7 @@ DisableProgramGroupPage=yes
 
 ; Output Configuration
 OutputDir=Output
-OutputBaseFilename=MePharma_Setup_2.01
+OutputBaseFilename=MePharma_Setup_2.02
 SetupIconFile={#AppIconPath}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 

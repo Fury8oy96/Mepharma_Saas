@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../core/utils/barcode_symbologies.dart';
 import '../../core/utils/money.dart';
+import '../../core/utils/pricing_engine.dart';
 import '../../core/utils/sku_generator.dart';
 import '../../domain/models/app_category.dart';
 import '../../domain/models/app_product.dart';
@@ -39,10 +40,11 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _doseController;
   late final TextEditingController _barcodeController;
   late final TextEditingController _costController;
-  late final TextEditingController _priceController;
   late final TextEditingController _thresholdController;
   late final TextEditingController _expiryController;
   late final TextEditingController _descriptionController;
+
+  int _calculatedSellingPrice = 0;
 
   int? _categoryId;
   int? _supplierId;
@@ -83,9 +85,13 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _costController = TextEditingController(
       text: formatCents(p?.costPrice ?? 0),
     );
-    _priceController = TextEditingController(
-      text: formatCents(p?.sellingPrice ?? 0),
-    );
+    final initialCost = p?.costPrice ?? 0;
+    final initialMarginStr =
+        ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
+    final initialMargin = double.tryParse(initialMarginStr) ?? 0.3;
+    _calculatedSellingPrice = p != null && p.sellingPrice > 0
+        ? p.sellingPrice
+        : PricingEngine.calculateSellingPrice(initialCost, initialMargin);
     _thresholdController = TextEditingController(
       text: (p?.lowStockThreshold ?? defaultThreshold).toString(),
     );
@@ -125,11 +131,14 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   void _updateSellingPrice() {
     final costText = _costController.text;
     final cost = parseCents(costText);
-    if (cost > 0) {
-      final marginStr = ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0';
-      final margin = double.tryParse(marginStr) ?? 0.0;
-      final sellingPrice = (cost * (1 + margin)).round();
-      _priceController.text = formatCents(sellingPrice);
+    final marginStr =
+        ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
+    final margin = double.tryParse(marginStr) ?? 0.3;
+    final sellingPrice = PricingEngine.calculateSellingPrice(cost, margin);
+    if (mounted && sellingPrice != _calculatedSellingPrice) {
+      setState(() {
+        _calculatedSellingPrice = sellingPrice;
+      });
     }
   }
 
@@ -161,7 +170,6 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _doseController.dispose();
     _barcodeController.dispose();
     _costController.dispose();
-    _priceController.dispose();
     _thresholdController.dispose();
     _expiryController.dispose();
     _descriptionController.dispose();
@@ -216,7 +224,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       }
 
       final cost = parseCents(_costController.text);
-      final price = parseCents(_priceController.text);
+      final marginStr =
+          ref.read(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
+      final margin = double.tryParse(marginStr) ?? 0.3;
+      final price = PricingEngine.calculateSellingPrice(cost, margin);
       final threshold = int.tryParse(_thresholdController.text.trim()) ?? 10;
 
       if (_isEditing) {
@@ -279,6 +290,14 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
+    final isArabic = l10n.localeName.startsWith('ar');
+    final settingsMargin =
+        ref.watch(storeSettingsProvider).valueOrNull?.profitMargin ?? '0.3';
+    final rawMargin = double.tryParse(settingsMargin) ?? 0.3;
+    final marginPercent = (rawMargin > 1.0
+            ? rawMargin
+            : (rawMargin * 100))
+        .toStringAsFixed(0);
 
     return AlertDialog(
       title: Text(_isEditing ? l10n.editProduct : l10n.addProduct),
@@ -476,19 +495,139 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: TextFormField(
-                        controller: _priceController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                      child: Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
                         ),
-                        decoration: InputDecoration(
-                          labelText: l10n.sellingPrice,
-                          prefixText: currency,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.3),
+                          ),
                         ),
-                        validator: (value) => _validateMoney(value, l10n),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 13,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.sellingPrice,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '+$marginPercent%',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              formatMoney(
+                                _calculatedSellingPrice,
+                                symbol: currency,
+                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outlineVariant
+                          .withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isArabic
+                              ? 'يتم احتساب سعر البيع تلقائياً بناءً على سعر الشراء وهامش الربح المحدد في النظام (سعر البيع = سعر الشراء + [سعر الشراء × نسبة الهامش $marginPercent%]).'
+                              : 'Selling price is auto-calculated based on purchase cost and governed profit margin (Selling Price = Cost Price + [Cost Price × Margin $marginPercent%]).',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
