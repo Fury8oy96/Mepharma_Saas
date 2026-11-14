@@ -29,35 +29,7 @@ class OfflineFirstProductRepository implements ProductRepository {
   Future<void> _mirrorToLocal(List<AppProduct> products) async {
     for (final p in products) {
       try {
-        final existing = await _localRepo.findById(p.id);
-        if (existing == null) {
-          await _localRepo.create(
-            sku: p.sku,
-            name: p.name,
-            barcode: p.barcode,
-            categoryId: p.categoryId,
-            supplierId: p.supplierId,
-            costPrice: p.costPrice,
-            sellingPrice: p.sellingPrice,
-            stockQuantity: p.stockQuantity,
-            lowStockThreshold: p.lowStockThreshold,
-            expiryDate: p.expiryDate,
-            description: p.description,
-          );
-        } else {
-          await _localRepo.update(
-            p.id,
-            name: p.name,
-            barcode: p.barcode,
-            categoryId: p.categoryId,
-            supplierId: p.supplierId,
-            costPrice: p.costPrice,
-            sellingPrice: p.sellingPrice,
-            lowStockThreshold: p.lowStockThreshold,
-            expiryDate: p.expiryDate,
-            description: p.description,
-          );
-        }
+        await _localRepo.upsertMirror(p);
       } catch (_) {}
     }
   }

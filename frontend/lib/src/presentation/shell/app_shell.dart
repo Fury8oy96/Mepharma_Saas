@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../domain/models/api_config.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../app/providers.dart';
 import '../common/network_status_banner.dart';
 import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
 import '../session/session_controller.dart';
-import '../settings/hardware_devices_section.dart';
-import '../common/update_notification_dialog.dart';
+import '../settings/printer_settings_section.dart';
 import 'navigation.dart';
 
 /// Modern Vuexy-inspired Shell: collapsible/expandable grouped sidebar,
@@ -20,7 +20,6 @@ class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
-  static bool _hasCheckedUpdateToday = false;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +32,7 @@ class AppShell extends ConsumerWidget {
     ref.watch(syncEventListener);
 
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final isExpanded = ref.watch(sidebarExpandedProvider);
 
     // Listen to events stream to show SnackBar alerts to the branch user
@@ -43,11 +43,11 @@ class AppShell extends ConsumerWidget {
           final json = jsonDecode(data) as Map<String, dynamic>;
           final eventName = json['event'] as String?;
           if (eventName == 'purchase_approved') {
-            final invoice = json['invoice_number'] as String?;
+            final invoice = json['invoice_number'] as String? ?? '';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Purchase request $invoice has been approved and stock is restocked!',
+                  l10n.purchaseApprovedNotice(invoice),
                 ),
                 backgroundColor: theme.colorScheme.primary,
                 duration: const Duration(seconds: 5),
@@ -63,23 +63,6 @@ class AppShell extends ConsumerWidget {
       (s) => s.path == location,
       orElse: () => appSections.first,
     );
-    final l10n = AppLocalizations.of(context);
-
-    // Daily Background Update Check (Non-intrusive)
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!_hasCheckedUpdateToday) {
-        _hasCheckedUpdateToday = true;
-        final updateService = ref.read(updateCheckerServiceProvider);
-        final updateInfo = await updateService.checkForUpdate(force: false);
-        if (updateInfo != null && context.mounted) {
-          UpdateNotificationDialog.show(
-            context,
-            updateInfo: updateInfo,
-            onDismissPermanently: () => updateService.dismissVersion(updateInfo.version),
-          );
-        }
-      }
-    });
 
     return Scaffold(
       body: Row(
@@ -104,9 +87,13 @@ class AppShell extends ConsumerWidget {
                 _ModernHeader(
                   activeSection: activeSection,
                   username: user.username,
-                  roleLabel: user.role.isSuperAdmin
-                      ? l10n.superAdminRole
-                      : (user.role.isBranchAdmin ? l10n.branchAdminRole : l10n.roleStaff),
+                  roleLabel: l10n.localeName.startsWith('ar')
+                      ? 'المدير'
+                      : (user.role.isSuperAdmin
+                          ? l10n.superAdminShort
+                          : (user.role.isBranchAdmin
+                              ? l10n.branchAdminShort
+                              : l10n.staffShort)),
                   onLogout: () => ref.read(sessionProvider.notifier).logout(),
                 ),
                 const NetworkStatusBanner(),
@@ -156,7 +143,7 @@ class _ModernSidebar extends StatelessWidget {
       if (isExpanded) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(left: 12, top: 14, bottom: 6),
+            padding: const EdgeInsetsDirectional.only(start: 12, top: 14, bottom: 6),
             child: Text(
               cat.label(l10n).toUpperCase(),
               style: theme.textTheme.labelSmall?.copyWith(
@@ -206,8 +193,8 @@ class _ModernSidebar extends StatelessWidget {
       width: width,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          right: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+        border: BorderDirectional(
+          end: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
         ),
       ),
       child: Column(
@@ -537,20 +524,26 @@ class _ModernHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final apiConfig = ref.watch(apiConfigProvider);
     final monitor = ref.watch(networkMonitorProvider);
+    final isLocalMode = apiConfig.mode == DatabaseMode.local;
     final isOnline = monitor.isOnline;
     final isSyncing = monitor.isSyncing;
 
-    final badgeColor = isSyncing
-        ? const Color(0xFF0091FF)
-        : (isOnline ? const Color(0xFF28C76F) : const Color(0xFFFF9F43));
+    final badgeColor = isLocalMode
+        ? const Color(0xFF0EA5E9)
+        : (isSyncing
+            ? const Color(0xFF0091FF)
+            : (isOnline ? const Color(0xFF28C76F) : const Color(0xFFFF9F43)));
 
     final isArabic = l10n.localeName.startsWith('ar');
-    final badgeText = isSyncing
-        ? (isArabic ? 'جاري المزامنة...' : 'Syncing...')
-        : (isOnline
-            ? (isArabic ? 'متصل مباشر' : 'Live Online')
-            : (isArabic ? 'غير متصل (محلي)' : 'Offline (Local)'));
+    final badgeText = isLocalMode
+        ? l10n.localModeActive
+        : (isSyncing
+            ? (isArabic ? 'جاري المزامنة...' : 'Syncing...')
+            : (isOnline
+                ? (isArabic ? 'متصل مباشر' : 'Live Online')
+                : (isArabic ? 'غير متصل (محلي)' : 'Offline (Local)')));
 
     return Container(
       height: 64,
@@ -638,13 +631,11 @@ class _ModernHeader extends ConsumerWidget {
           const LanguageSwitcher(),
           const SizedBox(width: 8),
 
-          // Quick Hardware & Devices Setup (accessible to all POS operators & managers)
+          // Quick Thermal Printer Setup (accessible to all POS operators & managers)
           IconButton(
             icon: const Icon(Icons.print_outlined, size: 20),
-            tooltip: Localizations.localeOf(context).languageCode == 'ar'
-                ? 'إدارة الطابعات والأجهزة المتصلة'
-                : 'Connected Hardware & Printers',
-            onPressed: () => HardwareDevicesDialog.show(context),
+            tooltip: l10n.printerSettings,
+            onPressed: () => PrinterSettingsDialog.show(context),
           ),
           const SizedBox(width: 10),
 

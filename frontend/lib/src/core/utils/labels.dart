@@ -1,13 +1,15 @@
 import '../../data/db/enums.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// Localized label for a stored payment method name ('cash'/'card'/'mobileMoney'/'credit').
+/// Localized label for a stored payment method name ('cash'/'card'/'bankTransfer'/'mobileMoney'/'credit').
 String paymentMethodLabel(String? method, AppLocalizations l10n) {
   switch (method) {
     case 'cash':
       return l10n.paymentCash;
     case 'card':
       return l10n.paymentCard;
+    case 'bankTransfer':
+      return l10n.paymentBankTransfer;
     case 'mobileMoney':
       return l10n.paymentMobileMoney;
     case 'credit':

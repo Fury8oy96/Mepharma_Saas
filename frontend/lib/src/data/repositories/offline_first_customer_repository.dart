@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../core/services/api_client.dart';
 import '../../core/services/network_monitor.dart';
 import '../../core/services/sync_engine.dart';
 import '../../domain/models/customer.dart';
@@ -28,28 +29,7 @@ class OfflineFirstCustomerRepository implements CustomerRepository {
   Future<void> _mirrorToLocal(List<CustomerWithBalance> list) async {
     for (final item in list) {
       try {
-        final c = item.customer;
-        final existing = await _localRepo.findById(c.id);
-        if (existing == null) {
-          await _localRepo.create(
-            name: c.name,
-            phone: c.phone,
-            email: c.email,
-            address: c.address,
-            notes: c.notes,
-            creditLimit: c.creditLimit,
-          );
-        } else {
-          await _localRepo.update(
-            c.id,
-            name: c.name,
-            phone: c.phone,
-            email: c.email,
-            address: c.address,
-            notes: c.notes,
-            creditLimit: c.creditLimit,
-          );
-        }
+        await _localRepo.upsertMirror(item.customer);
       } catch (_) {}
     }
   }
@@ -109,6 +89,12 @@ class OfflineFirstCustomerRepository implements CustomerRepository {
         ]));
         return customer;
       } catch (e) {
+        if (e is ApiException &&
+            e.statusCode != null &&
+            e.statusCode! >= 400 &&
+            e.statusCode! < 500) {
+          rethrow;
+        }
         _networkMonitor.reportFailure(e);
       }
     }
@@ -172,6 +158,12 @@ class OfflineFirstCustomerRepository implements CustomerRepository {
         );
         return;
       } catch (e) {
+        if (e is ApiException &&
+            e.statusCode != null &&
+            e.statusCode! >= 400 &&
+            e.statusCode! < 500) {
+          rethrow;
+        }
         _networkMonitor.reportFailure(e);
       }
     }
@@ -211,6 +203,12 @@ class OfflineFirstCustomerRepository implements CustomerRepository {
         await _localRepo.delete(id);
         return;
       } catch (e) {
+        if (e is ApiException &&
+            e.statusCode != null &&
+            e.statusCode! >= 400 &&
+            e.statusCode! < 500) {
+          rethrow;
+        }
         _networkMonitor.reportFailure(e);
       }
     }
@@ -270,6 +268,12 @@ class OfflineFirstCustomerRepository implements CustomerRepository {
         );
         return payment;
       } catch (e) {
+        if (e is ApiException &&
+            e.statusCode != null &&
+            e.statusCode! >= 400 &&
+            e.statusCode! < 500) {
+          rethrow;
+        }
         _networkMonitor.reportFailure(e);
       }
     }

@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/utils/labels.dart';
 import '../../core/utils/money.dart';
 import '../../data/db/enums.dart';
+import '../../domain/models/api_config.dart';
 import '../../domain/models/app_sale.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'sale_detail_dialog.dart';
@@ -102,6 +103,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                     );
                   }
 
+                  final isLocalMode =
+                      ref.watch(apiConfigProvider).mode == DatabaseMode.local;
                   final pendingInvoices = ref.watch(pendingSyncInvoicesProvider).value ?? <String>{};
                   final localSales = sales
                       .where((s) => pendingInvoices.contains(s.invoiceNumber))
@@ -112,7 +115,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
                   return ListView(
                     children: [
-                      if (localSales.isNotEmpty) ...[
+                      if (!isLocalMode && localSales.isNotEmpty) ...[
                         Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -138,7 +141,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Local Offline Transactions (${localSales.length})',
+                                        l10n.localOfflineTransactions(localSales.length),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: theme.textTheme.titleMedium?.copyWith(
@@ -152,20 +155,20 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                                       onPressed: () {
                                         ref.read(syncEngineProvider).triggerSync();
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Synchronizing local transactions with server...'),
-                                            duration: Duration(seconds: 2),
+                                          SnackBar(
+                                            content: Text(l10n.syncingTransactions),
+                                            duration: const Duration(seconds: 2),
                                           ),
                                         );
                                       },
                                       icon: const Icon(Icons.sync, size: 16),
-                                      label: const Text('Sync Now'),
+                                      label: Text(l10n.syncNow),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'These transactions were saved to local SQLite while offline. They will automatically sync with the server once connected.',
+                                  l10n.offlineQueueNotice,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -194,13 +197,17 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.cloud_done_rounded,
+                                    isLocalMode
+                                        ? Icons.storage_rounded
+                                        : Icons.cloud_done_rounded,
                                     color: theme.colorScheme.primary,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Server Synced Master Stream (${serverSales.length})',
+                                    isLocalMode
+                                        ? l10n.localSavedTransactions(sales.length)
+                                        : l10n.serverSyncedTransactions(serverSales.length),
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.primary,
@@ -210,12 +217,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                               ),
                             ),
                             const Divider(height: 1),
-                            serverSales.isEmpty
+                            (isLocalMode ? sales : serverSales).isEmpty
                                 ? Padding(
                                     padding: const EdgeInsets.all(24),
                                     child: Center(
                                       child: Text(
-                                        'No server-synced records matching filter.',
+                                        l10n.noSales,
                                         style: theme.textTheme.bodyMedium?.copyWith(
                                           color: theme.colorScheme.onSurfaceVariant,
                                         ),
@@ -225,10 +232,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                                 : ListView.separated(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: serverSales.length,
+                                    itemCount: (isLocalMode ? sales : serverSales).length,
                                     separatorBuilder: (_, _) => const Divider(height: 1),
-                                    itemBuilder: (context, index) =>
-                                        _SaleTile(sale: serverSales[index], isLocal: false),
+                                    itemBuilder: (context, index) {
+                                      final list = isLocalMode ? sales : serverSales;
+                                      return _SaleTile(sale: list[index], isLocal: false);
+                                    },
                                   ),
                           ],
                         ),
@@ -285,7 +294,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
               value: null,
               child: Text(l10n.paymentAll),
             ),
-            for (final method in const ['cash', 'card', 'mobileMoney'])
+            for (final method in const ['cash', 'card', 'bankTransfer', 'credit', 'mobileMoney'])
               DropdownMenuItem<String?>(
                 value: method,
                 child: Text(paymentMethodLabel(method, l10n)),
@@ -319,16 +328,16 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             onPressed: _resetFilters,
           ),
         IconButton(
-          tooltip: 'Refresh',
+          tooltip: l10n.refresh,
           icon: const Icon(Icons.refresh),
           onPressed: () {
             ref.read(saleRepositoryProvider).refresh();
             ScaffoldMessenger.of(context)
               ..clearSnackBars()
               ..showSnackBar(
-                const SnackBar(
-                  content: Text('Refreshing sales history...'),
-                  duration: Duration(seconds: 1),
+                SnackBar(
+                  content: Text(l10n.refreshing),
+                  duration: const Duration(seconds: 1),
                 ),
               );
           },
@@ -351,11 +360,13 @@ class _SaleTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     final icon = switch (sale.paymentMethod) {
       'card' => Icons.credit_card,
+      'bankTransfer' => Icons.account_balance_outlined,
       'mobileMoney' => Icons.phone_android,
+      'credit' => Icons.book_outlined,
       _ => Icons.payments_outlined,
     };
 
@@ -389,6 +400,21 @@ class _SaleTile extends ConsumerWidget {
             sale.invoiceNumber,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
+          if (sale.transactionReference != null && sale.transactionReference!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${l10n.transactionReference}: ${sale.transactionReference}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           if (isLocal)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

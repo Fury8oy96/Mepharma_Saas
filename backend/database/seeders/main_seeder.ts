@@ -266,17 +266,11 @@ export default class MainSeeder extends BaseSeeder {
     }
     console.log(`✅ Seeded ${masterMedicines.length} items into Central Master Drug Catalog (public.master_medicines)`)
 
-    // 6. Seed Pharmacy Users into Tenant Schema
+    // 6. Seed Admin User ONLY into Tenant Schema
     const adminHash = await bcrypt.hash('admin123', 10)
-    const supervisorHash = await bcrypt.hash('supervisor123', 10)
-    const staffHash = await bcrypt.hash('staff123', 10)
 
     const tenantUsers = [
       { username: 'admin', password: adminHash, role: 'pharmacy_admin' },
-      { username: 'supervisor', password: supervisorHash, role: 'supervisor' },
-      { username: 'staff', password: staffHash, role: 'pharmacist' },
-      { username: 'pharmacist', password: staffHash, role: 'pharmacist' },
-      { username: 'cashier1', password: staffHash, role: 'cashier' },
     ]
 
     for (const u of tenantUsers) {
@@ -288,50 +282,22 @@ export default class MainSeeder extends BaseSeeder {
         [u.username, u.password, u.role]
       )
     }
-    console.log('✅ Tenant users seeded (admin, supervisor, staff, pharmacist, cashier1)')
+    console.log('✅ Sole Admin user seeded (admin)')
 
-    // 7. Seed Sample Categories & Products into Tenant Schema
-    await db.rawQuery(
-      `INSERT INTO "${schemaName}".categories (id, name, description)
-       VALUES 
-        (1, 'Antibiotics', 'Broad spectrum and narrow spectrum antibiotics'),
-        (2, 'Analgesics & Pain Relief', 'Pain relievers, antipyretics and anti-inflammatory'),
-        (3, 'Cardiovascular', 'Blood pressure and heart medications'),
-        (4, 'Vitamins & Supplements', 'Daily nutritional supplements and minerals')
-       ON CONFLICT (id) DO NOTHING;`
-    )
-
-    await db.rawQuery(
-      `INSERT INTO "${schemaName}".products (id, name, sku, barcode, category_id, cost_price, selling_price, stock_quantity, low_stock_threshold)
-       VALUES 
-        (1, 'Amoxicillin 500mg (20 caps)', 'SKU-AMOX-500', '6221234567890', 1, 1500, 2200, 100, 15),
-        (2, 'Paracetamol 500mg (24 tabs)', 'SKU-PARA-500', '6221234567891', 2, 500, 850, 250, 20),
-        (3, 'Ibuprofen 400mg (30 tabs)', 'SKU-IBU-400', '6221234567892', 2, 800, 1300, 80, 10),
-        (4, 'Omeprazole 20mg (14 caps)', 'SKU-OMEP-20', '6221234567893', 3, 1200, 1800, 65, 10),
-        (5, 'Vitamin C 1000mg Effervescent', 'SKU-VITC-1000', '6221234567894', 4, 1800, 2700, 50, 10)
-       ON CONFLICT (sku) DO NOTHING;`
-    )
-
-    // Sync PostgreSQL serial sequences
-    await db.rawQuery(
-      `SELECT setval(pg_get_serial_sequence('"${schemaName}".products', 'id'), coalesce(max(id), 1)) FROM "${schemaName}".products;`
-    )
-    await db.rawQuery(
-      `SELECT setval(pg_get_serial_sequence('"${schemaName}".categories', 'id'), coalesce(max(id), 1)) FROM "${schemaName}".categories;`
-    )
+    // 7. Sync PostgreSQL serial sequences
     await db.rawQuery(
       `SELECT setval(pg_get_serial_sequence('"${schemaName}".users', 'id'), coalesce(max(id), 1)) FROM "${schemaName}".users;`
     )
 
     // 8. Seed Settings into Tenant Schema
     const settings = [
-      { key: 'store_name', value: 'MePharma Central Pharmacy' },
-      { key: 'store_phone', value: '+1-555-MEPHARMA' },
-      { key: 'store_address', value: '100 Medical Center Blvd' },
-      { key: 'currency', value: 'USD' },
-      { key: 'currency_symbol', value: '$' },
-      { key: 'tax_rate', value: '14' },
-      { key: 'receipt_footer', value: 'Thank you for choosing MePharma!' },
+      { key: 'store_name', value: 'MePharma Pharmacy' },
+      { key: 'currency', value: 'SDG' },
+      { key: 'currency_symbol', value: 'ج.س' },
+      { key: 'tax_rate', value: '0' },
+      { key: 'profit_margin', value: '0' },
+      { key: 'profitMargin', value: '0' },
+      { key: 'receipt_footer', value: 'شكراً لاختياركم صيدليتنا!' },
     ]
 
     for (const s of settings) {

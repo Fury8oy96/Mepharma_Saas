@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { apiRequest, addToast } from '../api';
+  import { currencyStore } from '../currency';
   import { t, currentLocale } from '../i18n/store';
   import { icons } from '../utils/icons';
 
@@ -100,8 +100,8 @@
     }
   }
 
-  function formatPrice(cents: number): string {
-    return (cents / 100).toFixed(2);
+  function formatPrice(val: number): string {
+    return Number(val || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 </script>
 
@@ -209,8 +209,8 @@
                   </td>
                   <td>
                     <div class="pricing-info">
-                      <strong class="sell-val">${formatPrice(med.defaultSellingPrice)}</strong>
-                      <small class="cost-val">Cost: ${formatPrice(med.defaultCostPrice)}</small>
+                      <strong class="sell-val">{formatPrice(med.defaultSellingPrice)} {$currencyStore}</strong>
+                      <small class="cost-val">{$t('prod.master.cost')}: {formatPrice(med.defaultCostPrice)} {$currencyStore}</small>
                     </div>
                   </td>
                 </tr>
@@ -339,6 +339,11 @@
     pointer-events: none;
   }
 
+  :global(html[dir="rtl"]) .search-icon {
+    left: auto;
+    right: 12px;
+  }
+
   .search-input-wrap input {
     width: 100%;
     padding-left: 36px;
@@ -349,6 +354,11 @@
     font-size: 0.95rem;
   }
 
+  :global(html[dir="rtl"]) .search-input-wrap input {
+    padding-left: 32px;
+    padding-right: 36px;
+  }
+
   .clear-search {
     position: absolute;
     right: 10px;
@@ -356,6 +366,11 @@
     border: none;
     cursor: pointer;
     color: #94a3b8;
+  }
+
+  :global(html[dir="rtl"]) .clear-search {
+    right: auto;
+    left: 10px;
   }
 
   .formulary-table-container {
@@ -381,6 +396,10 @@
     color: #475569;
     border-bottom: 2px solid var(--border-color, #e2e8f0);
     z-index: 10;
+  }
+
+  :global(html[dir="rtl"]) .data-table th {
+    text-align: right;
   }
 
   .data-table td {

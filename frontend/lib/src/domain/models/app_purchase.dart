@@ -8,6 +8,7 @@ class AppPurchase {
   const AppPurchase({
     required this.id,
     required this.invoiceNumber,
+    this.transactionReference,
     this.supplierId,
     required this.userId,
     required this.totalAmount,
@@ -18,6 +19,9 @@ class AppPurchase {
 
   final int id;
   final String invoiceNumber;
+
+  /// External transaction reference / receipt / bank reference (رقم العملية)
+  final String? transactionReference;
   final int? supplierId;
   final int userId;
 

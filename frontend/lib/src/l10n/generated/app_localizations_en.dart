@@ -414,7 +414,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentCard => 'Card';
 
   @override
+  String get paymentBankTransfer => 'Bank transfer';
+
+  @override
   String get paymentMobileMoney => 'Mobile money';
+
+  @override
+  String get transactionReference => 'Transaction reference';
+
+  @override
+  String get transactionRefHint => 'Enter bank transfer reference number';
+
+  @override
+  String get transactionRefRequired =>
+      'Transaction reference is required for bank transfer';
 
   @override
   String get amountReceived => 'Amount received';
@@ -1252,81 +1265,105 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get offlineModeBannerTitle =>
-      'Operating in Offline Mode — Local Storage Active';
+  String get refresh => 'Refresh';
 
   @override
-  String get offlineModeBannerSubtitle =>
-      'All changes are saved locally to SQLite.';
-
-  @override
-  String offlinePendingTransactions(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count transactions queued for sync.',
-      one: '1 transaction queued for sync.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get syncFailedBannerTitle =>
-      'Sync Failed — Retries When Connection Is Stable';
-
-  @override
-  String get networkRestoredBannerTitle =>
-      'Network Restored — Synchronizing with Server...';
-
-  @override
-  String get pendingSyncBannerTitle => 'Pending Local Changes Ready to Sync';
-
-  @override
-  String get reconcilingRecordsSubtitle =>
-      'Reconciling pending records and updating stock...';
-
-  @override
-  String pendingServerReconciliation(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count offline transactions pending server reconciliation.',
-      one: '1 offline transaction pending server reconciliation.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkConnection => 'Check Connection';
+  String get refreshing => 'Refreshing...';
 
   @override
   String get syncNow => 'Sync Now';
 
   @override
-  String get supervisorAuthorization => 'Supervisor Authorization';
+  String get checkConnection => 'Check Connection';
+
+  @override
+  String localOfflineTransactions(int count) {
+    return 'Local Offline Transactions ($count)';
+  }
+
+  @override
+  String serverSyncedTransactions(int count) {
+    return 'Server Synced Transactions ($count)';
+  }
+
+  @override
+  String localSavedTransactions(int count) {
+    return 'Local Sales Ledger ($count)';
+  }
+
+  @override
+  String get offlineQueueNotice =>
+      'These transactions were saved locally while offline and will sync automatically when online.';
+
+  @override
+  String get syncingTransactions =>
+      'Synchronizing local transactions with server...';
+
+  @override
+  String get superAdminShort => 'Super Admin';
+
+  @override
+  String get branchAdminShort => 'Branch Admin';
+
+  @override
+  String get staffShort => 'Staff';
+
+  @override
+  String get localModeActive => 'Local Mode';
+
+  @override
+  String purchaseApprovedNotice(String invoice) {
+    return 'Purchase request $invoice has been approved and inventory is updated.';
+  }
+
+  @override
+  String printedOn(String date) {
+    return 'Printed on $date';
+  }
+
+  @override
+  String get stockOut => 'Out of stock';
+
+  @override
+  String get confirmApprovePurchase =>
+      'Are you sure you want to approve this purchase order and add its inventory to branch stock?';
+
+  @override
+  String get supervisorApprovePurchaseReason =>
+      'Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.';
+
+  @override
+  String get supervisorReturnReason =>
+      'Processing refunds and returns requires supervisor override.';
+
+  @override
+  String get terminalQuotaTitle => 'Terminal Seat Limit Reached';
+
+  @override
+  String get terminalQuotaInfo =>
+      'To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.';
+
+  @override
+  String get understood => 'Understood';
+
+  @override
+  String get supervisorAuthTitle => 'Supervisor Authorization';
 
   @override
   String get supervisorUsernameOptional => 'Supervisor Username (optional)';
 
   @override
-  String get supervisorPasswordPin => 'Supervisor Password / PIN *';
+  String get supervisorPasswordRequired => 'Supervisor Password / PIN *';
 
   @override
   String get authorize => 'Authorize';
 
   @override
-  String get invalidSupervisorPassword =>
-      'Invalid local supervisor password or PIN.';
+  String get requestOutOfStockDrug => 'Request Out-of-Stock Drug';
 
   @override
-  String get checkForUpdates => 'Check for Updates';
+  String get diagnosticsCopied => 'Diagnostics copied to clipboard';
 
   @override
-  String get checkingForUpdates => 'Checking for updates...';
-
-  @override
-  String get upToDate => 'MePharma is up to date';
-
-  @override
-  String get updateAvailable => 'Update Available';
+  String get copyErrorDiagnostics => 'Copy Error Diagnostics';
 }

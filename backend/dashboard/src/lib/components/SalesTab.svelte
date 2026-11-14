@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { apiRequest, addToast, subscribeToSSE } from '../api';
+  import { currencyStore } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
 
@@ -55,8 +56,8 @@
     showModal = true;
     try {
       const res = await apiRequest(`/sales/${id}`);
-      viewingSale = res.sale;
-      viewingItems = res.items || [];
+      viewingSale = res.sale || res;
+      viewingItems = res.items || res.sale?.items || [];
     } catch (err: any) {
       addToast(err.message || $t('toast.error'), 'error');
       showModal = false;
@@ -65,8 +66,8 @@
     }
   }
 
-  function formatCurrency(val: number) {
-    return Math.round(Number(val || 0)).toLocaleString('en-US') + ' SDG';
+  function formatCurrency(val: number, curr: string = $currencyStore) {
+    return Math.round(Number(val || 0)).toLocaleString('en-US') + ' ' + curr;
   }
 </script>
 
@@ -135,12 +136,12 @@
                   <td>{s.customer_name || $t('sales.walkIn')}</td>
                   <td>{new Date(s.created_at).toLocaleString($currentLocale === 'ar' ? 'ar-EG' : 'en-US')}</td>
                   <td><span class="badge badge-role">{s.payment_method}</span></td>
-                  <td><strong>{formatCurrency(s.total_amount)}</strong></td>
+                  <td><strong>{formatCurrency(s.total_amount, $currencyStore)}</strong></td>
                   <td>
                     {#if s.status === 'completed'}
-                      <span class="badge badge-approved">Completed</span>
+                      <span class="badge badge-approved">{$t('sales.status.completed')}</span>
                     {:else if s.status === 'returned'}
-                      <span class="badge badge-danger">Returned</span>
+                      <span class="badge badge-danger">{$t('sales.status.returned')}</span>
                     {:else}
                       <span class="badge badge-pending">{s.status}</span>
                     {/if}
@@ -166,7 +167,7 @@
         <div class="modal-header">
           <div>
             <h3>{$t('sales.viewReceipt')} #{viewingSale?.invoice_number}</h3>
-            <span class="sub-text">{new Date(viewingSale?.created_at || '').toLocaleString()} | {$t('sales.th.customer')}: {viewingSale?.customer_name || $t('sales.walkIn')}</span>
+            <span class="sub-text">{new Date(viewingSale?.created_at || '').toLocaleString($currentLocale === 'ar' ? 'ar-EG' : 'en-US')} | {$t('sales.th.customer')}: {viewingSale?.customer_name || $t('sales.walkIn')}</span>
           </div>
           <button class="close-btn" on:click={() => showModal = false}>{@html icons.x}</button>
         </div>
@@ -184,17 +185,17 @@
                   <tr>
                     <th>{$t('prod.th.product')}</th>
                     <th>{$t('prod.th.stock')}</th>
-                    <th>Price</th>
-                    <th>Total</th>
+                    <th>{$t('common.price')}</th>
+                    <th>{$t('common.total')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {#each viewingItems as item}
                     <tr>
                       <td><strong>{item.product_name}</strong></td>
-                      <td>{item.quantity} units</td>
-                      <td>{formatCurrency(item.unit_price)}</td>
-                      <td><strong>{formatCurrency(item.total_price)}</strong></td>
+                      <td>{item.quantity} {$t('common.units')}</td>
+                      <td>{formatCurrency(item.unit_price, $currencyStore)}</td>
+                      <td><strong>{formatCurrency(item.total_price ?? item.total ?? ((item.unit_price || 0) * (item.quantity || 1)), $currencyStore)}</strong></td>
                     </tr>
                   {/each}
                 </tbody>
@@ -204,17 +205,17 @@
             <div class="invoice-summary-card">
               <div class="summary-line">
                 <span>{$t('sales.th.subtotal')}:</span>
-                <span>{formatCurrency(viewingSale?.subtotal || viewingSale?.total_amount)}</span>
+                <span>{formatCurrency(viewingSale?.subtotal || viewingSale?.total_amount, $currencyStore)}</span>
               </div>
               {#if viewingSale?.tax_amount}
                 <div class="summary-line">
                   <span>{$t('sales.th.tax')}:</span>
-                  <span>{formatCurrency(viewingSale?.tax_amount)}</span>
+                  <span>{formatCurrency(viewingSale?.tax_amount, $currencyStore)}</span>
                 </div>
               {/if}
               <div class="summary-line total-highlight">
                 <strong>{$t('sales.th.total')}:</strong>
-                <strong class="text-success">{formatCurrency(viewingSale?.total_amount)}</strong>
+                <strong class="text-success">{formatCurrency(viewingSale?.total_amount, $currencyStore)}</strong>
               </div>
             </div>
           </div>

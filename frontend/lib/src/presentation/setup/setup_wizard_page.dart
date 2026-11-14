@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/device_identifier_service.dart';
 import '../../domain/models/api_config.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../common/language_switcher.dart';
 import '../common/theme_mode_switcher.dart';
 
@@ -96,6 +97,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
+    final currentConfig = ref.watch(apiConfigProvider);
 
     return Scaffold(
       body: Container(
@@ -132,9 +136,20 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                         // Top Switchers Bar
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            ThemeModeSwitcher(),
-                            LanguageSwitcher(),
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (currentConfig.isConfigured)
+                                  TextButton.icon(
+                                    onPressed: _proceedToLogin,
+                                    icon: const Icon(Icons.arrow_back, size: 18),
+                                    label: Text(isArabic ? 'العودة لتسجيل الدخول' : 'Back to Login'),
+                                  ),
+                                const ThemeModeSwitcher(),
+                              ],
+                            ),
+                            const LanguageSwitcher(),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -168,7 +183,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                         const SizedBox(height: 16),
 
                         Text(
-                          '${AppConstants.appName} POS Initial Setup',
+                          isArabic
+                              ? 'إعداد وتشغيل ${AppConstants.appName}'
+                              : '${AppConstants.appName} POS Initial Setup',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,
@@ -178,7 +195,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Configure connection type, register hardware seat, and validate annual license.',
+                          isArabic
+                              ? 'اختر نمط التشغيل (محلي أو ربط سحابي أونلاين) وتفعيل الترخيص عند الربط بالخادم.'
+                              : 'Configure connection type, register hardware seat, and validate license.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
@@ -188,7 +207,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
 
                         // Step 1: Mode Selection
                         Text(
-                          '1. Setup & Connection Architecture',
+                          isArabic
+                              ? '1. نمط الاتصال وقاعدة البيانات'
+                              : '1. Setup & Connection Architecture',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.onSurface,
@@ -196,16 +217,16 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                         ),
                         const SizedBox(height: 10),
                         SegmentedButton<DatabaseMode>(
-                          segments: const [
-                            ButtonSegment<DatabaseMode>(
-                              value: DatabaseMode.onlineApi,
-                              icon: Icon(Icons.cloud_outlined),
-                              label: Text('Online Server / Cloud'),
-                            ),
+                          segments: [
                             ButtonSegment<DatabaseMode>(
                               value: DatabaseMode.local,
-                              icon: Icon(Icons.storage_outlined),
-                              label: Text('Local SQLite (Offline)'),
+                              icon: const Icon(Icons.storage_outlined),
+                              label: Text(isArabic ? 'محلي SQLite (بدون إنترنت)' : 'Local SQLite (Offline)'),
+                            ),
+                            ButtonSegment<DatabaseMode>(
+                              value: DatabaseMode.onlineApi,
+                              icon: const Icon(Icons.cloud_outlined),
+                              label: Text(isArabic ? 'خادم سحابي أونلاين (API)' : 'Online Server / Cloud'),
                             ),
                           ],
                           selected: {_selectedMode},
@@ -238,7 +259,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                     Icon(Icons.offline_bolt_outlined, color: colorScheme.primary),
                                     const SizedBox(width: 10),
                                     Text(
-                                      'Standalone Local Database',
+                                      isArabic
+                                          ? 'قاعدة بيانات محلية مستقلة'
+                                          : 'Standalone Local Database',
                                       style: theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -247,7 +270,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Runs entirely on this computer with an embedded SQLite database. No network server, Docker, or external license server required.',
+                                  isArabic
+                                      ? 'يعمل التطبيق بالكامل محلياً على هذا الجهاز عبر قاعدة بيانات SQLite مدمجة دون الحاجة لإنترنت أو خادم خارجي، ويمكنك الربط أونلاين في أي وقت لاحقاً.'
+                                      : 'Runs entirely on this computer with an embedded SQLite database. No network server, Docker, or external license server required. You can link online later anytime.',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                   ),
@@ -271,15 +296,19 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
                                 : const Icon(Icons.check_circle_outline),
-                            label: const Text(
-                              'Save Configuration & Proceed to Counter',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            label: Text(
+                              isArabic
+                                  ? 'حفظ الإعداد والانتقال لتسجيل الدخول'
+                                  : 'Save Configuration & Proceed to Counter',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           ),
                         ] else ...[
                           // Mode: Online Cloud / LAN
                           Text(
-                            '2. Pharmacy Domain & Server Endpoint',
+                            isArabic
+                                ? '2. نطاق الصيدلية وعنوان الخادم'
+                                : '2. Pharmacy Domain & Server Endpoint',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
@@ -289,10 +318,12 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                           TextFormField(
                             controller: _domainController,
                             decoration: InputDecoration(
-                              labelText: 'Pharmacy Domain or Base URL',
+                              labelText: isArabic ? 'نطاق الصيدلية أو رابط الخادم' : 'Pharmacy Domain or Base URL',
                               hintText: 'main.localhost:8000',
                               prefixIcon: const Icon(Icons.language_outlined),
-                              helperText: 'E.g. main.localhost:8000, pharmacy1.mepharma.io, or LAN IP:port',
+                              helperText: isArabic
+                                  ? 'مثال: main.localhost:8000 أو domain.mepharma.io أو عنوان الشبكة LAN'
+                                  : 'E.g. main.localhost:8000, pharmacy1.mepharma.io, or LAN IP:port',
                               filled: true,
                               fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                             ),
@@ -300,7 +331,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                           const SizedBox(height: 18),
 
                           Text(
-                            '3. Annual Cryptographic License Key',
+                            isArabic
+                                ? '3. مفتاح الترخيص الرقمي'
+                                : '3. Annual Cryptographic License Key',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onSurface,
@@ -317,15 +350,17 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                               letterSpacing: 0.4,
                             ),
                             decoration: InputDecoration(
-                              labelText: 'License Token (LIC-...)',
+                              labelText: isArabic ? 'رمز الترخيص (LIC-...)' : 'License Token (LIC-...)',
                               hintText: 'LIC-eyJ...',
                               prefixIcon: const Icon(Icons.key_outlined),
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.paste_outlined),
-                                tooltip: 'Paste from clipboard',
+                                tooltip: isArabic ? 'لصق من الحافظة' : 'Paste from clipboard',
                                 onPressed: _pasteFromClipboard,
                               ),
-                              helperText: 'Issued by system provider admin (valid for 1 year with hardware seat locking)',
+                              helperText: isArabic
+                                  ? 'يصدر من لوحة تحكم المزود لتفعيل هذا الجهاز أونلاين'
+                                  : 'Issued by system provider admin (valid for 1 year with hardware seat locking)',
                               filled: true,
                               fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                             ),
@@ -345,7 +380,7 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                 Icon(Icons.desktop_windows_outlined, size: 18, color: colorScheme.primary),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Detected Terminal Seat Hardware UUID:',
+                                  isArabic ? 'بصمة معرف الجهاز:' : 'Detected Terminal Seat Hardware UUID:',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: colorScheme.onSurfaceVariant,
@@ -385,7 +420,9 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                   )
                                 : const Icon(Icons.verified_outlined),
                             label: Text(
-                              _isActivating ? 'Verifying License & Connecting...' : 'Verify License & Connect',
+                              _isActivating
+                                  ? (isArabic ? 'جاري التحقق من الترخيص والاتصال...' : 'Verifying License & Connecting...')
+                                  : (isArabic ? 'التحقق من الترخيص والاتصال' : 'Verify License & Connect'),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           ),
@@ -434,12 +471,14 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                  Row(
                                   children: [
                                     const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 22),
                                     const SizedBox(width: 10),
                                     Text(
-                                      'License Verified & Terminal Registered',
+                                      isArabic
+                                          ? 'تم التحقق وتسجيل الجهاز بنجاح'
+                                          : 'License Verified & Terminal Registered',
                                       style: theme.textTheme.titleMedium?.copyWith(
                                         color: const Color(0xFF10B981),
                                         fontWeight: FontWeight.bold,
@@ -466,38 +505,42 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                 const Divider(height: 24),
                                 _infoRow(
                                   Icons.local_pharmacy_outlined,
-                                  'Pharmacy Name',
+                                  isArabic ? 'اسم الصيدلية' : 'Pharmacy Name',
                                   _activatedConfig!.pharmacyName ?? 'Central Pharmacy',
                                 ),
                                 const SizedBox(height: 8),
                                 _infoRow(
                                   Icons.place_outlined,
-                                  'Store Address',
+                                  isArabic ? 'العنوان' : 'Store Address',
                                   _activatedConfig!.pharmacyAddress ?? 'N/A',
                                 ),
                                 const SizedBox(height: 8),
                                 _infoRow(
                                   Icons.phone_outlined,
-                                  'Phone & Contact',
+                                  isArabic ? 'الهاتف' : 'Phone & Contact',
                                   _activatedConfig!.pharmacyPhone ?? 'N/A',
                                 ),
                                 const SizedBox(height: 8),
                                 _infoRow(
                                   Icons.monetization_on_outlined,
-                                  'Currency & Tax',
-                                  '${_activatedConfig!.currency ?? "USD"} (${_activatedConfig!.currencySymbol ?? r"$"}) • Tax: ${_activatedConfig!.taxRate ?? 0}%',
+                                  isArabic ? 'العملة والضريبة' : 'Currency & Tax',
+                                  '${_activatedConfig!.currency ?? "USD"} (${_activatedConfig!.currencySymbol ?? r"$"}) • ${l10n.tax}: ${_activatedConfig!.taxRate ?? 0}%',
                                 ),
                                 const SizedBox(height: 8),
                                 _infoRow(
                                   Icons.event_available_outlined,
-                                  'Annual Validity',
-                                  '${_activatedConfig!.validityDaysRemaining ?? 365} Days Remaining',
+                                  isArabic ? 'الصلاحية' : 'Annual Validity',
+                                  isArabic
+                                      ? 'متبقي ${_activatedConfig!.validityDaysRemaining ?? 365} يوم'
+                                      : '${_activatedConfig!.validityDaysRemaining ?? 365} Days Remaining',
                                 ),
                                 const SizedBox(height: 8),
                                 _infoRow(
                                   Icons.point_of_sale_outlined,
-                                  'Hardware Seat',
-                                  'Terminal Seat #${_activatedConfig!.seatNumber ?? 1}',
+                                  isArabic ? 'مقعد الجهاز' : 'Hardware Seat',
+                                  isArabic
+                                      ? 'جهاز #${_activatedConfig!.seatNumber ?? 1}'
+                                      : 'Terminal Seat #${_activatedConfig!.seatNumber ?? 1}',
                                 ),
                                 const SizedBox(height: 18),
                                 SizedBox(
@@ -513,9 +556,11 @@ class _SetupWizardPageState extends ConsumerState<SetupWizardPage> {
                                       ),
                                     ),
                                     icon: const Icon(Icons.arrow_forward),
-                                    label: const Text(
-                                      'Proceed to Terminal Login',
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    label: Text(
+                                      isArabic
+                                          ? 'المتابعة إلى شاشة تسجيل الدخول'
+                                          : 'Proceed to Terminal Login',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                     ),
                                   ),
                                 ),

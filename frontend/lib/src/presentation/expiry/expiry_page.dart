@@ -116,7 +116,7 @@ class _ExpiryList extends ConsumerWidget {
       children: [
         if (expired.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
             child: Text(
               '${l10n.expiredProducts} (${expired.length})',
               style: theme.textTheme.titleSmall?.copyWith(
@@ -140,7 +140,7 @@ class _ExpiryList extends ConsumerWidget {
         ],
         if (soon.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
             child: Text(
               '${l10n.expiringSoon} (${soon.length})',
               style: theme.textTheme.titleSmall?.copyWith(

@@ -16,7 +16,7 @@ class HoldsDialog extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final holds = ref.watch(salesHoldListProvider).valueOrNull ?? const [];
-    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final currency = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     return AlertDialog(
       title: Text(l10n.resumeHold),

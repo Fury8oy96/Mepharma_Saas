@@ -8,7 +8,6 @@ import '../core/services/thermal_printer_service.dart';
 import '../core/services/device_identifier_service.dart';
 import '../core/services/network_monitor.dart';
 import '../core/services/sync_engine.dart';
-import '../core/services/update_checker_service.dart';
 import '../data/db/app_database.dart' hide Customer, CustomerPayment;
 import '../data/db/enums.dart';
 // SQLite Repositories
@@ -86,18 +85,8 @@ final apiConfigManagerProvider = Provider<ApiConfigManager>((ref) {
 });
 
 class ApiConfigNotifier extends StateNotifier<ApiConfig> {
-  ApiConfigNotifier(this._manager, [ApiConfig? initialConfig])
-      : super(initialConfig ?? const ApiConfig(
-          mode: DatabaseMode.local,
-          baseUrl: 'http://localhost:8000/api',
-          branchId: 1,
-          isConfigured: true,
-          isLicenseValid: true,
-          pharmacyName: 'Local Pharmacy (Offline)',
-          pharmacyAddress: 'Standalone SQLite Database',
-          licensePlan: 'offline_standalone',
-          validityDaysRemaining: 365,
-        )) {
+  ApiConfigNotifier(this._manager)
+      : super(ApiConfigManager.defaultOfflineConfig) {
     load();
   }
 
@@ -157,8 +146,8 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
         isLicenseValid: true,
         pharmacyName: 'Local Pharmacy (Offline)',
         pharmacyAddress: 'Standalone SQLite Database',
-        currency: 'USD',
-        currencySymbol: r'$',
+        currency: 'SDG',
+        currencySymbol: 'ج.س',
         taxRate: 0.0,
         licensePlan: 'offline_standalone',
         validityDaysRemaining: 365,
@@ -254,8 +243,8 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
         pharmacyName: pharm['name']?.toString() ?? 'Pharmacy Branch',
         pharmacyPhone: pharm['phone']?.toString(),
         pharmacyAddress: pharm['address']?.toString(),
-        currency: pharm['currency']?.toString() ?? 'USD',
-        currencySymbol: pharm['currencySymbol']?.toString() ?? r'$',
+        currency: pharm['currency']?.toString() ?? 'SDG',
+        currencySymbol: pharm['currencySymbol']?.toString() ?? 'ج.س',
         taxRate: (pharm['taxRate'] as num?)?.toDouble() ?? 0.0,
         receiptFooter: pharm['receiptFooter']?.toString(),
         licenseExpiresAt: lic['expiresAt']?.toString(),
@@ -302,12 +291,15 @@ class ApiConfigNotifier extends StateNotifier<ApiConfig> {
     String? baseUrl,
     int? branchId,
     String? pharmacyCode,
+    bool? isConfigured,
   }) async {
+    final nextMode = mode ?? state.mode;
     final updated = state.copyWith(
       mode: mode,
       baseUrl: baseUrl,
       branchId: branchId,
       pharmacyCode: pharmacyCode,
+      isConfigured: isConfigured ?? (nextMode == DatabaseMode.local ? true : state.isConfigured),
     );
     state = updated;
     await _manager.saveConfig(updated);
@@ -346,10 +338,16 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 final networkMonitorProvider = ChangeNotifierProvider<NetworkMonitor>((ref) {
-  final initialBaseUrl = ref.watch(apiConfigProvider.select((c) => c.baseUrl));
-  final monitor = NetworkMonitor(baseUrl: initialBaseUrl);
+  final initialConfig = ref.watch(apiConfigProvider.select((c) => (baseUrl: c.baseUrl, mode: c.mode)));
+  final monitor = NetworkMonitor(
+    baseUrl: initialConfig.baseUrl,
+    enabled: initialConfig.mode == DatabaseMode.onlineApi,
+  );
   ref.listen<String>(apiConfigProvider.select((c) => c.baseUrl), (_, newBaseUrl) {
     monitor.updateBaseUrl(newBaseUrl);
+  });
+  ref.listen<DatabaseMode>(apiConfigProvider.select((c) => c.mode), (_, nextMode) {
+    monitor.setEnabled(nextMode == DatabaseMode.onlineApi);
   });
   return monitor;
 });
@@ -539,10 +537,6 @@ final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
   return ThermalPrinterService(ref.watch(settingsRepositoryProvider));
 });
 
-final updateCheckerServiceProvider = Provider<UpdateCheckerService>((ref) {
-  return UpdateCheckerService(ref.watch(settingsRepositoryProvider));
-});
-
 /// The currently selected locale (en / ar). Persisted through the settings
 /// repository by [LanguageSwitcher] and restored during app bootstrap.
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
@@ -725,7 +719,9 @@ final stockValuationProvider = FutureProvider<StockValuation>((ref) {
 
 final syncEventsProvider = StreamProvider<String>((ref) async* {
   final config = ref.watch(apiConfigProvider);
-  if (config.mode != DatabaseMode.onlineApi) {
+  if (config.mode != DatabaseMode.onlineApi ||
+      config.token == null ||
+      config.token!.isEmpty) {
     return;
   }
   final client = ref.watch(apiClientProvider);

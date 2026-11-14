@@ -184,15 +184,15 @@ class SuppliersPage extends ConsumerWidget {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh',
+                  tooltip: l10n.refresh,
                   onPressed: () {
                     ref.read(supplierRepositoryProvider).refresh();
                     ScaffoldMessenger.of(context)
                       ..clearSnackBars()
                       ..showSnackBar(
-                        const SnackBar(
-                          content: Text('Refreshing suppliers...'),
-                          duration: Duration(seconds: 1),
+                        SnackBar(
+                          content: Text(l10n.refreshing),
+                          duration: const Duration(seconds: 1),
                         ),
                       );
                   },

@@ -28,6 +28,7 @@ class ReceiptData {
     required this.cashierName,
     this.customerName,
     required this.paymentMethod,
+    this.transactionReference,
     required this.lines,
     required this.subtotal,
     required this.discount,
@@ -43,6 +44,7 @@ class ReceiptData {
   final String cashierName;
   final String? customerName;
   final String paymentMethod;
+  final String? transactionReference;
   final List<ReceiptLine> lines;
   final int subtotal;
   final int discount;

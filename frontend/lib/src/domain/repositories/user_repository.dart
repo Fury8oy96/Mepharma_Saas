@@ -20,10 +20,13 @@ abstract interface class UserRepository {
   /// Updates only the provided fields. A null password keeps the old one.
   Future<AppUser> updateUser(
     int id, {
+    String? username,
     String? password,
     UserRole? role,
     bool? isActive,
   });
 
   Future<void> ensureDefaultAdmin();
+
+  Future<void> deleteUser(int id);
 }

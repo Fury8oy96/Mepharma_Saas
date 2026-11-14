@@ -55,7 +55,7 @@ function clearStoredSession() {
 const initialToken = getInitialToken();
 export const tokenStore = writable<string | null>(initialToken);
 export const userStore = writable<any>(initialToken ? getInitialUser() : null);
-export const alertsStore = writable<Array<{ id: string; type: 'success' | 'error' | 'info'; message: string }>>([]);
+export const alertsStore = writable<Array<{ id: string; type: 'success' | 'error' | 'info' | 'warning'; message: string }>>([]);
 
 let initialSub = true;
 tokenStore.subscribe((val) => {
@@ -85,9 +85,13 @@ export function startSession(token: string, user: any) {
   localStorage.setItem('mepharma_user', JSON.stringify(user));
   tokenStore.set(token);
   userStore.set(user);
+  if (typeof window !== 'undefined' && (wildcardListeners.size > 0 || Object.keys(sseListeners).length > 0)) {
+    reconnectSSE();
+  }
 }
 
 export function clearSession() {
+  closeSSE();
   clearStoredSession();
   tokenStore.set(null);
   userStore.set(null);
@@ -102,7 +106,7 @@ export function checkAndRotateSession(): boolean {
   return true;
 }
 
-export function addToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+export function addToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
   const id = Math.random().toString(36).substring(2, 9);
   alertsStore.update((all) => [...all, { id, type, message }]);
   setTimeout(() => {
@@ -221,10 +225,27 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
 
 // SSE Real-time Updates
 let eventSource: EventSource | null = null;
+let sseReconnectTimer: any = null;
 type SSEListener = (data: any) => void;
 type SSEWildcardListener = (eventObj: { event: string; data?: any }) => void;
 const sseListeners: Record<string, Set<SSEListener>> = {};
 const wildcardListeners: Set<SSEWildcardListener> = new Set();
+
+export function closeSSE() {
+  if (sseReconnectTimer) {
+    clearTimeout(sseReconnectTimer);
+    sseReconnectTimer = null;
+  }
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+
+export function reconnectSSE() {
+  closeSSE();
+  initSSE();
+}
 
 export function subscribeToSSE(
   eventOrCallback: string | SSEWildcardListener,
@@ -261,7 +282,11 @@ export function subscribeToSSE(
 function initSSE() {
   if (eventSource || typeof window === 'undefined') return;
   try {
-    eventSource = new EventSource('/sync/events');
+    const token = localStorage.getItem('mepharma_token');
+    if (!token) return;
+    const pharmacyCode = detectCurrentTenant();
+    const sseUrl = `/sync/events?pharmacy=${encodeURIComponent(pharmacyCode)}&token=${encodeURIComponent(token)}`;
+    eventSource = new EventSource(sseUrl);
     const supportedEvents = [
       'purchase_created',
       'purchase_approved',
@@ -271,6 +296,7 @@ function initSSE() {
       'product_deleted',
       'user_created',
       'user_updated',
+      'user_deleted',
       'category_created',
       'supplier_created',
       'settings_updated',
@@ -295,7 +321,10 @@ function initSSE() {
     eventSource.onerror = () => {
       eventSource?.close();
       eventSource = null;
-      setTimeout(initSSE, 10000);
+      if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+      if (localStorage.getItem('mepharma_token')) {
+        sseReconnectTimer = setTimeout(initSSE, 10000);
+      }
     };
   } catch (_) {}
 }

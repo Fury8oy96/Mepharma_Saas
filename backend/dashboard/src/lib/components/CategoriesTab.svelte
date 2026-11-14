@@ -105,7 +105,7 @@
           <thead>
             <tr>
               <th>{$t('cat.th.name')}</th>
-              <th>Description</th>
+              <th>{$t('common.description')}</th>
               <th>{$t('prod.th.actions')}</th>
             </tr>
           </thead>
@@ -148,7 +148,7 @@
           </div>
 
           <div class="form-group">
-            <label for="cat-desc">Description</label>
+            <label for="cat-desc">{$t('common.description')}</label>
             <textarea id="cat-desc" class="form-textarea" rows="3" bind:value={form.description}></textarea>
           </div>
 

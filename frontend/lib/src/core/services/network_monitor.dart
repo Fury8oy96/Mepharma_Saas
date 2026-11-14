@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'api_client.dart';
+
 enum NetworkState {
   online,
   offline,
@@ -12,20 +14,45 @@ class NetworkMonitor extends ChangeNotifier {
   NetworkMonitor({
     required String baseUrl,
     this.pingInterval = const Duration(seconds: 6),
-  }) : _baseUrl = baseUrl {
-    _startPeriodicProbe();
+    bool enabled = true,
+  })  : _baseUrl = baseUrl,
+        _enabled = enabled {
+    if (_enabled) {
+      _startPeriodicProbe();
+    }
   }
 
   String _baseUrl;
   String get baseUrl => _baseUrl;
   final Duration pingInterval;
+  bool _enabled;
+  bool get enabled => _enabled;
 
   bool _isDisposed = false;
+
+  void setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    if (_enabled) {
+      _startPeriodicProbe();
+    } else {
+      _probeTimer?.cancel();
+      _probeTimer = null;
+      _consecutiveFailures = 0;
+      _lastError = null;
+      if (_state != NetworkState.offline) {
+        _state = NetworkState.offline;
+      }
+      notifyListeners();
+    }
+  }
 
   void updateBaseUrl(String newUrl) {
     if (_baseUrl != newUrl) {
       _baseUrl = newUrl;
-      checkConnectivity();
+      if (_enabled) {
+        checkConnectivity();
+      }
     }
   }
 
@@ -58,6 +85,9 @@ class NetworkMonitor extends ChangeNotifier {
 
   /// Actively probes the health endpoint
   Future<bool> checkConnectivity() async {
+    if (!_enabled) {
+      return false;
+    }
     try {
       var cleanBase = _baseUrl.endsWith('/') ? _baseUrl.substring(0, _baseUrl.length - 1) : _baseUrl;
       if (cleanBase.contains('.localhost')) {
@@ -82,6 +112,12 @@ class NetworkMonitor extends ChangeNotifier {
 
   static bool isTransportFailure(Object error) {
     if (error is TimeoutException) return true;
+    if (error is ApiException) {
+      final code = error.statusCode;
+      if (code == null) return true;
+      if (code >= 502 && code <= 504) return true;
+      if (code >= 400 && code < 500) return false;
+    }
     final str = error.toString().toLowerCase();
     return str.contains('socketexception') ||
         str.contains('connection refused') ||

@@ -39,6 +39,10 @@ class SessionController extends Notifier<AppUser?> {
     return user;
   }
 
+  void updateUser(AppUser user) {
+    state = user;
+  }
+
   void logout() {
     state = null;
     // A new session should never inherit another user's open cart.

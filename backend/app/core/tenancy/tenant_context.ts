@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
 export interface TenantData {
   id: number
@@ -14,6 +15,7 @@ export interface TenantData {
 
 export interface TenantStore {
   tenant: TenantData
+  trx?: TransactionClientContract
 }
 
 export const tenantLocalStorage = new AsyncLocalStorage<TenantStore>()
@@ -26,6 +28,11 @@ export class TenantContext {
   static get(): TenantData | null {
     const store = tenantLocalStorage.getStore()
     return store?.tenant || null
+  }
+
+  static getTrx(): TransactionClientContract | null {
+    const store = tenantLocalStorage.getStore()
+    return store?.trx || null
   }
 
   static require(): TenantData {

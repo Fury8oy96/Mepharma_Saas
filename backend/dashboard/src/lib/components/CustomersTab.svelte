@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { apiRequest, addToast, subscribeToSSE } from '../api';
+  import { currencyStore } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
 
@@ -82,7 +83,10 @@
   function openNotifyModal(request: any) {
     activeRequest = request;
     notifyChannel = 'whatsapp';
-    notifyMessage = `Hello ${request.customer_name || 'Valued Customer'}, the requested medication "${request.requested_product_name}" is now available at MePharma! We have reserved your unit. Please visit or contact us to collect it.`;
+    const medName = request.requested_product_name || request.medicine_name || '';
+    notifyMessage = $currentLocale === 'ar'
+      ? `مرحباً ${request.customer_name || 'عميلنا العزيز'}، الدواء المطلوب "${medName}" متوفر الآن في صيدلية مي فارما! تم حجز عبوتك، يرجى التفضل بزيارتنا أو التواصل معنا للاستلام.`
+      : `Hello ${request.customer_name || 'Valued Customer'}, the requested medication "${medName}" is now available at MePharma! We have reserved your unit. Please visit or contact us to collect it.`;
     showNotifyModal = true;
   }
 
@@ -324,10 +328,10 @@
                       <span class="badge badge-secondary">{$t('cust.tier.bronze')}</span>
                     {/if}
                   </td>
-                  <td><strong>{c.loyalty_points || 0} pts</strong></td>
+                  <td><strong>{c.loyalty_points || 0} {$currentLocale === 'ar' ? 'نقطة' : 'pts'}</strong></td>
                   <td>
                     <span class="{c.balance > 0 ? 'text-danger' : 'text-success'}">
-                      {formatCurrency(c.balance)} SDG
+                      {formatCurrency(c.balance)} {$currencyStore}
                     </span>
                   </td>
                   <td>
@@ -362,38 +366,38 @@
                 <th>{$t('prod.th.product')}</th>
                 <th>{$t('cust.th.name')}</th>
                 <th>{$t('cust.th.phone')}</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{$t('common.date')}</th>
+                <th>{$t('common.status')}</th>
+                <th>{$t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {#each requests as req}
                 <tr>
-                  <td><strong>{req.requested_product_name}</strong></td>
-                  <td>{req.customer_name || 'Walk-in'}</td>
+                  <td><strong>{req.requested_product_name || req.medicine_name}</strong></td>
+                  <td>{req.customer_name || $t('sales.walkIn')}</td>
                   <td>{req.customer_phone || '—'}</td>
                   <td>{new Date(req.created_at).toLocaleDateString($currentLocale === 'ar' ? 'ar-EG' : 'en-US')}</td>
                   <td>
                     {#if req.status === 'notified'}
-                      <span class="badge badge-approved">Notified</span>
+                      <span class="badge badge-approved">{$t('cust.status.notified')}</span>
                     {:else if req.status === 'fulfilled'}
-                      <span class="badge badge-role">Fulfilled</span>
+                      <span class="badge badge-role">{$t('cust.status.fulfilled')}</span>
                     {:else}
-                      <span class="badge badge-pending">Demand Active</span>
+                      <span class="badge badge-pending">{$t('cust.status.pending')}</span>
                     {/if}
                   </td>
                   <td>
                     <div class="row-actions">
                       {#if req.status === 'pending'}
                         <button class="btn btn-primary btn-sm" on:click={() => openNotifyModal(req)}>
-                          {@html icons.bell} Notify In Stock
+                          {@html icons.bell} {$t('cust.act.notify')}
                         </button>
                         <button class="btn btn-secondary btn-sm" on:click={() => markRequestFulfilled(req.id)}>
-                          Mark Fulfilled
+                          {$t('cust.act.fulfill')}
                         </button>
                       {:else}
-                        <span class="text-muted text-sm">Resolved</span>
+                        <span class="text-muted text-sm">{$t('cust.status.resolved')}</span>
                       {/if}
                     </div>
                   </td>
@@ -409,51 +413,51 @@
     <div class="messaging-layout">
       <div class="vuexy-card broadcast-card">
         <h3>{$t('cust.btnBroadcast')}</h3>
-        <p class="sub-text">Compose announcement or health advisory campaigns</p>
+        <p class="sub-text">{$t('cust.broadcast.sub')}</p>
 
         <form on:submit|preventDefault={sendBroadcastCampaign} class="broadcast-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="b-tier">Target Segment:</label>
+              <label for="b-tier">{$t('cust.broadcast.segment')}:</label>
               <select id="b-tier" class="form-select" bind:value={campaignTier}>
-                <option value="all">All Registered Customers ({customers.length})</option>
-                <option value="platinum">Platinum VIP Only</option>
-                <option value="gold">Gold & Platinum Tier</option>
+                <option value="all">{$t('cust.broadcast.allCustomers')} ({customers.length})</option>
+                <option value="platinum">{$t('cust.broadcast.vipOnly')}</option>
+                <option value="gold">{$t('cust.broadcast.goldPlus')}</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="b-chan">Channel:</label>
+              <label for="b-chan">{$t('cust.broadcast.channel')}:</label>
               <select id="b-chan" class="form-select" bind:value={campaignChannel}>
-                <option value="whatsapp">WhatsApp Cloud Gateway</option>
-                <option value="sms">Direct SMS</option>
+                <option value="whatsapp">{$t('cust.broadcast.whatsappGw')}</option>
+                <option value="sms">{$t('cust.broadcast.directSms')}</option>
               </select>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="b-msg">Campaign Content:</label>
-            <textarea id="b-msg" class="form-textarea" rows="4" bind:value={campaignContent} placeholder="Type your broadcast message..."></textarea>
+            <label for="b-msg">{$t('cust.broadcast.content')}:</label>
+            <textarea id="b-msg" class="form-textarea" rows="4" bind:value={campaignContent} placeholder={$t('cust.broadcast.placeholder')}></textarea>
           </div>
 
           <button type="submit" class="btn btn-primary" disabled={isSendingCampaign}>
-            {isSendingCampaign ? $t('app.syncing') : 'Dispatch Broadcast'}
+            {isSendingCampaign ? $t('app.syncing') : $t('cust.broadcast.dispatch')}
           </button>
         </form>
       </div>
 
       <div class="vuexy-card logs-card">
-        <h3>Recent Messaging History</h3>
+        <h3>{$t('cust.logs.title')}</h3>
         <div class="logs-list">
           {#if communicationLogs.length === 0}
-            <p class="text-muted">No transmission logs yet.</p>
+            <p class="text-muted">{$t('cust.logs.empty')}</p>
           {:else}
             {#each communicationLogs.slice(0, 15) as log}
               <div class="log-item">
                 <div class="log-top">
                   <span class="badge badge-{log.channel === 'whatsapp' ? 'approved' : 'role'}">{log.channel}</span>
-                  <span class="log-date">{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span class="log-date">{new Date(log.created_at).toLocaleTimeString($currentLocale === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <div class="log-recip"><strong>To:</strong> {log.recipient}</div>
+                <div class="log-recip"><strong>{$t('cust.logs.to')}:</strong> {log.recipient}</div>
                 <div class="log-msg">{log.message}</div>
               </div>
             {/each}
@@ -470,14 +474,14 @@
     <div class="modal-card vuexy-card animate-scale-up">
       <div class="modal-header">
         <div>
-          <h3>Send Restock Notification</h3>
-          <p class="sub-text">Medication: {activeRequest?.requested_product_name} &bull; Customer: {activeRequest?.customer_name}</p>
+          <h3>{$t('cust.notify.title')}</h3>
+          <p class="sub-text">{$t('prod.th.product')}: {activeRequest?.requested_product_name || activeRequest?.medicine_name} &bull; {$t('cust.th.name')}: {activeRequest?.customer_name || $t('sales.walkIn')}</p>
         </div>
         <button class="close-btn" on:click={() => showNotifyModal = false}>{@html icons.x}</button>
       </div>
 
       <div class="form-group">
-        <label for="notif-chan">Select Channel:</label>
+        <label for="notif-chan">{$t('cust.notify.channel')}:</label>
         <select id="notif-chan" class="form-select" bind:value={notifyChannel}>
           <option value="whatsapp">WhatsApp</option>
           <option value="sms">SMS</option>
@@ -485,19 +489,19 @@
       </div>
 
       <div class="form-group">
-        <label for="notif-phone">Recipient Phone:</label>
+        <label for="notif-phone">{$t('cust.notify.phone')}:</label>
         <input id="notif-phone" class="form-input" type="text" bind:value={activeRequest.customer_phone} />
       </div>
 
       <div class="form-group">
-        <label for="notif-msg">Message:</label>
+        <label for="notif-msg">{$t('cust.notify.message')}:</label>
         <textarea id="notif-msg" class="form-textarea" rows="4" bind:value={notifyMessage}></textarea>
       </div>
 
       <div class="modal-actions">
         <button class="btn btn-secondary" on:click={() => showNotifyModal = false} disabled={isSending}>{$t('btn.cancel')}</button>
         <button class="btn btn-primary" on:click={sendStockNotification} disabled={isSending}>
-          {isSending ? $t('app.syncing') : 'Send Notification'}
+          {isSending ? $t('app.syncing') : $t('cust.notify.send')}
         </button>
       </div>
     </div>
@@ -511,7 +515,7 @@
       <div class="modal-header">
         <div>
           <h3>{isEditingCustomer ? $t('btn.edit') : $t('cust.btnAdd')}</h3>
-          <p class="sub-text">Track credit limit, loyalty tier, and points balance</p>
+          <p class="sub-text">{$t('cust.modal.sub')}</p>
         </div>
         <button class="close-btn" on:click={() => showCustomerModal = false}>{@html icons.x}</button>
       </div>
@@ -530,7 +534,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="c-email">Email Address</label>
+            <label for="c-email">{$t('common.email')}</label>
             <input id="c-email" class="form-input" type="email" bind:value={customerForm.email} />
           </div>
           <div class="form-group">

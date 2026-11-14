@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 import '../../app/providers.dart';
-import '../../data/repositories/sqlite_user_repository.dart';
 import '../../l10n/generated/app_localizations.dart';
-
+import '../session/session_controller.dart';
 import '../../domain/models/api_config.dart';
 
 class ServerSettingsSection extends ConsumerStatefulWidget {
@@ -54,6 +54,7 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
       return;
     }
     final l10n = AppLocalizations.of(context);
+    final prevMode = ref.read(apiConfigProvider).mode;
     setState(() => _saving = true);
     try {
       final url = _urlController.text.trim();
@@ -63,12 +64,17 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
             mode: _mode,
             baseUrl: url,
             branchId: branchId,
+            isConfigured: true,
           );
 
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
           ..showSnackBar(SnackBar(content: Text(l10n.saved)));
+        if (prevMode != _mode) {
+          ref.read(sessionProvider.notifier).logout();
+          context.go('/login');
+        }
       }
     } on Exception {
       if (mounted) {
@@ -141,89 +147,11 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
     }
   }
 
-  Future<void> _resetDatabase() async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
-            const SizedBox(width: 8),
-            Text(
-              l10n.localeName.startsWith('ar')
-                  ? 'تأكيد تهيئة قاعدة البيانات'
-                  : 'Confirm Database Reset',
-            ),
-          ],
-        ),
-        content: Text(
-          l10n.localeName.startsWith('ar')
-              ? 'تحذير: سيتم حذف جميع المبيعات والمشتريات والمنتجات والعملاء والموردين محلياً، وإعادة تعيين حساب المسؤول الافتراضي (admin / admin123). لا يمكن التراجع عن هذا الإجراء!\n\nهل أنت متأكد من الاستمرار؟'
-              : 'Warning: This will delete all local sales, purchases, inventory, customers, and suppliers, and restore the default administrator account (admin / admin123). This action cannot be undone!\n\nAre you sure you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(
-              l10n.localeName.startsWith('ar') ? 'نعم، تهيئة وحذف' : 'Yes, Wipe & Reset',
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    try {
-      final db = ref.read(databaseProvider);
-      await db.wipeAndReset();
-      await SqliteUserRepository(db).ensureDefaultAdmin();
-
-      // Refresh providers
-      ref.invalidate(productListProvider);
-      ref.invalidate(purchaseListProvider);
-      ref.invalidate(categoryListProvider);
-      ref.invalidate(supplierListProvider);
-      ref.invalidate(customerListProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.localeName.startsWith('ar')
-                    ? 'تمت تهيئة قاعدة البيانات بنجاح وبدء قاعدة بيانات نظيفة فارغة.'
-                    : 'Database has been wiped and reset to a clean empty state.',
-              ),
-              backgroundColor: Colors.green.shade800,
-            ),
-          );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Failed to reset database: $e'),
-              backgroundColor: Colors.red.shade800,
-            ),
-          );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -241,7 +169,7 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
               Icon(Icons.dns_outlined, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Text(
-                'Database & Environment Setup',
+                l10n.serverSettings,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -261,7 +189,7 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Operation Mode',
+                    isArabic ? 'نمط التشغيل والاتصال' : 'Operation Mode',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -272,12 +200,12 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
                       ButtonSegment<DatabaseMode>(
                         value: DatabaseMode.local,
                         icon: const Icon(Icons.storage_outlined),
-                        label: Text(l10n.localeName.startsWith('ar') ? 'محلي SQLite (بدون إنترنت)' : 'Local SQLite (Offline)'),
+                        label: Text(isArabic ? 'محلي SQLite (بدون إنترنت)' : 'Local SQLite (Offline)'),
                       ),
                       ButtonSegment<DatabaseMode>(
                         value: DatabaseMode.onlineApi,
                         icon: const Icon(Icons.cloud_outlined),
-                        label: Text(l10n.localeName.startsWith('ar') ? 'خادم سحابي مباشر (API)' : 'Online Server (API)'),
+                        label: Text(isArabic ? 'خادم سحابي مباشر (API)' : 'Online Server (API)'),
                       ),
                     ],
                     selected: {_mode},
@@ -301,11 +229,47 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Standalone Mode Active: All user data, inventory, transactions, and passwords (bcrypt) are stored locally in your SQLite database. No Docker or web server is required.',
+                              isArabic
+                                  ? 'الوضع المحلي مفعل: جميع البيانات والمبيعات والمخزون وحسابات الموظفين محفوظة محلياً بأمان في قاعدة بيانات SQLite دون الحاجة لإنترنت أو خادم.'
+                                  : 'Standalone Mode Active: All user data, inventory, transactions, and credentials are stored locally in SQLite without requiring internet or a remote server.',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface,
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.vpn_key_outlined, color: theme.colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              isArabic
+                                  ? 'للربط الكامل بالمنصة السحابية وتفعيل مفتاح الترخيص، يمكنك استخدام معالج التفعيل عبر البوابة.'
+                                  : 'For full cloud onboarding and license activation, launch the Online Setup Portal.',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              await ref.read(apiConfigProvider.notifier).resetConfiguration();
+                              ref.read(sessionProvider.notifier).logout();
+                              if (context.mounted) {
+                                context.go('/setup');
+                              }
+                            },
+                            icon: const Icon(Icons.launch, size: 16),
+                            label: Text(isArabic ? 'معالج الربط أونلاين' : 'Online Setup Portal'),
                           ),
                         ],
                       ),
@@ -340,7 +304,7 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: l10n.branchId,
-                hintText: 'e.g. 1',
+                hintText: isArabic ? 'مثال: 1' : 'e.g. 1',
                 prefixIcon: const Icon(Icons.store_outlined),
               ),
               validator: (value) {
@@ -385,63 +349,6 @@ class _ServerSettingsSectionState extends ConsumerState<ServerSettingsSection> {
                 label: Text(l10n.save),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.red.shade200),
-            ),
-            color: Colors.red.shade50.withValues(alpha: 0.3),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.cleaning_services_outlined, color: Colors.red.shade700),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.localeName.startsWith('ar')
-                            ? 'صيانة وتهيئة قاعدة البيانات'
-                            : 'Database Maintenance & Reset',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.shade900,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.localeName.startsWith('ar')
-                        ? 'إذا كنت تقوم بإعداد هذا الفرع كفرع جديد تماماً بدون بيانات سابقة، أو ترغب في مسح البيانات القديمة المتزامنة من الخادم والبدء بقاعدة بيانات نظيفة فارغة، يمكنك إعادة التهيئة هنا.'
-                        : 'If you are setting up this branch from scratch or want to erase stale synced data and start with a completely fresh, empty database, you can wipe and reset the local database here.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: _resetDatabase,
-                    icon: const Icon(Icons.delete_forever_outlined),
-                    label: Text(
-                      l10n.localeName.startsWith('ar')
-                          ? 'تهيئة قاعدة بيانات جديدة فارغة (حذف البيانات القديمة)'
-                          : 'Reset Database to Fresh Empty State',
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),

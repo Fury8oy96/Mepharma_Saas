@@ -1,26 +1,89 @@
 import db from '@adonisjs/lucid/services/db'
 
+const SCHEMA_NAME_REGEX = /^tenant_[a-z0-9_]{1,55}$/
+const TENANT_CODE_REGEX = /^[a-z0-9_-]{1,55}$/
+
 export class SchemaManager {
+  private static initializedSchemas = new Set<string>()
+  private static migratedColumnsSchemas = new Set<string>()
+
   /**
-   * Sanitizes a tenant code into a safe PostgreSQL schema name.
+   * Strictly validates and converts a tenant code into a safe PostgreSQL schema name.
    */
   static getSchemaName(tenantCode: string): string {
-    const clean = tenantCode.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-    return `tenant_${clean}`
+    const raw = String(tenantCode || '').trim().toLowerCase()
+    if (!TENANT_CODE_REGEX.test(raw)) {
+      throw new Error(`Invalid tenant code '${tenantCode}'.`)
+    }
+    const normalized = raw.replace(/-/g, '_')
+    return `tenant_${normalized}`
+  }
+
+  static assertValidSchema(schemaName: string): void {
+    if (!SCHEMA_NAME_REGEX.test(schemaName)) {
+      throw new Error(`Unsafe PostgreSQL schema identifier: '${schemaName}'`)
+    }
   }
 
   /**
-   * Creates a schema if it does not already exist.
+   * Creates a schema if it does not already exist (cached per process).
    */
   static async ensureSchema(schemaName: string): Promise<void> {
+    this.assertValidSchema(schemaName)
+    if (this.initializedSchemas.has(schemaName)) {
+      return
+    }
     await db.rawQuery(`CREATE SCHEMA IF NOT EXISTS "${schemaName}";`)
+    this.initializedSchemas.add(schemaName)
   }
 
   /**
-   * Switches the active search path for a database connection.
+   * Switches the active search path for a database connection or active transaction.
    */
   static async setSearchPath(schemaName: string): Promise<void> {
-    await db.rawQuery(`SET search_path TO "${schemaName}", public;`)
+    this.assertValidSchema(schemaName)
+    await db.rawQuery(`SET LOCAL search_path TO "${schemaName}", public;`)
+  }
+
+  /**
+   * Upgrades legacy tenant schemas in place with new compatibility columns without data loss.
+   */
+  static async ensureSchemaColumns(schemaName: string): Promise<void> {
+    this.assertValidSchema(schemaName)
+    if (this.migratedColumnsSchemas.has(schemaName)) {
+      return
+    }
+
+    const alterStatements = [
+      `ALTER TABLE IF EXISTS "${schemaName}".sales_holds ADD COLUMN IF NOT EXISTS user_id INTEGER;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".sales ADD COLUMN IF NOT EXISTS transaction_reference VARCHAR(255);`,
+      `ALTER TABLE IF EXISTS "${schemaName}".purchases ADD COLUMN IF NOT EXISTS transaction_reference VARCHAR(255);`,
+      `ALTER TABLE IF EXISTS "${schemaName}".sales_holds ADD COLUMN IF NOT EXISTS subtotal BIGINT DEFAULT 0;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".sales_holds ADD COLUMN IF NOT EXISTS discount BIGINT DEFAULT 0;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".sales_holds ADD COLUMN IF NOT EXISTS discount_type VARCHAR(50);`,
+      `ALTER TABLE IF EXISTS "${schemaName}".sales_holds ADD COLUMN IF NOT EXISTS total_amount BIGINT DEFAULT 0;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".return_items ADD COLUMN IF NOT EXISTS sale_item_id INTEGER;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".return_items ADD COLUMN IF NOT EXISTS product_name VARCHAR(255);`,
+      `ALTER TABLE IF EXISTS "${schemaName}".return_items ADD COLUMN IF NOT EXISTS unit_price BIGINT DEFAULT 0;`,
+      `ALTER TABLE IF EXISTS "${schemaName}".stock_adjustments ADD COLUMN IF NOT EXISTS reference VARCHAR(255);`,
+      `CREATE TABLE IF NOT EXISTS "${schemaName}".customer_requests (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER REFERENCES "${schemaName}".customers(id) ON DELETE SET NULL,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(100),
+        medicine_name VARCHAR(255) NOT NULL,
+        notes TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`,
+    ]
+
+    for (const stmt of alterStatements) {
+      await db.rawQuery(stmt)
+    }
+
+    this.migratedColumnsSchemas.add(schemaName)
   }
 
   /**
@@ -30,7 +93,6 @@ export class SchemaManager {
     const schemaName = this.getSchemaName(tenantCode)
     await this.ensureSchema(schemaName)
 
-    // Execute schema creation inside the tenant schema
     const queries = [
       `CREATE TABLE IF NOT EXISTS "${schemaName}".users (
         id SERIAL PRIMARY KEY,
@@ -102,6 +164,18 @@ export class SchemaManager {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
 
+      `CREATE TABLE IF NOT EXISTS "${schemaName}".customer_requests (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER REFERENCES "${schemaName}".customers(id) ON DELETE SET NULL,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(100),
+        medicine_name VARCHAR(255) NOT NULL,
+        notes TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );`,
+
       `CREATE TABLE IF NOT EXISTS "${schemaName}".sales (
         id SERIAL PRIMARY KEY,
         invoice_number VARCHAR(100) UNIQUE NOT NULL,
@@ -117,6 +191,7 @@ export class SchemaManager {
         paid_amount BIGINT DEFAULT 0,
         change_amount BIGINT DEFAULT 0,
         payment_method VARCHAR(50) DEFAULT 'cash',
+        transaction_reference VARCHAR(255),
         status VARCHAR(50) DEFAULT 'completed',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -140,9 +215,14 @@ export class SchemaManager {
       `CREATE TABLE IF NOT EXISTS "${schemaName}".sales_holds (
         id SERIAL PRIMARY KEY,
         reference VARCHAR(100) UNIQUE NOT NULL,
+        user_id INTEGER,
         customer_id INTEGER REFERENCES "${schemaName}".customers(id) ON DELETE SET NULL,
         customer_name VARCHAR(255),
         items JSONB NOT NULL,
+        subtotal BIGINT DEFAULT 0,
+        discount BIGINT DEFAULT 0,
+        discount_type VARCHAR(50),
+        total_amount BIGINT DEFAULT 0,
         notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
@@ -156,6 +236,7 @@ export class SchemaManager {
         tax_amount BIGINT DEFAULT 0,
         total_amount BIGINT NOT NULL,
         paid_amount BIGINT DEFAULT 0,
+        transaction_reference VARCHAR(255),
         status VARCHAR(50) DEFAULT 'received',
         notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -187,7 +268,10 @@ export class SchemaManager {
       `CREATE TABLE IF NOT EXISTS "${schemaName}".return_items (
         id SERIAL PRIMARY KEY,
         return_id INTEGER REFERENCES "${schemaName}".returns(id) ON DELETE CASCADE,
+        sale_item_id INTEGER,
         product_id INTEGER REFERENCES "${schemaName}".products(id) ON DELETE SET NULL,
+        product_name VARCHAR(255),
+        unit_price BIGINT DEFAULT 0,
         quantity INTEGER NOT NULL,
         refund_amount BIGINT NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -200,6 +284,7 @@ export class SchemaManager {
         type VARCHAR(50) NOT NULL,
         quantity INTEGER NOT NULL,
         reason TEXT,
+        reference VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );`,
 
@@ -240,13 +325,15 @@ export class SchemaManager {
       `INSERT INTO "${schemaName}".suppliers (name, phone, email, address) VALUES
         ('National Pharma Wholesalers', '+966-11-2345678', 'supply@natpharma.com', 'Central Med District'),
         ('Al-Razi Drug Distributing', '+966-11-8765432', 'orders@alrazi.com', 'North Warehouse 4')
-      ON CONFLICT DO NOTHING;`
+      ON CONFLICT DO NOTHING;`,
     ]
 
     for (const q of queries) {
       await db.rawQuery(q)
     }
 
+    await this.ensureSchemaColumns(schemaName)
+    this.initializedSchemas.add(schemaName)
     return schemaName
   }
 }

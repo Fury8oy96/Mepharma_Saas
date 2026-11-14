@@ -22,6 +22,9 @@ export default class StockAdjustment extends BaseModel {
   @column()
   declare reason: string | null
 
+  @column()
+  declare reference: string | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 }

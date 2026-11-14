@@ -89,6 +89,7 @@ class SaleDetailDialog extends ConsumerWidget {
       cashierName: cashier?.username ?? '',
       customerName: detail.sale.customerName,
       paymentMethod: paymentMethodLabel(detail.sale.paymentMethod, l10n),
+      transactionReference: detail.sale.transactionReference,
       lines: [
         for (final item in detail.items)
           ReceiptLine(
@@ -178,7 +179,7 @@ class _DetailContent extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final sale = detail.sale;
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final cashier = ref.watch(cashierNameProvider(sale.userId)).valueOrNull;
 
     return SingleChildScrollView(
@@ -195,6 +196,8 @@ class _DetailContent extends ConsumerWidget {
                 l10n.payment,
                 paymentMethodLabel(sale.paymentMethod, l10n),
               ),
+              if (sale.transactionReference != null && sale.transactionReference!.isNotEmpty)
+                _infoItem(theme, l10n.transactionReference, sale.transactionReference!),
               if (sale.customerName?.isNotEmpty ?? false)
                 _infoItem(theme, l10n.customer, sale.customerName!),
               _infoItem(

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { apiRequest, addToast } from '../api';
+  import { currencyStore } from '../currency';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
 
@@ -75,12 +76,12 @@
     }
   }
 
-  function formatCurrency(val: any): string {
+  function formatCurrency(val: any, curr: string = $currencyStore): string {
     const num = Number(val ?? 0);
     return Math.round(num).toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    }) + ' SDG';
+    }) + ' ' + curr;
   }
 
   function getPaymentColor(method: string): string {
@@ -114,7 +115,7 @@
         <span>{$t('rep.title')}</span>
       </div>
       <h2>{$t('rep.revenueAnalytics')}</h2>
-      <p class="subtitle">Comprehensive income statements, COGS accounting, category profitability, and audit trail.</p>
+      <p class="subtitle">{$t('rep.subtitle')}</p>
     </div>
 
     <!-- Filter Controls Toolbar -->
@@ -144,9 +145,9 @@
         </button>
       </div>
 
-      <button class="btn btn-sm btn-secondary print-action-btn" on:click={printReport} title="Print Financial Report">
+      <button class="btn btn-sm btn-secondary print-action-btn" on:click={printReport} title={$t('rep.printBtn')}>
         {@html icons.printer}
-        <span class="btn-text">Print Report</span>
+        <span class="btn-text">{$t('rep.printBtn')}</span>
       </button>
 
       <button class="btn btn-sm btn-secondary" on:click={loadReports} title={$t('btn.refresh')}>
@@ -169,15 +170,15 @@
           <div class="pillar-icon bg-primary-light text-primary">
             {@html icons.dollar}
           </div>
-          <span class="badge badge-primary">{summary.total_sales || 0} Invoices</span>
+          <span class="badge badge-primary">{summary.total_sales || 0} {$t('rep.invoices')}</span>
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.netRevenue')}</span>
-          <h3 class="pillar-value text-primary">{formatCurrency(summary.net_revenue ?? summary.revenue)}</h3>
+          <h3 class="pillar-value text-primary">{formatCurrency(summary.net_revenue ?? summary.revenue, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Gross: {formatCurrency(summary.gross_revenue ?? summary.revenue)}</span>
+            <span>{$t('common.gross')}: {formatCurrency(summary.gross_revenue ?? summary.revenue, $currencyStore)}</span>
             {#if (summary.refunds || 0) > 0}
-              <span class="text-danger">(-{formatCurrency(summary.refunds)} refunds)</span>
+              <span class="text-danger">(-{formatCurrency(summary.refunds, $currencyStore)} {$t('rep.refunds')})</span>
             {/if}
           </div>
         </div>
@@ -193,9 +194,9 @@
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.grossProfit')}</span>
-          <h3 class="pillar-value text-success">{formatCurrency(summary.gross_profit ?? summary.total_profit)}</h3>
+          <h3 class="pillar-value text-success">{formatCurrency(summary.gross_profit ?? summary.total_profit, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Net Return on Goods Sold</span>
+            <span>{$t('overview.returnMargin')}</span>
           </div>
         </div>
       </div>
@@ -206,13 +207,13 @@
           <div class="pillar-icon bg-warning-light text-warning">
             {@html icons.shoppingCart}
           </div>
-          <span class="badge badge-warning">AOV: {formatCurrency(summary.aov)}</span>
+          <span class="badge badge-warning">AOV: {formatCurrency(summary.aov, $currencyStore)}</span>
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('rep.costOfGoods')}</span>
-          <h3 class="pillar-value text-warning">{formatCurrency(summary.cogs ?? summary.cost_of_goods)}</h3>
+          <h3 class="pillar-value text-warning">{formatCurrency(summary.cogs ?? summary.cost_of_goods, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Purchases Inflow: {formatCurrency(summary.purchases_cost)}</span>
+            <span>{$t('rep.purchasesInflow')}: {formatCurrency(summary.purchases_cost, $currencyStore)}</span>
           </div>
         </div>
       </div>
@@ -223,13 +224,13 @@
           <div class="pillar-icon bg-info-light text-info">
             {@html icons.warehouse}
           </div>
-          <span class="badge badge-info">{stockValuation.total_items || 0} Catalog SKUs</span>
+          <span class="badge badge-info">{stockValuation.total_items || 0} {$t('rep.catalogSkus')}</span>
         </div>
         <div class="pillar-body">
           <span class="pillar-label">{$t('overview.kpi.stockValuation')}</span>
-          <h3 class="pillar-value text-info">{formatCurrency(stockValuation.total_retail_value)}</h3>
+          <h3 class="pillar-value text-info">{formatCurrency(stockValuation.total_retail_value, $currencyStore)}</h3>
           <div class="pillar-footer">
-            <span>Cost Basis: {formatCurrency(stockValuation.total_cost_value)}</span>
+            <span>{$t('overview.costBasis')}: {formatCurrency(stockValuation.total_cost_value, $currencyStore)}</span>
           </div>
         </div>
       </div>
@@ -239,22 +240,22 @@
     <div class="vuexy-card deductions-strip">
       <div class="strip-item">
         <span class="strip-label">{$t('rep.discounts')}</span>
-        <span class="strip-val text-warning">{formatCurrency(summary.total_discount)}</span>
+        <span class="strip-val text-warning">{formatCurrency(summary.total_discount, $currencyStore)}</span>
       </div>
       <div class="strip-divider"></div>
       <div class="strip-item">
         <span class="strip-label">{$t('rep.taxCollected')}</span>
-        <span class="strip-val text-info">{formatCurrency(summary.total_tax)}</span>
+        <span class="strip-val text-info">{formatCurrency(summary.total_tax, $currencyStore)}</span>
       </div>
       <div class="strip-divider"></div>
       <div class="strip-item">
         <span class="strip-label">{$t('rep.refunds')}</span>
-        <span class="strip-val text-danger">{formatCurrency(summary.refunds)}</span>
+        <span class="strip-val text-danger">{formatCurrency(summary.refunds, $currencyStore)}</span>
       </div>
       <div class="strip-divider"></div>
       <div class="strip-item">
         <span class="strip-label">{$t('overview.kpi.potentialMargin')}</span>
-        <span class="strip-val text-success font-bold">+{formatCurrency(stockValuation.potential_profit)}</span>
+        <span class="strip-val text-success font-bold">+{formatCurrency(stockValuation.potential_profit, $currencyStore)}</span>
       </div>
     </div>
 
@@ -264,7 +265,7 @@
       <div class="vuexy-card section-card">
         <div class="card-header-line">
           <h4>{@html icons.creditCard} {$t('rep.paymentBreakdown')}</h4>
-          <span class="badge badge-neutral">{(summary.sales_by_payment || []).length} Channels</span>
+          <span class="badge badge-neutral">{(summary.sales_by_payment || []).length} {$t('overview.channels')}</span>
         </div>
 
         <div class="payment-channels-list">
@@ -278,10 +279,10 @@
                   <div class="payment-identity">
                     <span class="channel-dot" style="background: {pColor}"></span>
                     <strong class="channel-name">{p.method.toUpperCase()}</strong>
-                    <span class="channel-count">({p.count} sales)</span>
+                    <span class="channel-count">({p.count} {$t('overview.salesCount')})</span>
                   </div>
                   <div class="payment-values">
-                    <span class="channel-total">{formatCurrency(p.total)}</span>
+                    <span class="channel-total">{formatCurrency(p.total, $currencyStore)}</span>
                     <span class="mono-tag">{p.percentage || 0}%</span>
                   </div>
                 </div>
@@ -298,18 +299,18 @@
       <div class="vuexy-card section-card">
         <div class="card-header-line">
           <h4>{@html icons.award} {$t('rep.topEarners')}</h4>
-          <span class="badge badge-success">Top Performers</span>
+          <span class="badge badge-success">{$t('overview.topPerformers')}</span>
         </div>
 
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Drug Name</th>
-                <th>Units</th>
-                <th>Revenue</th>
-                <th>Profit</th>
-                <th>Margin</th>
+                <th>{$t('overview.drugName')}</th>
+                <th>{$t('common.units')}</th>
+                <th>{$t('overview.revenue')}</th>
+                <th>{$t('overview.profit')}</th>
+                <th>{$t('overview.margin')}</th>
               </tr>
             </thead>
             <tbody>
@@ -325,8 +326,8 @@
                       </div>
                     </td>
                     <td><span class="badge badge-secondary">{tp.quantity}</span></td>
-                    <td>{formatCurrency(tp.revenue)}</td>
-                    <td><strong class="text-success">+{formatCurrency(tp.profit)}</strong></td>
+                    <td>{formatCurrency(tp.revenue, $currencyStore)}</td>
+                    <td><strong class="text-success">+{formatCurrency(tp.profit, $currencyStore)}</strong></td>
                     <td>
                       <span class="badge {tp.margin_pct >= 25 ? 'badge-success' : 'badge-warning'}">
                         {tp.margin_pct || 0}%
@@ -345,7 +346,7 @@
     <div class="vuexy-card section-card">
       <div class="card-header-line">
         <h4>{@html icons.categories} {$t('rep.categoryMatrix')}</h4>
-        <span class="badge badge-neutral">{categoryReports.length} Categories Analyzed</span>
+        <span class="badge badge-neutral">{categoryReports.length} {$t('rep.categoriesAnalyzed')}</span>
       </div>
 
       <div class="table-responsive">
@@ -353,7 +354,7 @@
           <thead>
             <tr>
               <th>{$t('cat.th.name')}</th>
-              <th>Units Sold</th>
+              <th>{$t('rep.unitsSold')}</th>
               <th>{$t('rep.grossRevenue')}</th>
               <th>{$t('rep.costOfGoods')}</th>
               <th>{$t('rep.grossProfit')}</th>
@@ -366,11 +367,11 @@
             {:else}
               {#each categoryReports as c}
                 <tr>
-                  <td><strong class="category-name">{c.category_name || 'General / Uncategorized'}</strong></td>
+                  <td><strong class="category-name">{c.category_name || $t('common.uncategorized')}</strong></td>
                   <td><span class="badge badge-secondary">{c.items_sold || 0}</span></td>
-                  <td><strong>{formatCurrency(c.revenue)}</strong></td>
-                  <td class="text-warning">{formatCurrency(c.cost)}</td>
-                  <td><strong class="text-success">+{formatCurrency(c.profit)}</strong></td>
+                  <td><strong>{formatCurrency(c.revenue, $currencyStore)}</strong></td>
+                  <td class="text-warning">{formatCurrency(c.cost, $currencyStore)}</td>
+                  <td><strong class="text-success">+{formatCurrency(c.profit, $currencyStore)}</strong></td>
                   <td>
                     <span class="badge {c.margin_pct >= 25 ? 'badge-success' : 'badge-warning'}">
                       {c.margin_pct || 0}%
@@ -387,21 +388,21 @@
     <!-- SECTION 5: 12-MONTH HISTORICAL FINANCIAL LEDGER -->
     <div class="vuexy-card section-card">
       <div class="card-header-line">
-        <h4>{@html icons.sales} 12-Month Historical Financial Ledger</h4>
-        <span class="badge badge-neutral">{monthly.length} Months Recorded</span>
+        <h4>{@html icons.sales} {$t('rep.historicalLedger')}</h4>
+        <span class="badge badge-neutral">{monthly.length} {$t('rep.monthsRecorded')}</span>
       </div>
 
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Month Period</th>
-              <th>Invoices</th>
-              <th>Gross Revenue</th>
-              <th>Cost of Goods</th>
-              <th>Net Profit</th>
-              <th>Profit Margin</th>
-              <th>Volume Bar</th>
+              <th>{$t('rep.monthPeriod')}</th>
+              <th>{$t('rep.invoices')}</th>
+              <th>{$t('rep.grossRevenue')}</th>
+              <th>{$t('rep.costOfGoods')}</th>
+              <th>{$t('rep.netProfit')}</th>
+              <th>{$t('rep.profitMargin')}</th>
+              <th>{$t('rep.volumeBar')}</th>
             </tr>
           </thead>
           <tbody>
@@ -414,9 +415,9 @@
                 <tr>
                   <td><strong class="font-mono">{m.month_str || `${m.year}-${m.month}`}</strong></td>
                   <td><span class="badge badge-secondary">{m.sales_count || 0}</span></td>
-                  <td><strong>{formatCurrency(m.revenue)}</strong></td>
-                  <td class="text-warning">{formatCurrency(m.cost)}</td>
-                  <td><strong class="text-success">+{formatCurrency(m.profit)}</strong></td>
+                  <td><strong>{formatCurrency(m.revenue, $currencyStore)}</strong></td>
+                  <td class="text-warning">{formatCurrency(m.cost, $currencyStore)}</td>
+                  <td><strong class="text-success">+{formatCurrency(m.profit, $currencyStore)}</strong></td>
                   <td>
                     <span class="badge {m.margin_pct >= 25 ? 'badge-success' : 'badge-warning'}">
                       {m.margin_pct || 0}%

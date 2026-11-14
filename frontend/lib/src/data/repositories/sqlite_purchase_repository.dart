@@ -33,7 +33,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
     required int userId,
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
-    bool autoApprove = true,
+    String? transactionReference,
   }) {
     return _db.transaction(() async {
       final filtered = items.where((i) => i.quantity > 0).toList();
@@ -51,7 +51,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
               userId: userId,
               totalAmount: totalAmount,
               purchaseDate: purchaseDate,
-              status: Value(autoApprove ? 'approved' : 'pending'),
+              transactionReference: Value(transactionReference),
               createdAt: Value(now),
             ),
           );
@@ -68,7 +68,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
               ),
             );
 
-        if (autoApprove && item.productId != null && item.productId! > 0) {
+        if (item.productId != null && item.productId! > 0) {
           final product = await (_db.select(_db.products)
                 ..where((p) => p.id.equals(item.productId!)))
               .getSingleOrNull();
@@ -101,56 +101,7 @@ class SqlitePurchaseRepository implements PurchaseRepository {
 
   @override
   Future<void> approvePurchase(int id) async {
-    return _db.transaction(() async {
-      final purchaseRow = await (_db.select(_db.purchases)
-            ..where((p) => p.id.equals(id)))
-          .getSingleOrNull();
-      if (purchaseRow == null) {
-        throw StateError('Purchase #$id not found.');
-      }
-      if (purchaseRow.status == 'approved') {
-        return;
-      }
-
-      final items = await (_db.select(_db.purchaseItems)
-            ..where((i) => i.purchaseId.equals(id)))
-          .get();
-      final now = DateTime.now();
-
-      for (final item in items) {
-        if (item.productId != null && item.productId! > 0) {
-          final product = await (_db.select(_db.products)
-                ..where((p) => p.id.equals(item.productId!)))
-              .getSingleOrNull();
-          if (product != null) {
-            await (_db.update(_db.products)
-                  ..where((p) => p.id.equals(item.productId!)))
-                .write(
-              ProductsCompanion(
-                stockQuantity: Value(product.stockQuantity + item.quantity),
-                costPrice: Value(item.costPrice),
-                updatedAt: Value(now),
-              ),
-            );
-            await _db.into(_db.stockAdjustments).insert(
-                  StockAdjustmentsCompanion.insert(
-                    productId: item.productId!,
-                    adjustmentQuantity: item.quantity,
-                    reason: Value('Purchase order #${purchaseRow.invoiceNumber} approved'),
-                    reference: Value('purchase:$id'),
-                    userId: Value(purchaseRow.userId),
-                  ),
-                );
-          }
-        }
-      }
-
-      await (_db.update(_db.purchases)..where((p) => p.id.equals(id))).write(
-        const PurchasesCompanion(
-          status: Value('approved'),
-        ),
-      );
-    });
+    // In local offline sqlite mode, purchases are created already approved
   }
 
   @override
@@ -184,12 +135,13 @@ class SqlitePurchaseRepository implements PurchaseRepository {
     return AppPurchase(
       id: row.id,
       invoiceNumber: row.invoiceNumber,
+      transactionReference: row.transactionReference,
       supplierId: row.supplierId,
       userId: row.userId,
       totalAmount: row.totalAmount,
       purchaseDate: row.purchaseDate,
       createdAt: row.createdAt,
-      status: row.status == 'approved' ? PurchaseStatus.approved : PurchaseStatus.pending,
+      status: PurchaseStatus.approved,
     );
   }
 

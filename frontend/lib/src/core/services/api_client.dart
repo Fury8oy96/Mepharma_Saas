@@ -53,9 +53,17 @@ class ApiClient {
     terminalName = name;
   }
 
-  Uri _makeUri(String path) {
+  Uri _makeUri(String path, {Map<String, String>? queryParameters}) {
     final cleanPath = path.startsWith('/') ? path : '/$path';
     var uri = Uri.parse('$baseUrl$cleanPath');
+    if (queryParameters != null && queryParameters.isNotEmpty) {
+      uri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          ...queryParameters,
+        },
+      );
+    }
     // On Windows, subdomains of localhost (e.g. main.localhost) fail with 'No such host is known'.
     // Automatically rewrite *.localhost to localhost so Windows WinSock resolves to loopback 127.0.0.1.
     if (uri.host.contains('.localhost')) {
@@ -249,7 +257,14 @@ class ApiClient {
   Stream<String> connectEvents() async* {
     final client = http.Client();
     try {
-      final request = http.Request('GET', _makeUri('/sync/events'));
+      final qp = <String, String>{
+        'pharmacy': pharmacyCode,
+        if (token != null && token!.isNotEmpty) 'token': token!,
+      };
+      final request = http.Request(
+        'GET',
+        _makeUri('/sync/events', queryParameters: qp),
+      );
       request.headers.addAll(_makeHeaders());
       request.headers['Accept'] = 'text/event-stream';
       request.headers['Cache-Control'] = 'no-cache';

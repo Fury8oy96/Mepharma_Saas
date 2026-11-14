@@ -113,6 +113,73 @@ class SqliteProductRepository implements ProductRepository {
     return (await findById(id))!;
   }
 
+  /// Upserts a product fetched from the remote server, preserving exact server
+  /// ID, SKU, and current stock quantity without causing unique-key collisions.
+  Future<void> upsertMirror(AppProduct product) async {
+    await _db.transaction(() async {
+      final byId = await findById(product.id);
+      if (byId != null) {
+        await (_db.update(_db.products)..where((p) => p.id.equals(product.id)))
+            .write(
+          ProductsCompanion(
+            sku: Value(product.sku),
+            barcode: Value(product.barcode),
+            name: Value(product.name),
+            categoryId: Value(product.categoryId),
+            supplierId: Value(product.supplierId),
+            costPrice: Value(product.costPrice),
+            sellingPrice: Value(product.sellingPrice),
+            stockQuantity: Value(product.stockQuantity),
+            lowStockThreshold: Value(product.lowStockThreshold),
+            expiryDate: Value(product.expiryDate),
+            description: Value(product.description),
+            updatedAt: Value(product.updatedAt),
+          ),
+        );
+        return;
+      }
+
+      final bySku = await findBySku(product.sku);
+      if (bySku != null) {
+        await (_db.update(_db.products)..where((p) => p.id.equals(bySku.id)))
+            .write(
+          ProductsCompanion(
+            barcode: Value(product.barcode),
+            name: Value(product.name),
+            categoryId: Value(product.categoryId),
+            supplierId: Value(product.supplierId),
+            costPrice: Value(product.costPrice),
+            sellingPrice: Value(product.sellingPrice),
+            stockQuantity: Value(product.stockQuantity),
+            lowStockThreshold: Value(product.lowStockThreshold),
+            expiryDate: Value(product.expiryDate),
+            description: Value(product.description),
+            updatedAt: Value(product.updatedAt),
+          ),
+        );
+        return;
+      }
+
+      await _db.into(_db.products).insert(
+            ProductsCompanion.insert(
+              id: Value(product.id),
+              sku: product.sku,
+              barcode: Value(product.barcode),
+              name: product.name,
+              categoryId: Value(product.categoryId),
+              supplierId: Value(product.supplierId),
+              costPrice: Value(product.costPrice),
+              sellingPrice: Value(product.sellingPrice),
+              stockQuantity: Value(product.stockQuantity),
+              lowStockThreshold: Value(product.lowStockThreshold),
+              expiryDate: Value(product.expiryDate),
+              description: Value(product.description),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    });
+  }
+
   @override
   Future<void> update(
     int id, {

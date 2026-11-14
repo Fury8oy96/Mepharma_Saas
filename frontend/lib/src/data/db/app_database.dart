@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -17,13 +17,6 @@ part 'app_database.g.dart';
 Future<File> defaultDatabaseFilePath() async {
   final documents = await getApplicationDocumentsDirectory();
   return File(p.join(documents.path, '${AppConstants.databaseName}.sqlite'));
-}
-
-QueryExecutor _openConnection() {
-  return LazyDatabase(() async {
-    final file = await defaultDatabaseFilePath();
-    return NativeDatabase.createInBackground(file);
-  });
 }
 
 @DriftDatabase(
@@ -50,7 +43,15 @@ QueryExecutor _openConnection() {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? _openConnection());
+      : super(
+          executor ??
+              driftDatabase(
+                name: AppConstants.databaseName,
+                native: DriftNativeOptions(
+                  databaseDirectory: getApplicationDocumentsDirectory,
+                ),
+              ),
+        );
 
   @override
   int get schemaVersion => 5;
@@ -72,33 +73,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(staffProductFeedbacks);
         }
         if (from < 5) {
-          await m.addColumn(purchases, purchases.status);
-          await m.addColumn(purchases, purchases.notes);
+          await m.addColumn(sales, sales.transactionReference);
+          await m.addColumn(purchases, purchases.transactionReference);
         }
       },
     );
-  }
-
-  /// Completely wipes all operational tables and resets to an empty database state.
-  Future<void> wipeAndReset() async {
-    await transaction(() async {
-      await delete(saleItems).go();
-      await delete(sales).go();
-      await delete(salesHolds).go();
-      await delete(purchaseItems).go();
-      await delete(purchases).go();
-      await delete(stockAdjustments).go();
-      await delete(customerPayments).go();
-      await delete(customers).go();
-      await delete(products).go();
-      await delete(categories).go();
-      await delete(suppliers).go();
-      await delete(staffProductFeedbacks).go();
-      await delete(syncQueueEntries).go();
-      await delete(backupLogs).go();
-      await delete(settings).go();
-      await delete(users).go();
-    });
   }
 }
 
