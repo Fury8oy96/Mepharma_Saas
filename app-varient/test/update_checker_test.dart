@@ -22,10 +22,12 @@ void main() {
       expect(UpdateCheckerService.isRemoteNewer('1.0.1', '1.0.1'), isFalse);
     });
 
-    test('UpdateInfo parses JSON correctly with bilingual changelogs', () {
+    test('UpdateInfo parses JSON correctly with bilingual changelogs and edition', () {
       final json = {
         'version': '1.0.2',
         'buildNumber': 3,
+        'edition': 'standard',
+        'appName': 'MePharma',
         'releaseDate': '2026-11-20',
         'downloadUrl': 'https://github.com/Fury8oy96/mepharma/releases/download/v1.0.2/setup.exe',
         'htmlUrl': 'https://github.com/Fury8oy96/mepharma/releases/tag/v1.0.2',
@@ -38,9 +40,26 @@ void main() {
       final info = UpdateInfo.fromJson(json);
       expect(info.version, equals('1.0.2'));
       expect(info.buildNumber, equals(3));
+      expect(info.edition, equals('standard'));
+      expect(info.appName, equals('MePharma'));
       expect(info.releaseDate, equals('2026-11-20'));
       expect(info.changelogEn, contains('Feature A'));
       expect(info.changelogAr, contains('ميزة أ'));
+    });
+
+    test('Edition matching strictly validates payload edition against AppConstants.edition', () {
+      final standardPayload = UpdateInfo.fromJson({
+        'version': '2.0.5',
+        'edition': 'standard',
+      });
+      final variantPayload = UpdateInfo.fromJson({
+        'version': '2.0.5',
+        'edition': 'variant',
+      });
+
+      expect(standardPayload.edition == 'standard', isTrue);
+      expect(variantPayload.edition == 'standard', isFalse);
+      expect(variantPayload.edition == 'variant', isTrue);
     });
   });
 }

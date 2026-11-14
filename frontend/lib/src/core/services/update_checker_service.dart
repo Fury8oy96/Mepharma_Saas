@@ -10,6 +10,8 @@ import '../constants/app_constants.dart';
 class UpdateInfo {
   final String version;
   final int buildNumber;
+  final String? edition;
+  final String? appName;
   final String releaseDate;
   final String downloadUrl;
   final String htmlUrl;
@@ -19,6 +21,8 @@ class UpdateInfo {
   const UpdateInfo({
     required this.version,
     required this.buildNumber,
+    this.edition,
+    this.appName,
     required this.releaseDate,
     required this.downloadUrl,
     required this.htmlUrl,
@@ -31,6 +35,8 @@ class UpdateInfo {
     return UpdateInfo(
       version: json['version'] as String? ?? '1.0.0',
       buildNumber: json['buildNumber'] as int? ?? 1,
+      edition: json['edition'] as String?,
+      appName: json['appName'] as String?,
       releaseDate: json['releaseDate'] as String? ?? '',
       downloadUrl: json['downloadUrl'] as String? ?? '',
       htmlUrl: json['htmlUrl'] as String? ?? '',
@@ -113,6 +119,14 @@ class UpdateCheckerService {
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final info = UpdateInfo.fromJson(body);
+
+      // Enforce strict edition matching: variant updates only for variant app, standard only for main app
+      if (info.edition != null && info.edition != AppConstants.edition) {
+        debugPrint(
+          'UpdateCheckerService: Edition mismatch. Current app edition is "${AppConstants.edition}", but update payload edition is "${info.edition}". Rejecting cross-edition update.',
+        );
+        return const UpdateCheckResult(status: UpdateStatus.upToDate);
+      }
 
       // Record check date
       await _settingsRepository.setValue(_keyLastCheckedDate, today);

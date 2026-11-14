@@ -1,9 +1,10 @@
 /// Application-wide constants.
 abstract final class AppConstants {
   static const String appName = 'MePharma Variant';
+  static const String edition = 'variant';
   static const String appVersion = '2.0.4';
   static const int buildNumber = 6;
-  static const String updateCheckUrl = 'https://raw.githubusercontent.com/Fury8oy96/Mepharma_Saas/main/version.json';
+  static const String updateCheckUrl = 'https://raw.githubusercontent.com/Fury8oy96/Mepharma_Saas/main/version-variant.json';
 
   static const String databaseName = 'mepharma_variant';
 

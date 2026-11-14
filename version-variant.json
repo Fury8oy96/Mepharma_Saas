@@ -1,0 +1,26 @@
+{
+  "edition": "variant",
+  "appName": "MePharma Variant",
+  "version": "2.0.4",
+  "buildNumber": 6,
+  "releaseDate": "2026-11-14",
+  "minRequiredVersion": "1.0.0",
+  "downloadUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/latest/download/mepharma_varient.exe",
+  "htmlUrl": "https://github.com/Fury8oy96/Mepharma_Saas/releases/tag/v2.0.4",
+  "changelog": {
+    "en": [
+      "Open Selling Price Input: Full freedom for cashiers and pharmacists to enter arbitrary selling prices per product, completely replacing the governed margin formula.",
+      "Unrestricted Sales Returns: Cashiers, pharmacists, and all staff roles can execute sales returns directly without requiring administrator supervisor overrides.",
+      "Dedicated Sales Returns Navigation: Direct access to /returns section in the main navigation with live metrics, search filters, and receipt lookup.",
+      "Separate Real Name Field: Added real name and login username separation, ensuring staff real names appear on receipts and UI cards.",
+      "Isolated Database & Single Instance Mutex: Uses mepharma_variant.sqlite and MePharmaVariantSingletonMutex to run side-by-side with standard MePharma without conflict."
+    ],
+    "ar": [
+      "تسعير حر ومفتوح: حرية كاملة للموظفين والكاشير في تحديد سعر البيع مباشرة لكل صنف دون إجبار على معادلة هامش الربح الإلزامية.",
+      "مرتجعات مبيعات مفتوحة لكافة الأدوار: إمكانية إرجاع المبيعات واسترجاع المخزون مباشرة من قبل الكاشير والصيدلي دون اشتراط موافقة المشرف.",
+      "شاشة مخصصة لمرتجعات المبيعات: قسم مستقل في القائمة الجانبية (/returns) لمتابعة كافة عمليات الإرجاع واسترجاع الفواتير.",
+      "فصل الاسم الحقيقي عن اسم الدخول: حقل مستقل للاسم الحقيقي للموظف ليظهر في الفواتير الحرارية وشاشات النظام مع بقاء اسم المستخدم لتسجيل الدخول.",
+      "قاعدة بيانات وتشغيل مستقل: استخدام قاعدة بيانات mepharma_variant.sqlite لمنع أي تداخل مع النسخة القياسية."
+    ]
+  }
+}

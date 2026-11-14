@@ -1,4 +1,6 @@
 {
+  "edition": "standard",
+  "appName": "MePharma",
   "version": "2.0.4",
   "buildNumber": 6,
   "releaseDate": "2026-11-14",
