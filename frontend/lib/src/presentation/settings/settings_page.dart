@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/services/update_checker_service.dart';
 import '../../core/services/windows_startup_service.dart';
 import '../../domain/models/app_user.dart';
 import '../../domain/models/store_settings.dart';
@@ -1435,18 +1436,49 @@ class _SystemUpdatesSectionState extends ConsumerState<_SystemUpdatesSection> {
   Future<void> _checkUpdate() async {
     setState(() => _checking = true);
     final l10n = AppLocalizations.of(context);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final updateService = ref.read(updateCheckerServiceProvider);
 
     try {
-      final info = await updateService.checkForUpdate(force: true);
+      final result = await updateService.checkForUpdateResult(force: true);
       if (!mounted) return;
 
-      if (info != null) {
+      if (result.status == UpdateStatus.updateAvailable && result.updateInfo != null) {
         UpdateNotificationDialog.show(
           context,
-          updateInfo: info,
-          onDismissPermanently: () => updateService.dismissVersion(info.version),
+          updateInfo: result.updateInfo!,
+          onDismissPermanently: () => updateService.dismissVersion(result.updateInfo!.version),
         );
+      } else if (result.status == UpdateStatus.error) {
+        final err = result.errorMessage ?? '';
+        final is404 = err.contains('404');
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.cloud_off_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      is404
+                          ? (isArabic
+                              ? 'تعذر الوصول لملف التحديثات على GitHub (404 Not Found): المستودع الخاص يتطلب جعله Public حتى تتمكن الأجهزة من قراءة التحديثات.'
+                              : 'Update file returned 404 Not Found: Ensure the GitHub repository is set to Public for update discovery.')
+                          : (isArabic
+                              ? 'فشل التحقق من التحديثات: $err'
+                              : 'Update check failed: $err'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 6),
+            ),
+          );
       } else {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()

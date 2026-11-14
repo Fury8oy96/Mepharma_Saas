@@ -40,6 +40,26 @@ class UpdateInfo {
   }
 }
 
+enum UpdateStatus {
+  updateAvailable,
+  upToDate,
+  throttled,
+  dismissed,
+  error,
+}
+
+class UpdateCheckResult {
+  final UpdateStatus status;
+  final UpdateInfo? updateInfo;
+  final String? errorMessage;
+
+  const UpdateCheckResult({
+    required this.status,
+    this.updateInfo,
+    this.errorMessage,
+  });
+}
+
 class UpdateCheckerService {
   final SettingsRepository _settingsRepository;
 
@@ -60,24 +80,35 @@ class UpdateCheckerService {
     return false;
   }
 
-  /// Checks for available updates.
-  /// If [force] is false, throttles checks to once every 24 hours and ignores dismissed versions.
-  Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
+  /// Checks for available updates returning a detailed result.
+  Future<UpdateCheckResult> checkForUpdateResult({
+    bool force = false,
+    String? gitHubToken,
+  }) async {
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     if (!force) {
       final lastChecked = await _settingsRepository.getValue(_keyLastCheckedDate);
       if (lastChecked == today) {
-        return null; // Already checked today
+        return const UpdateCheckResult(status: UpdateStatus.throttled);
       }
     }
 
     try {
       final uri = Uri.parse(AppConstants.updateCheckUrl);
-      final response = await http.get(uri).timeout(const Duration(seconds: 6));
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        if (gitHubToken != null && gitHubToken.isNotEmpty)
+          'Authorization': 'token $gitHubToken',
+      };
+
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
 
       if (response.statusCode != 200) {
-        return null;
+        return UpdateCheckResult(
+          status: UpdateStatus.error,
+          errorMessage: 'HTTP ${response.statusCode} (${response.reasonPhrase ?? "Error"})',
+        );
       }
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -88,21 +119,34 @@ class UpdateCheckerService {
 
       final hasUpdate = isRemoteNewer(info.version, AppConstants.appVersion);
       if (!hasUpdate) {
-        return null;
+        return const UpdateCheckResult(status: UpdateStatus.upToDate);
       }
 
       if (!force) {
         final dismissed = await _settingsRepository.getValue(_keyDismissedVersion);
         if (dismissed == info.version) {
-          return null; // User dismissed this version
+          return const UpdateCheckResult(status: UpdateStatus.dismissed);
         }
       }
 
-      return info;
+      return UpdateCheckResult(
+        status: UpdateStatus.updateAvailable,
+        updateInfo: info,
+      );
     } catch (e) {
-      debugPrint('UpdateCheckerService check non-fatal error: $e');
-      return null;
+      debugPrint('UpdateCheckerService check error: $e');
+      return UpdateCheckResult(
+        status: UpdateStatus.error,
+        errorMessage: e.toString(),
+      );
     }
+  }
+
+  /// Checks for available updates.
+  /// If [force] is false, throttles checks to once every 24 hours and ignores dismissed versions.
+  Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
+    final result = await checkForUpdateResult(force: force);
+    return result.updateInfo;
   }
 
   Future<void> dismissVersion(String version) async {
