@@ -154,6 +154,109 @@ class UsersPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _deleteUser(
+    BuildContext context,
+    WidgetRef ref,
+    AppUser user,
+    List<AppUser> users,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
+    final current = ref.read(sessionProvider);
+
+    if (current?.id == user.id) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic
+                  ? 'لا يمكن حذف حسابك الحالي المسجل به الدخول'
+                  : 'Cannot delete your own account',
+            ),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+      return;
+    }
+
+    final activeAdmins = users.where((u) => u.isAdmin && u.isActive).length;
+    if (user.isAdmin && activeAdmins <= 1) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.needOneActiveAdmin),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.person_remove_outlined, color: Colors.red, size: 26),
+            const SizedBox(width: 10),
+            Text(
+              isArabic ? 'حذف المستخدم نهائياً' : 'Delete User Permanently',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          isArabic
+              ? 'هل أنت متأكد من حذف المستخدم "${user.username}" نهائياً من النظام؟\n\nلا يمكن التراجع عن هذا الإجراء.'
+              : 'Are you sure you want to permanently delete user "${user.username}" from the system?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(isArabic ? 'نعم، حذف نهائي' : 'Yes, Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(userRepositoryProvider).deleteUser(user.id);
+      ref.invalidate(userListProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic
+                  ? 'تم حذف المستخدم "${user.username}" نهائياً من النظام بنجاح'
+                  : 'User "${user.username}" was permanently deleted.',
+            ),
+            backgroundColor: const Color(0xFF28C76F),
+          ),
+        );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.errorOccurred),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -280,6 +383,27 @@ class UsersPage extends ConsumerWidget {
                               onChanged: (isSelf || !canModify)
                                   ? null
                                   : (_) => _toggleActive(
+                                      context,
+                                      ref,
+                                      user,
+                                      users,
+                                    ),
+                            ),
+                            IconButton(
+                              tooltip: (isSelf || !canModify)
+                                  ? null
+                                  : (l10n.localeName.startsWith('ar')
+                                      ? 'حذف المستخدم نهائياً'
+                                      : 'Delete user permanently'),
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: (isSelf || !canModify)
+                                    ? theme.colorScheme.outlineVariant
+                                    : Colors.red.shade700,
+                              ),
+                              onPressed: (isSelf || !canModify)
+                                  ? null
+                                  : () => _deleteUser(
                                       context,
                                       ref,
                                       user,

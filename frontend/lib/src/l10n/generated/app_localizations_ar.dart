@@ -88,7 +88,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get roleAdmin => 'مدير';
+  String get roleAdmin => 'المدير';
 
   @override
   String get roleStaff => 'موظف';
@@ -412,7 +412,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paymentCard => 'بطاقة';
 
   @override
+  String get paymentBankTransfer => 'تحويل بنكي';
+
+  @override
   String get paymentMobileMoney => 'محفظة إلكترونية';
+
+  @override
+  String get transactionReference => 'رقم العملية';
+
+  @override
+  String get transactionRefHint => 'أدخل رقم العملية أو إشعار التحويل';
+
+  @override
+  String get transactionRefRequired =>
+      'يرجى إدخال رقم العملية لإتمام التحويل البنكي';
 
   @override
   String get amountReceived => 'المبلغ المستلم';
@@ -1244,87 +1257,105 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get offlineModeBannerTitle =>
-      'العمل في وضع عدم الاتصال — التخزين المحلي نشط';
+  String get refresh => 'تحديث';
 
   @override
-  String get offlineModeBannerSubtitle =>
-      'يتم حفظ جميع التغييرات محلياً في قاعدة البيانات.';
-
-  @override
-  String offlinePendingTransactions(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count معاملة في انتظار المزامنة.',
-      many: '$count معاملة في انتظار المزامنة.',
-      few: '$count معاملات في انتظار المزامنة.',
-      two: 'معاملتان في انتظار المزامنة.',
-      one: 'معاملة واحدة في انتظار المزامنة.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get syncFailedBannerTitle =>
-      'فشلت المزامنة — ستتم إعادة المحاولة فور استقرار الاتصال';
-
-  @override
-  String get networkRestoredBannerTitle =>
-      'تمت استعادة الاتصال — جارٍ المزامنة مع الخادم...';
-
-  @override
-  String get pendingSyncBannerTitle => 'تغييرات محلية جاهزة للمزامنة';
-
-  @override
-  String get reconcilingRecordsSubtitle =>
-      'جارٍ مطابقة السجلات المعلقة وتحديث المخزون...';
-
-  @override
-  String pendingServerReconciliation(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count معاملة بانتظار المطابقة مع الخادم.',
-      many: '$count معاملة بانتظار المطابقة مع الخادم.',
-      few: '$count معاملات بانتظار المطابقة مع الخادم.',
-      two: 'معاملتان بانتظار المطابقة مع الخادم.',
-      one: 'معاملة واحدة بانتظار المطابقة مع الخادم.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkConnection => 'فحص الاتصال';
+  String get refreshing => 'جاري التحديث...';
 
   @override
   String get syncNow => 'مزامنة الآن';
 
   @override
-  String get supervisorAuthorization => 'صلاحية المشرف';
+  String get checkConnection => 'فحص الاتصال';
+
+  @override
+  String localOfflineTransactions(int count) {
+    return 'المعاملات المحلية غير المتزامنة ($count)';
+  }
+
+  @override
+  String serverSyncedTransactions(int count) {
+    return 'المعاملات المتزامنة مع الخادم ($count)';
+  }
+
+  @override
+  String localSavedTransactions(int count) {
+    return 'سجل المبيعات المحلية ($count)';
+  }
+
+  @override
+  String get offlineQueueNotice =>
+      'تم حفظ هذه المعاملات محلياً أثناء عدم الاتصال وستتم مزامنتها تلقائياً عند عودة الاتصال.';
+
+  @override
+  String get syncingTransactions =>
+      'جاري مزامنة المعاملات المحلية مع الخادم...';
+
+  @override
+  String get superAdminShort => 'المدير';
+
+  @override
+  String get branchAdminShort => 'المدير';
+
+  @override
+  String get staffShort => 'المدير';
+
+  @override
+  String get localModeActive => 'وضع محلي';
+
+  @override
+  String purchaseApprovedNotice(String invoice) {
+    return 'تم اعتماد أمر الشراء $invoice وتحديث المخزون.';
+  }
+
+  @override
+  String printedOn(String date) {
+    return 'تاريخ الطباعة: $date';
+  }
+
+  @override
+  String get stockOut => 'نافد';
+
+  @override
+  String get confirmApprovePurchase =>
+      'هل أنت متأكد من اعتماد أمر الشراء هذا وإضافة أصنافه إلى مخزون الفرع؟';
+
+  @override
+  String get supervisorApprovePurchaseReason =>
+      'اعتماد أوامر الشراء وتحديث المخزون يتطلب تفويض مدير الفرع أو المشرف.';
+
+  @override
+  String get supervisorReturnReason =>
+      'معالجة المرتجعات والاسترداد تتطلب تفويض المشرف.';
+
+  @override
+  String get terminalQuotaTitle => 'تم الوصول للحد الأقصى للأجهزة';
+
+  @override
+  String get terminalQuotaInfo =>
+      'لإضافة المزيد من نقاط البيع أو الحواسيب، يرجى طلب ترقية حد الأجهزة من منصة المزود.';
+
+  @override
+  String get understood => 'حسناً';
+
+  @override
+  String get supervisorAuthTitle => 'تفويض المشرف';
 
   @override
   String get supervisorUsernameOptional => 'اسم مستخدم المشرف (اختياري)';
 
   @override
-  String get supervisorPasswordPin => 'رمز المشرف أو كلمة المرور *';
+  String get supervisorPasswordRequired => 'كلمة مرور / رمز المشرف *';
 
   @override
-  String get authorize => 'تأكيد الصلاحية';
+  String get authorize => 'تفويض';
 
   @override
-  String get invalidSupervisorPassword =>
-      'رمز المشرف أو كلمة المرور غير صحيحة.';
+  String get requestOutOfStockDrug => 'طلب دواء غير متوفر';
 
   @override
-  String get checkForUpdates => 'التحقق من التحديثات';
+  String get diagnosticsCopied => 'تم نسخ تفاصيل الخطأ إلى الحافظة';
 
   @override
-  String get checkingForUpdates => 'جارٍ التحقق من التحديثات...';
-
-  @override
-  String get upToDate => 'نظام MePharma محدّث إلى آخر إصدار';
-
-  @override
-  String get updateAvailable => 'يتوفر تحديث جديد';
+  String get copyErrorDiagnostics => 'نسخ تفاصيل الخطأ للتشخيص';
 }

@@ -116,7 +116,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit feedback: $e'),
+            content: Text('${l10n.errorOccurred}: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -131,6 +131,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
     final product = widget.product;
 
     return Dialog(
@@ -223,7 +224,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
                               if (product.barcode != null &&
                                   product.barcode!.isNotEmpty)
                                 Text(
-                                  'SKU / Barcode: ${product.barcode}',
+                                  '${l10n.barcode}: ${product.barcode}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: theme.colorScheme.onSurfaceVariant,
@@ -244,7 +245,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Stock: ${product.stockQuantity}',
+                            '${l10n.stock}: ${product.stockQuantity}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -270,7 +271,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
                       ),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Product name is required'
+                        ? l10n.fieldRequired
                         : null,
                   ),
 
@@ -278,7 +279,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
 
                 // Urgency Selector
                 Text(
-                  'Reason / Urgency',
+                  isArabic ? 'السبب / درجة الأهمية' : 'Reason / Urgency',
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -327,7 +328,7 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
                         ),
                         validator: (v) {
                           final n = int.tryParse(v ?? '');
-                          if (n == null || n <= 0) return 'Enter valid quantity';
+                          if (n == null || n <= 0) return l10n.invalidNumber;
                           return null;
                         },
                       ),
@@ -359,7 +360,9 @@ class _StaffFeedbackDialogState extends ConsumerState<StaffFeedbackDialog> {
                   maxLines: 2,
                   decoration: InputDecoration(
                     labelText: l10n.staffNotes,
-                    hintText: 'e.g., 5 patients requested today, fast-selling batch',
+                    hintText: isArabic
+                        ? 'مثال: تم طلبه من 5 مرضى اليوم / نافد من الرف'
+                        : 'e.g., 5 patients requested today, fast-selling batch',
                     prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

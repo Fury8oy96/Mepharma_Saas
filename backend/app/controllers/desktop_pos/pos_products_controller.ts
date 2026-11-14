@@ -1,6 +1,8 @@
 import { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import Product from '#models/tenant/product'
+import { TenantContext } from '#core/tenancy/tenant_context'
+import { syncHub } from '#core/events/sync_hub'
 
 export default class PosProductsController {
   private mapProduct(p: Product) {
@@ -57,6 +59,24 @@ export default class PosProductsController {
 
   async show({ params, response }: HttpContext) {
     const product = await Product.query().where('id', params.id).first()
+    if (!product) {
+      return response.status(404).json({ error: 'Product not found.' })
+    }
+    return response.ok(this.mapProduct(product))
+  }
+
+  async findBySku({ params, response }: HttpContext) {
+    const sku = decodeURIComponent(String(params.sku || '')).trim()
+    const product = await Product.query().where('sku', sku).first()
+    if (!product) {
+      return response.status(404).json({ error: 'Product not found.' })
+    }
+    return response.ok(this.mapProduct(product))
+  }
+
+  async findByBarcode({ params, response }: HttpContext) {
+    const barcode = decodeURIComponent(String(params.barcode || '')).trim()
+    const product = await Product.query().where('barcode', barcode).first()
     if (!product) {
       return response.status(404).json({ error: 'Product not found.' })
     }
@@ -162,6 +182,7 @@ export default class PosProductsController {
       version: 1,
     })
 
+    syncHub.emit(TenantContext.get()?.code || 'main', 'product_created', { id: product.id })
     return response.status(201).json(this.mapProduct(product))
   }
 
@@ -246,6 +267,7 @@ export default class PosProductsController {
     product.version = (product.version || 0) + 1
     await product.save()
 
+    syncHub.emit(TenantContext.get()?.code || 'main', 'product_updated', { id: product.id })
     return response.ok(this.mapProduct(product))
   }
 
@@ -264,6 +286,7 @@ export default class PosProductsController {
     }
 
     await product.delete()
+    syncHub.emit(TenantContext.get()?.code || 'main', 'product_deleted', { id: Number(params.id) })
     return response.ok({ success: true, message: 'Product deleted.' })
   }
 }

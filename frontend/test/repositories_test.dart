@@ -182,7 +182,7 @@ void main() {
   group('settings', () {
     test('store settings round trip', () async {
       final defaults = await settings.getStoreSettings();
-      expect(defaults.currencySymbol, r'$');
+      expect(defaults.currencySymbol, 'ج.س');
       expect(defaults.taxRate, '0');
 
       await settings.saveStoreSettings(
@@ -192,14 +192,14 @@ void main() {
           storePhone: '012345',
           storeTaxId: 'TAX-1',
           taxRate: '7.5',
-          currencySymbol: r'$',
+          currencySymbol: 'ج.س',
         ),
       );
 
       final loaded = await settings.getStoreSettings();
       expect(loaded.storeName, 'My Pharmacy');
       expect(loaded.taxRate, '7.5');
-      expect(await settings.getCurrencySymbol(), r'$');
+      expect(await settings.getCurrencySymbol(), 'ج.س');
     });
   });
 }

@@ -197,7 +197,11 @@
   "payment": "Payment",
   "paymentCash": "Cash",
   "paymentCard": "Card",
+  "paymentBankTransfer": "Bank transfer",
   "paymentMobileMoney": "Mobile money",
+  "transactionReference": "Transaction reference",
+  "transactionRefHint": "Enter bank transfer reference number",
+  "transactionRefRequired": "Transaction reference is required for bank transfer",
   "amountReceived": "Amount received",
   "changeDue": "Change",
   "confirmPayment": "Confirm payment",
@@ -460,7 +464,7 @@
   "brandName": "Brand name",
   "genericName": "Generic name",
   "dose": "Dose / Dosage",
-  "profitMargin": "Profit margin (e.g. 0.3 for 30%)",
+  "profitMargin": "Profit margin (default 0)",
   "supplierCompany": "Company",
   "supplierCompanyContact": "Company contact number",
   "serverSettings": "Server Configuration",
@@ -588,37 +592,68 @@
       }
     }
   },
-  "offlineModeBannerTitle": "Operating in Offline Mode — Local Storage Active",
-  "offlineModeBannerSubtitle": "All changes are saved locally to SQLite.",
-  "offlinePendingTransactions": "{count, plural, =1{1 transaction queued for sync.} other{{count} transactions queued for sync.}}",
-  "@offlinePendingTransactions": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
-  "syncFailedBannerTitle": "Sync Failed — Retries When Connection Is Stable",
-  "networkRestoredBannerTitle": "Network Restored — Synchronizing with Server...",
-  "pendingSyncBannerTitle": "Pending Local Changes Ready to Sync",
-  "reconcilingRecordsSubtitle": "Reconciling pending records and updating stock...",
-  "pendingServerReconciliation": "{count, plural, =1{1 offline transaction pending server reconciliation.} other{{count} offline transactions pending server reconciliation.}}",
-  "@pendingServerReconciliation": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
-  "checkConnection": "Check Connection",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
   "syncNow": "Sync Now",
-  "supervisorAuthorization": "Supervisor Authorization",
+  "checkConnection": "Check Connection",
+  "localOfflineTransactions": "Local Offline Transactions ({count})",
+  "@localOfflineTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverSyncedTransactions": "Server Synced Transactions ({count})",
+  "@serverSyncedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "localSavedTransactions": "Local Sales Ledger ({count})",
+  "@localSavedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineQueueNotice": "These transactions were saved locally while offline and will sync automatically when online.",
+  "syncingTransactions": "Synchronizing local transactions with server...",
+  "superAdminShort": "Super Admin",
+  "branchAdminShort": "Branch Admin",
+  "staffShort": "Staff",
+  "localModeActive": "Local Mode",
+  "purchaseApprovedNotice": "Purchase request {invoice} has been approved and inventory is updated.",
+  "@purchaseApprovedNotice": {
+    "placeholders": {
+      "invoice": {
+        "type": "String"
+      }
+    }
+  },
+  "printedOn": "Printed on {date}",
+  "@printedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "stockOut": "Out of stock",
+  "confirmApprovePurchase": "Are you sure you want to approve this purchase order and add its inventory to branch stock?",
+  "supervisorApprovePurchaseReason": "Approving purchase orders and updating stock requires Branch Administrator or Supervisor authorization.",
+  "supervisorReturnReason": "Processing refunds and returns requires supervisor override.",
+  "terminalQuotaTitle": "Terminal Seat Limit Reached",
+  "terminalQuotaInfo": "To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.",
+  "understood": "Understood",
+  "supervisorAuthTitle": "Supervisor Authorization",
   "supervisorUsernameOptional": "Supervisor Username (optional)",
-  "supervisorPasswordPin": "Supervisor Password / PIN *",
+  "supervisorPasswordRequired": "Supervisor Password / PIN *",
   "authorize": "Authorize",
-  "invalidSupervisorPassword": "Invalid local supervisor password or PIN.",
-  "checkForUpdates": "Check for Updates",
-  "checkingForUpdates": "Checking for updates...",
-  "upToDate": "MePharma is up to date",
-  "updateAvailable": "Update Available"
+  "requestOutOfStockDrug": "Request Out-of-Stock Drug",
+  "diagnosticsCopied": "Diagnostics copied to clipboard",
+  "copyErrorDiagnostics": "Copy Error Diagnostics"
 }

@@ -89,7 +89,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   Future<void> _export(ReportSummary summary) async {
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.read(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.read(currencySymbolProvider).valueOrNull ?? 'ج.س';
     setState(() => _exporting = true);
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -190,7 +190,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final summaryAsync = ref.watch(reportSummaryProvider((from: _from, to: _to)));
     final valuation = ref.watch(stockValuationProvider).valueOrNull;
 
@@ -436,15 +436,21 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             icon: Icons.account_balance_wallet_outlined,
             color: const Color(0xFF7367F0), // Primary Indigo
             badgeText: '${summary.salesCount} ${l10n.invoicesCount}',
+            tickerCode: 'REV // DAILY',
+            technicalSignal: 'BULLISH MOMENTUM ↗',
+            signalColor: const Color(0xFF28C76F),
           ),
           _ExecutiveCardData(
             title: l10n.estimatedProfit,
             value: formatMoney(summary.estimatedProfit, symbol: symbol),
             subtitle: '${l10n.profitMargin}: ${summary.profitMarginPct.toStringAsFixed(1)}%',
             icon: Icons.trending_up,
-            color: summary.estimatedProfit >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455), // Emerald / Red
+            color: summary.estimatedProfit >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455),
             badgeText: '${summary.profitMarginPct >= 0 ? '+' : ''}${summary.profitMarginPct.toStringAsFixed(1)}%',
             badgeColor: summary.estimatedProfit >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455),
+            tickerCode: 'PFT // MARGIN',
+            technicalSignal: summary.estimatedProfit >= 0 ? 'ACCUMULATION 🟢' : 'CORRECTION 🔴',
+            signalColor: summary.estimatedProfit >= 0 ? const Color(0xFF28C76F) : const Color(0xFFEA5455),
           ),
           _ExecutiveCardData(
             title: l10n.cogs,
@@ -454,6 +460,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             color: const Color(0xFFFF9F43), // Amber
             badgeText: '${l10n.averageOrderValue}: ${formatMoney(summary.averageOrderValue, symbol: symbol)}',
             badgeColor: const Color(0xFFFF9F43),
+            tickerCode: 'EXP // COGS',
+            technicalSignal: 'STABLE RANGE',
+            signalColor: const Color(0xFFFF9F43),
           ),
           _ExecutiveCardData(
             title: l10n.stockValuationTitle,
@@ -463,6 +472,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             color: const Color(0xFF00CFE8), // Info Cyan
             badgeText: '${valuation?.potentialMarginPct.toStringAsFixed(1) ?? '0.0'}% ${l10n.margin}',
             badgeColor: const Color(0xFF00CFE8),
+            tickerCode: 'NAV // STOCK',
+            technicalSignal: 'CAPITAL GROWTH ↗',
+            signalColor: const Color(0xFF00CFE8),
           ),
         ];
 
@@ -473,7 +485,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             crossAxisCount: columns,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
-            mainAxisExtent: 140,
+            mainAxisExtent: 155,
           ),
           itemCount: cards.length,
           itemBuilder: (context, i) {
@@ -485,7 +497,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -493,21 +505,46 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          c.title,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: c.color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(c.icon, size: 18, color: c.color),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              c.title,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: c.color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
+                        if (c.tickerCode != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Text(
+                              c.tickerCode!,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'monospace',
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
-                          child: Icon(c.icon, size: 20, color: c.color),
-                        ),
                       ],
                     ),
                     Row(
@@ -543,14 +580,51 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                           ),
                       ],
                     ),
-                    Text(
-                      c.subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            c.subtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (c.technicalSignal != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (c.signalColor ?? c.color).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: c.signalColor ?? c.color,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  c.technicalSignal!,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: c.signalColor ?? c.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -640,6 +714,9 @@ class _ExecutiveCardData {
     required this.color,
     this.badgeText,
     this.badgeColor,
+    this.tickerCode,
+    this.technicalSignal,
+    this.signalColor,
   });
 
   final String title;
@@ -649,6 +726,9 @@ class _ExecutiveCardData {
   final Color color;
   final String? badgeText;
   final Color? badgeColor;
+  final String? tickerCode;
+  final String? technicalSignal;
+  final Color? signalColor;
 }
 
 class _DailyTrendsChartCard extends StatelessWidget {
@@ -657,21 +737,50 @@ class _DailyTrendsChartCard extends StatelessWidget {
   final List<DailyTrend> trends;
   final String symbol;
 
+  double _calculateRsi(List<DailyTrend> list) {
+    if (list.length < 2) return 55.0;
+    double gains = 0;
+    double losses = 0;
+    for (int i = 1; i < list.length; i++) {
+      final diff = (list[i].revenue - list[i - 1].revenue).toDouble();
+      if (diff > 0) {
+        gains += diff;
+      } else {
+        losses += diff.abs();
+      }
+    }
+    if (losses == 0) return gains > 0 ? 84.0 : 50.0;
+    final rs = gains / losses;
+    return (100 - (100 / (1 + rs))).clamp(15.0, 92.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
 
     if (trends.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final maxRevenue = trends.map((t) => t.revenue).fold(1, (a, b) => a > b ? a : b);
+    final minRevenue = trends.map((t) => t.revenue).fold(maxRevenue, (a, b) => a < b ? a : b);
+    final maxVolume = trends.map((t) => t.count).fold(1, (a, b) => a > b ? a : b);
+    final totalRevenue = trends.fold<int>(0, (acc, t) => acc + t.revenue);
+    final avgRevenue = trends.isNotEmpty ? totalRevenue ~/ trends.length : 0;
+    final rsi = _calculateRsi(trends);
+
+    final isBullishTrend = rsi >= 50;
+    final trendSignalText = isBullishTrend
+        ? (isArabic ? 'زخم صاعد (BULLISH)' : 'BULLISH MOMENTUM')
+        : (isArabic ? 'تصحيح هابط (BEARISH)' : 'BEARISH PULLBACK');
+    final trendColor = isBullishTrend ? const Color(0xFF28C76F) : const Color(0xFFEA5455);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Padding(
@@ -679,76 +788,399 @@ class _DailyTrendsChartCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Trading Header Bar
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.candlestick_chart_rounded, size: 24, color: theme.colorScheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isArabic ? 'مؤشرات التداول الفنية لحركة المبيعات (Technical Indicators)' : 'Sales Technical Trading Indicators',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
+                            ),
+                            child: const Text(
+                              'DAILY / 1D',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        isArabic
+                            ? 'تحليل الشموع اليابانية، الزخم النسبي RSI، وحجم التداول (Volume Histogram)'
+                            : 'Candlestick price action, RSI momentum, and daily volume histogram',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: trendColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: trendColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: trendColor),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            trendSignalText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: trendColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      ),
+                      child: Text(
+                        'RSI(14): ${rsi.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // High / Low / Avg Telemetry Band
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _IndicatorStat(
+                    label: isArabic ? 'أعلى قمة (HIGH)' : 'HIGH',
+                    value: formatMoney(maxRevenue, symbol: symbol),
+                    color: const Color(0xFF28C76F),
+                  ),
+                  _IndicatorStat(
+                    label: isArabic ? 'أدنى قاع (LOW)' : 'LOW',
+                    value: formatMoney(minRevenue, symbol: symbol),
+                    color: const Color(0xFFEA5455),
+                  ),
+                  _IndicatorStat(
+                    label: isArabic ? 'المتوسط اليومي (AVG)' : 'AVG',
+                    value: formatMoney(avgRevenue, symbol: symbol),
+                    color: theme.colorScheme.primary,
+                  ),
+                  _IndicatorStat(
+                    label: isArabic ? 'أعلى فوليوم يومي' : 'PEAK VOL',
+                    value: '$maxVolume ${isArabic ? 'عملية' : 'orders'}',
+                    color: const Color(0xFFFF9F43),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Candlestick & Volume Chart Canvas
+            SizedBox(
+              height: 220,
+              child: Stack(
+                children: [
+                  // Subtle Grid Lines
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.15)),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.15)),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                      const SizedBox(height: 45), // Volume spacer
+                    ],
+                  ),
+                  // Candlesticks and Volume Bars
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (int i = 0; i < trends.length; i++) ...[
+                        Expanded(
+                          child: _CandleVolumeColumn(
+                            trend: trends[i],
+                            previousRevenue: i > 0 ? trends[i - 1].revenue : trends[i].revenue,
+                            maxRevenue: maxRevenue,
+                            maxVolume: maxVolume,
+                            symbol: symbol,
+                            isArabic: isArabic,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Chart Legend & Indicators Guide
             Row(
               children: [
-                Icon(Icons.show_chart_outlined, size: 22, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
+                _LegendBadge(
+                  color: const Color(0xFF28C76F),
+                  label: isArabic ? 'شمعة صاعدة (ربح / نمو)' : 'Bullish Candle',
+                ),
+                const SizedBox(width: 14),
+                _LegendBadge(
+                  color: const Color(0xFFEA5455),
+                  label: isArabic ? 'شمعة تصحيحية' : 'Bearish Candle',
+                ),
+                const SizedBox(width: 14),
+                _LegendBadge(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  label: isArabic ? 'شريط الفوليوم (عدد الفواتير)' : 'Volume Histogram',
+                ),
+                const Spacer(),
                 Text(
-                  l10n.salesTrends,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  isArabic
+                      ? 'مرر الماوس فوق أي شمعة لعرض القياسات الفنية اللحظية'
+                      : 'Hover over candles to view full technical metrics',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.salesTrendsSubtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CandleVolumeColumn extends StatelessWidget {
+  const _CandleVolumeColumn({
+    required this.trend,
+    required this.previousRevenue,
+    required this.maxRevenue,
+    required this.maxVolume,
+    required this.symbol,
+    required this.isArabic,
+  });
+
+  final DailyTrend trend;
+  final int previousRevenue;
+  final int maxRevenue;
+  final int maxVolume;
+  final String symbol;
+  final bool isArabic;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isBullish = trend.revenue >= previousRevenue;
+    final candleColor = isBullish ? const Color(0xFF28C76F) : const Color(0xFFEA5455);
+    final pctChange = previousRevenue > 0
+        ? ((trend.revenue - previousRevenue) / previousRevenue) * 100
+        : 0.0;
+    final pctSign = pctChange >= 0 ? '+' : '';
+
+    final candleRatio = maxRevenue > 0 ? (trend.revenue / maxRevenue).clamp(0.08, 1.0) : 0.08;
+    final bodyHeight = (candleRatio * 105.0).clamp(10.0, 105.0);
+    final wickTotalHeight = (bodyHeight + 16.0).clamp(16.0, 125.0);
+
+    final volRatio = maxVolume > 0 ? (trend.count / maxVolume).clamp(0.1, 1.0) : 0.1;
+    final volHeight = (volRatio * 32.0).clamp(4.0, 32.0);
+
+    final tooltipMessage = isArabic
+        ? 'التاريخ: ${trend.date}\n'
+          'الإيراد اليومي: ${formatMoney(trend.revenue, symbol: symbol)}\n'
+          'حالة الحركة: ${isBullish ? "زخم صاعد 🟢" : "حركة تصحيحية 🔴"} ($pctSign${pctChange.toStringAsFixed(1)}%)\n'
+          'فوليوم المبيعات: ${trend.count} فاتورة\n'
+          'الربح التقديري: ${formatMoney(trend.profit, symbol: symbol)}'
+        : 'Date: ${trend.date}\n'
+          'Revenue: ${formatMoney(trend.revenue, symbol: symbol)}\n'
+          'Action: ${isBullish ? "Bullish 🟢" : "Bearish 🔴"} ($pctSign${pctChange.toStringAsFixed(1)}%)\n'
+          'Volume: ${trend.count} invoices\n'
+          'Profit: ${formatMoney(trend.profit, symbol: symbol)}';
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 100),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2.5),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Candlestick Area
             SizedBox(
-              height: 160,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              height: 130,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
                 children: [
-                  for (final t in trends)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Tooltip(
-                              message: '${t.date}\n${formatMoney(t.revenue, symbol: symbol)} (${t.count} ${l10n.invoicesCount})',
-                              child: Container(
-                                height: ((t.revenue / maxRevenue) * 110).clamp(6.0, 110.0),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.primary.withValues(alpha: 0.6),
-                                    ],
-                                  ),
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              t.date.length >= 5 ? t.date.substring(t.date.length - 5) : t.date,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                  // Vertical Wick (High-Low Shadow)
+                  Container(
+                    width: 1.5,
+                    height: wickTotalHeight,
+                    color: candleColor.withValues(alpha: 0.75),
+                  ),
+                  // Candle Solid Body
+                  Container(
+                    width: 13,
+                    height: bodyHeight,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          candleColor,
+                          candleColor.withValues(alpha: 0.8),
+                        ],
                       ),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(
+                        color: candleColor.withValues(alpha: 0.9),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: candleColor.withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
+                  ),
                 ],
               ),
+            ),
+            const SizedBox(height: 6),
+            // Volume Histogram Bar
+            Container(
+              width: 11,
+              height: volHeight,
+              decoration: BoxDecoration(
+                color: candleColor.withValues(alpha: 0.4),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            // Date Label
+            Text(
+              trend.date.length >= 5 ? trend.date.substring(trend.date.length - 5) : trend.date,
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _IndicatorStat extends StatelessWidget {
+  const _IndicatorStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
+    );
+  }
+}
+
+class _LegendBadge extends StatelessWidget {
+  const _LegendBadge({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 }
@@ -1056,7 +1488,7 @@ class _DepthSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1403,7 +1835,7 @@ class _PrintReportDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final storeName = ref.watch(storeSettingsProvider).valueOrNull?.storeName ?? 'MePharma';
 
     return Dialog(
@@ -1495,7 +1927,11 @@ class _PrintReportDialog extends ConsumerWidget {
                         const Divider(),
                         Center(
                           child: Text(
-                            'Printed on ${DateFormat.yMd().add_jm().format(DateTime.now())}',
+                            l10n.printedOn(
+                              DateFormat.yMd(l10n.localeName)
+                                  .add_jm()
+                                  .format(DateTime.now()),
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 10),
                           ),
                         ),

@@ -46,7 +46,7 @@ class SqliteSettingsRepository implements SettingsRepository {
         AppConstants.settingLowStockThreshold,
         '10',
       ),
-      profitMargin: await _string(AppConstants.settingProfitMargin, '0.3'),
+      profitMargin: await _string(AppConstants.settingProfitMargin, '0'),
       branchNumber: int.tryParse(branchStr) ?? 1,
       seatNumber: int.tryParse(seatStr) ?? 1,
       receiptStyle: await _string(AppConstants.settingReceiptStyle, 'modern'),
@@ -90,7 +90,7 @@ class SqliteSettingsRepository implements SettingsRepository {
   @override
   Future<String> getCurrencySymbol() async {
     final value = await getValue(AppConstants.settingCurrencySymbol);
-    return (value == null || value.isEmpty) ? r'$' : value;
+    return (value == null || value.isEmpty) ? 'ج.س' : value;
   }
 
   @override

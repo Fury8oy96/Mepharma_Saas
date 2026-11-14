@@ -2,7 +2,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import User from '#models/tenant/user'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import { getJwtSecret } from '#core/security/jwt_secret'
 
 export default class AdminAuthController {
   async login({ request, response, tenant }: HttpContext) {
@@ -12,8 +12,9 @@ export default class AdminAuthController {
       return response.status(400).json({ error: 'Username and password are required.' })
     }
 
+    const cleanUsername = String(username).trim().toLowerCase()
     const user = await User.query()
-      .where('username', username.toLowerCase())
+      .where('username', cleanUsername)
       .where('is_active', true)
       .first()
 
@@ -21,13 +22,13 @@ export default class AdminAuthController {
       return response.status(401).json({ error: 'Invalid pharmacy username or password.' })
     }
 
-    const valid = await bcrypt.compare(password, user.password)
+    const valid = await bcrypt.compare(String(password).trim(), user.password)
     if (!valid) {
       return response.status(401).json({ error: 'Invalid pharmacy username or password.' })
     }
 
     // STRICT ROLE GATEKEEPING:
-    // If the account is a Branch Admin, Pharmacist, Supervisor, or Cashier, BLOCK login from the Web Dashboard.
+    // Branch Admins, Pharmacists, Supervisors, and Cashiers must use the Desktop POS Application.
     const role = (user.role || '').toLowerCase()
     if (role === 'branch_admin' || role === 'pharmacist' || role === 'supervisor' || role === 'cashier' || role === 'staff') {
       return response.status(403).json({
@@ -38,7 +39,6 @@ export default class AdminAuthController {
       })
     }
 
-    const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
     const token = jwt.sign(
       {
         id: user.id,
@@ -47,7 +47,7 @@ export default class AdminAuthController {
         pharmacyId: tenant.id,
         pharmacyCode: tenant.code,
       },
-      secret,
+      getJwtSecret(),
       { expiresIn: '24h' }
     )
 

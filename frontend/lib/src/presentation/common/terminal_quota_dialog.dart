@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class TerminalQuotaDialog extends StatelessWidget {
   const TerminalQuotaDialog({
@@ -20,12 +21,13 @@ class TerminalQuotaDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.devices_other, color: Colors.amber, size: 28),
-          SizedBox(width: 10),
-          Text('Terminal Seat Limit Reached'),
+          const Icon(Icons.devices_other, color: Colors.amber, size: 28),
+          const SizedBox(width: 10),
+          Expanded(child: Text(l10n.terminalQuotaTitle)),
         ],
       ),
       content: Column(
@@ -44,14 +46,14 @@ class TerminalQuotaDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'To add more cash counters or desktop terminals, please request a license seat upgrade on the Provider Platform.',
-                    style: TextStyle(fontSize: 12),
+                    l10n.terminalQuotaInfo,
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ],
@@ -62,7 +64,7 @@ class TerminalQuotaDialog extends StatelessWidget {
       actions: [
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Understood'),
+          child: Text(l10n.understood),
         ),
       ],
     );

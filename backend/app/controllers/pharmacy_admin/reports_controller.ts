@@ -15,14 +15,9 @@ export default class ReportsController {
     const schema = this.getSchema(ctx)
     const { from, to } = request.qs()
 
-    // Base query for completed sales
     let salesQuery = Sale.query().where('status', 'completed')
-    if (from) {
-      salesQuery = salesQuery.where('created_at', '>=', from)
-    }
-    if (to) {
-      salesQuery = salesQuery.where('created_at', '<=', to)
-    }
+    if (from) salesQuery = salesQuery.where('created_at', '>=', from)
+    if (to) salesQuery = salesQuery.where('created_at', '<=', to)
 
     const totalSalesRes = await salesQuery.clone().sum('total_amount as sum')
     const grossSalesRes = await salesQuery.clone().sum('subtotal as sum')
@@ -36,7 +31,6 @@ export default class ReportsController {
     const totalTax = Number(taxRes[0]?.$extras?.sum) || 0
     const totalDiscount = Number(discountRes[0]?.$extras?.sum) || 0
 
-    // Purchases in range
     let purchasesQuery = Purchase.query()
     if (from) purchasesQuery = purchasesQuery.where('created_at', '>=', from)
     if (to) purchasesQuery = purchasesQuery.where('created_at', '<=', to)
@@ -45,68 +39,71 @@ export default class ReportsController {
     const purchasesCost = Number(purchasesSumRes[0]?.$extras?.sum) || 0
     const totalPurchases = Number(purchasesCountRes[0]?.$extras?.count) || 0
 
-    // Low stock count
     const lowStockRes = await Product.query().whereRaw('stock_quantity <= low_stock_threshold').count('* as count')
     const lowStockCount = Number(lowStockRes[0]?.$extras?.count) || 0
 
-    // Cost of goods sold (COGS) in range
-    const cogsParams: any[] = []
-    let cogsWhere = "s.status = 'completed'"
+    const dateParams: any[] = []
+    let dateWhere = "s.status = 'completed'"
     if (from) {
-      cogsWhere += " AND s.created_at >= ?"
-      cogsParams.push(from)
+      dateWhere += ' AND s.created_at >= ?'
+      dateParams.push(from)
     }
     if (to) {
-      cogsWhere += " AND s.created_at <= ?"
-      cogsParams.push(to)
+      dateWhere += ' AND s.created_at <= ?'
+      dateParams.push(to)
     }
 
-    const cogsRes = await db.rawQuery(`
-      SELECT 
+    const cogsRes = await db.rawQuery(
+      `
+      SELECT
         COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0) as cogs
       FROM "${schema}".sale_items si
       JOIN "${schema}".sales s ON si.sale_id = s.id
       LEFT JOIN "${schema}".products p ON si.product_id = p.id
-      WHERE ${cogsWhere};
-    `, cogsParams)
+      WHERE ${dateWhere};
+      `,
+      dateParams
+    )
     const costOfGoods = Number(cogsRes.rows[0]?.cogs) || 0
 
-    // Refunds from returns in range
-    let refundWhere = "s.status = 'completed'"
     const refundParams: any[] = []
+    let refundWhere = '1=1'
     if (from) {
-      refundWhere += " AND s.created_at >= ?"
+      refundWhere += ' AND r.created_at >= ?'
       refundParams.push(from)
     }
     if (to) {
-      refundWhere += " AND s.created_at <= ?"
+      refundWhere += ' AND r.created_at <= ?'
       refundParams.push(to)
     }
-    const refundRes = await db.rawQuery(`
+    const refundRes = await db.rawQuery(
+      `
       SELECT COALESCE(SUM(r.total_refund), 0) as refunds
       FROM "${schema}".returns r
-      JOIN "${schema}".sales s ON r.sale_id = s.id
       WHERE ${refundWhere};
-    `, refundParams)
+      `,
+      refundParams
+    )
     const refunds = Number(refundRes.rows[0]?.refunds) || 0
 
-    const netRevenue = Math.max(0, revenue - refunds)
-    const grossProfit = Math.max(0, netRevenue - costOfGoods)
+    const netRevenue = revenue - refunds
+    const grossProfit = netRevenue - costOfGoods
     const profitMarginPct = netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0
     const aov = salesCount > 0 ? Math.round(revenue / salesCount) : 0
 
-    // Payment breakdown in range
-    const paymentParams = [...cogsParams]
-    const paymentRes = await db.rawQuery(`
-      SELECT 
+    const paymentRes = await db.rawQuery(
+      `
+      SELECT
         COALESCE(s.payment_method, 'cash') as method,
         COUNT(*)::int as count,
         COALESCE(SUM(s.total_amount), 0)::numeric as total
       FROM "${schema}".sales s
-      WHERE ${cogsWhere.replace(/si\./g, '')}
+      WHERE ${dateWhere}
       GROUP BY s.payment_method
       ORDER BY total DESC;
-    `, paymentParams)
+      `,
+      dateParams
+    )
 
     const salesByPayment = (paymentRes.rows || []).map((row: any) => {
       const tot = Number(row.total) || 0
@@ -119,9 +116,9 @@ export default class ReportsController {
       }
     })
 
-    // Top products in range
-    const topProductsRes = await db.rawQuery(`
-      SELECT 
+    const topProductsRes = await db.rawQuery(
+      `
+      SELECT
         si.product_id as id,
         si.product_name as name,
         COALESCE(SUM(si.quantity), 0)::int as quantity,
@@ -130,11 +127,13 @@ export default class ReportsController {
       FROM "${schema}".sale_items si
       JOIN "${schema}".sales s ON si.sale_id = s.id
       LEFT JOIN "${schema}".products p ON si.product_id = p.id
-      WHERE ${cogsWhere}
+      WHERE ${dateWhere}
       GROUP BY si.product_id, si.product_name
       ORDER BY revenue DESC
       LIMIT 10;
-    `, cogsParams)
+      `,
+      dateParams
+    )
 
     const topProducts = (topProductsRes.rows || []).map((row: any) => ({
       name: row.name,
@@ -143,20 +142,39 @@ export default class ReportsController {
       cost: Number(row.cost) || 0,
     }))
 
-    // Daily trends in range
-    const trendsRes = await db.rawQuery(`
-      SELECT 
-        TO_CHAR(s.created_at, 'YYYY-MM-DD') as date,
-        COUNT(DISTINCT s.id)::int as count,
-        COALESCE(SUM(si.total), 0)::numeric as revenue,
-        COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0)::numeric as cost
-      FROM "${schema}".sales s
-      JOIN "${schema}".sale_items si ON si.sale_id = s.id
-      LEFT JOIN "${schema}".products p ON si.product_id = p.id
-      WHERE ${cogsWhere}
-      GROUP BY TO_CHAR(s.created_at, 'YYYY-MM-DD')
-      ORDER BY date ASC;
-    `, cogsParams)
+    // Separate sales revenue & COGS CTEs so daily sales revenue is never distorted by line items
+    const trendsRes = await db.rawQuery(
+      `
+      WITH daily_sales AS (
+        SELECT
+          TO_CHAR(s.created_at, 'YYYY-MM-DD') as date,
+          COUNT(*)::int as count,
+          COALESCE(SUM(s.total_amount), 0)::numeric as revenue
+        FROM "${schema}".sales s
+        WHERE ${dateWhere}
+        GROUP BY TO_CHAR(s.created_at, 'YYYY-MM-DD')
+      ),
+      daily_cogs AS (
+        SELECT
+          TO_CHAR(s.created_at, 'YYYY-MM-DD') as date,
+          COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0)::numeric as cost
+        FROM "${schema}".sale_items si
+        JOIN "${schema}".sales s ON si.sale_id = s.id
+        LEFT JOIN "${schema}".products p ON si.product_id = p.id
+        WHERE ${dateWhere}
+        GROUP BY TO_CHAR(s.created_at, 'YYYY-MM-DD')
+      )
+      SELECT
+        ds.date,
+        ds.count,
+        ds.revenue,
+        COALESCE(dc.cost, 0)::numeric as cost
+      FROM daily_sales ds
+      LEFT JOIN daily_cogs dc ON ds.date = dc.date
+      ORDER BY ds.date ASC;
+      `,
+      [...dateParams, ...dateParams]
+    )
 
     const trends = (trendsRes.rows || []).map((row: any) => {
       const rev = Number(row.revenue) || 0
@@ -198,104 +216,200 @@ export default class ReportsController {
   }
 
   async overview(ctx: HttpContext) {
-    const { response } = ctx
+    const { request, response } = ctx
     const schema = this.getSchema(ctx)
-    const totalSalesRes = await Sale.query().where('status', 'completed').sum('total_amount as sum')
-    const salesCountRes = await Sale.query().where('status', 'completed').count('* as count')
-    const totalProductsRes = await Product.query().count('* as count')
-    const totalUnitsRes = await db.rawQuery(`SELECT COALESCE(SUM(stock_quantity), 0) as sum FROM "${schema}".products;`)
-    const lowStockRes = await Product.query().whereRaw('stock_quantity <= low_stock_threshold').count('* as count')
-    const totalPurchasesRes = await Purchase.query().sum('total_amount as sum')
-    const purchasesCountRes = await Purchase.query().count('* as count')
+    const { from, to } = request.qs()
 
-    const valuationRes = await db.rawQuery(
-      `SELECT COALESCE(SUM(cost_price * stock_quantity), 0) as cost_val, COALESCE(SUM(selling_price * stock_quantity), 0) as retail_val FROM "${schema}".products;`
+    const saleParams: any[] = []
+    let saleWhere = "s.status = 'completed'"
+    if (from) {
+      saleWhere += ' AND s.created_at >= ?'
+      saleParams.push(from)
+    }
+    if (to) {
+      saleWhere += ' AND s.created_at <= ?'
+      saleParams.push(to)
+    }
+
+    const salesAgg = await db.rawQuery(
+      `
+      SELECT
+        COUNT(*)::int as sales_count,
+        COALESCE(SUM(s.total_amount), 0)::numeric as revenue,
+        COALESCE(SUM(s.subtotal), 0)::numeric as gross_revenue
+      FROM "${schema}".sales s
+      WHERE ${saleWhere};
+      `,
+      saleParams
     )
 
-    const costVal = Number(valuationRes.rows[0]?.cost_val) || 0
-    const retailVal = Number(valuationRes.rows[0]?.retail_val) || 0
-    const revenue = Number(totalSalesRes[0]?.$extras?.sum) || 0
-    const totalSalesCount = Number(salesCountRes[0]?.$extras?.count) || 0
-    const grossProfit = retailVal > costVal ? (retailVal - costVal) : 0
-    const profitMarginPct = retailVal > 0 ? Math.round(((retailVal - costVal) / retailVal) * 100) : 0
+    const cogsAgg = await db.rawQuery(
+      `
+      SELECT
+        COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0)::numeric as cogs
+      FROM "${schema}".sale_items si
+      JOIN "${schema}".sales s ON si.sale_id = s.id
+      LEFT JOIN "${schema}".products p ON si.product_id = p.id
+      WHERE ${saleWhere};
+      `,
+      saleParams
+    )
+
+    const refundParams: any[] = []
+    let refundWhere = '1=1'
+    if (from) {
+      refundWhere += ' AND r.created_at >= ?'
+      refundParams.push(from)
+    }
+    if (to) {
+      refundWhere += ' AND r.created_at <= ?'
+      refundParams.push(to)
+    }
+    const refundAgg = await db.rawQuery(
+      `SELECT COALESCE(SUM(r.total_refund), 0)::numeric as refunds FROM "${schema}".returns r WHERE ${refundWhere};`,
+      refundParams
+    )
+
+    const purchaseParams: any[] = []
+    let purchaseWhere = '1=1'
+    if (from) {
+      purchaseWhere += ' AND created_at >= ?'
+      purchaseParams.push(from)
+    }
+    if (to) {
+      purchaseWhere += ' AND created_at <= ?'
+      purchaseParams.push(to)
+    }
+    const purchasesAgg = await db.rawQuery(
+      `SELECT COUNT(*)::int as total, COALESCE(SUM(total_amount), 0)::numeric as total_cost FROM "${schema}".purchases WHERE ${purchaseWhere};`,
+      purchaseParams
+    )
+
+    const prodStatsRes = await db.rawQuery(
+      `
+      SELECT
+        COUNT(*)::int as total_products,
+        COALESCE(SUM(stock_quantity), 0)::int as total_units,
+        COUNT(*) FILTER (WHERE stock_quantity <= low_stock_threshold)::int as low_stock,
+        COUNT(*) FILTER (WHERE expiry_date IS NOT NULL AND expiry_date >= CURRENT_DATE AND expiry_date <= CURRENT_DATE + INTERVAL '30 days')::int as expiring,
+        COUNT(*) FILTER (WHERE expiry_date IS NOT NULL AND expiry_date < CURRENT_DATE)::int as expired,
+        COALESCE(SUM(cost_price * stock_quantity), 0)::numeric as cost_val,
+        COALESCE(SUM(selling_price * stock_quantity), 0)::numeric as retail_val
+      FROM "${schema}".products;
+      `
+    )
+
+    const pStats = prodStatsRes.rows[0] || {}
+    const costVal = Number(pStats.cost_val) || 0
+    const retailVal = Number(pStats.retail_val) || 0
+    const revenue = Number(salesAgg.rows[0]?.revenue) || 0
+    const grossRevenue = Number(salesAgg.rows[0]?.gross_revenue) || revenue
+    const totalSalesCount = Number(salesAgg.rows[0]?.sales_count) || 0
+    const cogs = Number(cogsAgg.rows[0]?.cogs) || 0
+    const refunds = Number(refundAgg.rows[0]?.refunds) || 0
+    const netRevenue = revenue - refunds
+    const grossProfit = netRevenue - cogs
+    const profitMarginPct = netRevenue > 0 ? Math.round((grossProfit / netRevenue) * 1000) / 10 : 0
     const aov = totalSalesCount > 0 ? Math.round(revenue / totalSalesCount) : 0
 
-    // Recent 5 sales
-    const recentSales = await Sale.query().orderBy('created_at', 'desc').limit(5)
+    const recentSalesRaw = await Sale.query().orderBy('created_at', 'desc').limit(5)
+    const recentSales = recentSalesRaw.map((s) => ({
+      id: s.id,
+      invoice_number: s.invoiceNumber,
+      invoiceNumber: s.invoiceNumber,
+      customer_name: s.customerName,
+      customerName: s.customerName,
+      total_amount: Number(s.totalAmount) || 0,
+      totalAmount: Number(s.totalAmount) || 0,
+      payment_method: s.paymentMethod || 'cash',
+      paymentMethod: s.paymentMethod || 'cash',
+      status: s.status,
+      created_at: s.createdAt ? s.createdAt.toISO() : null,
+      createdAt: s.createdAt ? s.createdAt.toISO() : null,
+    }))
 
-    // Last 7 days trends
-    const trendsRes = await db.rawQuery(`
-      SELECT 
-        TO_CHAR(created_at, 'YYYY-MM-DD') as date,
+    const trendsRes = await db.rawQuery(
+      `
+      SELECT
+        TO_CHAR(s.created_at, 'YYYY-MM-DD') as date,
         COUNT(*)::int as count,
-        COALESCE(SUM(total_amount), 0)::numeric as revenue
-      FROM "${schema}".sales
-      WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '14 days'
-      GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+        COALESCE(SUM(s.total_amount), 0)::numeric as revenue
+      FROM "${schema}".sales s
+      WHERE ${saleWhere} AND s.created_at >= NOW() - INTERVAL '14 days'
+      GROUP BY TO_CHAR(s.created_at, 'YYYY-MM-DD')
       ORDER BY date ASC;
-    `)
+      `,
+      saleParams
+    )
 
-    // Payment breakdown
-    const paymentRes = await db.rawQuery(`
-      SELECT 
-        COALESCE(payment_method, 'cash') as method,
+    const paymentRes = await db.rawQuery(
+      `
+      SELECT
+        COALESCE(s.payment_method, 'cash') as method,
         COUNT(*)::int as count,
-        COALESCE(SUM(total_amount), 0)::numeric as total
-      FROM "${schema}".sales
-      WHERE status = 'completed'
-      GROUP BY payment_method
+        COALESCE(SUM(s.total_amount), 0)::numeric as total
+      FROM "${schema}".sales s
+      WHERE ${saleWhere}
+      GROUP BY s.payment_method
       ORDER BY total DESC;
-    `)
+      `,
+      saleParams
+    )
 
-    // Top products
-    const topProductsRes = await db.rawQuery(`
-      SELECT 
+    const topProductsRes = await db.rawQuery(
+      `
+      SELECT
         si.product_id as id,
-        p.name,
+        COALESCE(p.name, si.product_name) as name,
         COALESCE(SUM(si.quantity), 0)::int as units,
         COALESCE(SUM(si.total), 0)::numeric as revenue,
         COALESCE(SUM(si.total - (COALESCE(si.cost_price, p.cost_price, 0) * si.quantity)), 0)::numeric as profit,
-        CASE WHEN SUM(si.total) > 0 
+        CASE WHEN SUM(si.total) > 0
           THEN ROUND((SUM(si.total - (COALESCE(si.cost_price, p.cost_price, 0) * si.quantity))::numeric / SUM(si.total)::numeric) * 100)
           ELSE 0 END as margin
       FROM "${schema}".sale_items si
-      JOIN "${schema}".products p ON si.product_id = p.id
-      GROUP BY si.product_id, p.name
+      JOIN "${schema}".sales s ON si.sale_id = s.id
+      LEFT JOIN "${schema}".products p ON si.product_id = p.id
+      WHERE ${saleWhere}
+      GROUP BY si.product_id, COALESCE(p.name, si.product_name)
       ORDER BY revenue DESC
       LIMIT 5;
-    `)
+      `,
+      saleParams
+    )
 
     return response.ok({
       sales: {
         total: totalSalesCount,
-        revenue: revenue,
-        grossRevenue: revenue,
-        refunds: 0,
-        grossProfit: grossProfit,
-        profitMarginPct: profitMarginPct,
-        aov: aov,
-        costOfGoods: costVal
+        revenue,
+        grossRevenue,
+        refunds,
+        netRevenue,
+        grossProfit,
+        profitMarginPct,
+        aov,
+        costOfGoods: cogs,
       },
       stock: {
-        potentialMargin: grossProfit,
+        potentialMargin: Math.max(0, retailVal - costVal),
         retailValue: retailVal,
-        costValue: costVal
+        costValue: costVal,
       },
       products: {
-        total: Number(totalProductsRes[0]?.$extras?.count) || 0,
-        totalUnits: Number(totalUnitsRes.rows[0]?.sum || 0),
-        lowStock: Number(lowStockRes[0]?.$extras?.count) || 0,
-        expiring: 0,
-        expired: 0
+        total: Number(pStats.total_products) || 0,
+        totalUnits: Number(pStats.total_units) || 0,
+        lowStock: Number(pStats.low_stock) || 0,
+        expiring: Number(pStats.expiring) || 0,
+        expired: Number(pStats.expired) || 0,
       },
       purchases: {
-        totalCost: Number(totalPurchasesRes[0]?.$extras?.sum) || 0,
-        total: Number(purchasesCountRes[0]?.$extras?.count) || 0
+        totalCost: Number(purchasesAgg.rows[0]?.total_cost) || 0,
+        total: Number(purchasesAgg.rows[0]?.total) || 0,
       },
       trends: trendsRes.rows || [],
       todayPaymentBreakdown: paymentRes.rows || [],
       topProducts: topProductsRes.rows || [],
-      recentSales: recentSales
+      recentSales,
     })
   }
 
@@ -303,10 +417,10 @@ export default class ReportsController {
     const { response } = ctx
     const schema = this.getSchema(ctx)
     const rows = await db.rawQuery(`
-      SELECT 
+      SELECT
         DATE(created_at) as date,
-        COUNT(*) as total_orders,
-        SUM(total_amount) as total_amount
+        COUNT(*)::int as total_orders,
+        COALESCE(SUM(total_amount), 0)::numeric as total_amount
       FROM "${schema}".sales
       WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days'
       GROUP BY DATE(created_at)
@@ -321,26 +435,61 @@ export default class ReportsController {
     const { months = 12 } = request.qs()
     const numMonths = Math.min(24, Math.max(1, Number(months) || 12))
 
-    const rows = await db.rawQuery(`
-      SELECT 
-        EXTRACT(YEAR FROM s.created_at)::int as year,
-        EXTRACT(MONTH FROM s.created_at)::int as month,
-        COUNT(DISTINCT s.id)::int as sales_count,
-        COALESCE(SUM(s.total_amount), 0)::numeric as revenue,
-        COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0)::numeric as cost
-      FROM "${schema}".sales s
-      LEFT JOIN "${schema}".sale_items si ON si.sale_id = s.id
-      LEFT JOIN "${schema}".products p ON si.product_id = p.id
-      WHERE s.status = 'completed' AND s.created_at >= NOW() - make_interval(months => ?)
-      GROUP BY EXTRACT(YEAR FROM s.created_at), EXTRACT(MONTH FROM s.created_at)
-      ORDER BY year ASC, month ASC;
-    `, [numMonths])
+    // Use separate CTEs so joining sale_items never multiplies s.total_amount
+    const rows = await db.rawQuery(
+      `
+      WITH monthly_sales AS (
+        SELECT
+          EXTRACT(YEAR FROM created_at)::int as year,
+          EXTRACT(MONTH FROM created_at)::int as month,
+          COUNT(*)::int as sales_count,
+          COALESCE(SUM(total_amount), 0)::numeric as revenue
+        FROM "${schema}".sales
+        WHERE status = 'completed' AND created_at >= NOW() - make_interval(months => ?)
+        GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+      ),
+      monthly_cogs AS (
+        SELECT
+          EXTRACT(YEAR FROM s.created_at)::int as year,
+          EXTRACT(MONTH FROM s.created_at)::int as month,
+          COALESCE(SUM(si.quantity * COALESCE(si.cost_price, p.cost_price, 0)), 0)::numeric as cost
+        FROM "${schema}".sale_items si
+        JOIN "${schema}".sales s ON si.sale_id = s.id
+        LEFT JOIN "${schema}".products p ON si.product_id = p.id
+        WHERE s.status = 'completed' AND s.created_at >= NOW() - make_interval(months => ?)
+        GROUP BY EXTRACT(YEAR FROM s.created_at), EXTRACT(MONTH FROM s.created_at)
+      ),
+      monthly_refunds AS (
+        SELECT
+          EXTRACT(YEAR FROM r.created_at)::int as year,
+          EXTRACT(MONTH FROM r.created_at)::int as month,
+          COALESCE(SUM(r.total_refund), 0)::numeric as refunds
+        FROM "${schema}".returns r
+        WHERE r.created_at >= NOW() - make_interval(months => ?)
+        GROUP BY EXTRACT(YEAR FROM r.created_at), EXTRACT(MONTH FROM r.created_at)
+      )
+      SELECT
+        ms.year,
+        ms.month,
+        ms.sales_count,
+        ms.revenue,
+        COALESCE(mc.cost, 0)::numeric as cost,
+        COALESCE(mr.refunds, 0)::numeric as refunds
+      FROM monthly_sales ms
+      LEFT JOIN monthly_cogs mc ON ms.year = mc.year AND ms.month = mc.month
+      LEFT JOIN monthly_refunds mr ON ms.year = mr.year AND ms.month = mr.month
+      ORDER BY ms.year ASC, ms.month ASC;
+      `,
+      [numMonths, numMonths, numMonths]
+    )
 
     const mapped = (rows.rows || []).map((r: any) => {
       const revenue = Number(r.revenue) || 0
       const cost = Number(r.cost) || 0
-      const profit = revenue - cost
-      const marginPct = revenue > 0 ? Math.round((profit / revenue) * 1000) / 10 : 0
+      const refunds = Number(r.refunds) || 0
+      const netRevenue = revenue - refunds
+      const profit = netRevenue - cost
+      const marginPct = netRevenue > 0 ? Math.round((profit / netRevenue) * 1000) / 10 : 0
       const monthStr = `${r.year}-${String(r.month).padStart(2, '0')}`
       return {
         year: Number(r.year),
@@ -351,7 +500,7 @@ export default class ReportsController {
         revenue,
         total_amount: revenue,
         cost,
-        refunds: 0,
+        refunds,
         profit,
         margin_pct: marginPct,
         marginPct,
@@ -367,19 +516,20 @@ export default class ReportsController {
     const schema = this.getSchema(ctx)
     const { from, to } = request.qs()
     const params: any[] = []
-    let dateFilter = ""
+    let dateFilter = ''
     if (from) {
-      dateFilter += " AND s.created_at >= ?"
+      dateFilter += ' AND s.created_at >= ?'
       params.push(from)
     }
     if (to) {
-      dateFilter += " AND s.created_at <= ?"
+      dateFilter += ' AND s.created_at <= ?'
       params.push(to)
     }
 
-    const rows = await db.rawQuery(`
+    const rows = await db.rawQuery(
+      `
       WITH sales_by_cat AS (
-        SELECT 
+        SELECT
           COALESCE(c.id, 0) as cat_id,
           COALESCE(c.name, 'General') as cat_name,
           COALESCE(SUM(si.quantity), 0)::int as items_sold,
@@ -391,7 +541,7 @@ export default class ReportsController {
         LEFT JOIN "${schema}".categories c ON p.category_id = c.id
         GROUP BY c.id, c.name
       )
-      SELECT 
+      SELECT
         COALESCE(sbc.cat_name, c.name) as category_name,
         COALESCE(sbc.items_sold, 0)::int as items_sold,
         COALESCE(sbc.revenue, 0)::numeric as revenue,
@@ -399,7 +549,9 @@ export default class ReportsController {
       FROM "${schema}".categories c
       FULL OUTER JOIN sales_by_cat sbc ON c.id = sbc.cat_id
       ORDER BY revenue DESC, category_name ASC;
-    `, params)
+      `,
+      params
+    )
 
     const mapped = (rows.rows || []).map((r: any) => {
       const revenue = Number(r.revenue) || 0
@@ -426,7 +578,7 @@ export default class ReportsController {
     const { response } = ctx
     const schema = this.getSchema(ctx)
     const valuationRes = await db.rawQuery(`
-      SELECT 
+      SELECT
         COUNT(*)::int as items,
         COALESCE(SUM(stock_quantity), 0)::int as total_stock_quantity,
         COALESCE(SUM(stock_quantity * cost_price), 0)::numeric as cost_value,
@@ -439,7 +591,7 @@ export default class ReportsController {
     const totalQty = Number(row.total_stock_quantity) || 0
     const costValue = Number(row.cost_value) || 0
     const retailValue = Number(row.retail_value) || 0
-    const potentialProfit = Math.max(0, retailValue - costValue)
+    const potentialProfit = retailValue - costValue
     const marginPct = retailValue > 0 ? Math.round((potentialProfit / retailValue) * 1000) / 10 : 0
 
     return response.ok({

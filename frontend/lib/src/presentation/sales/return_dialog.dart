@@ -103,7 +103,7 @@ class _ReturnDialogState extends ConsumerState<ReturnDialog> {
     if (!isSupervisorOrAdmin) {
       final approved = await SupervisorApprovalDialog.requestApproval(
         context,
-        reason: 'Processing refunds and returns requires supervisor override.',
+        reason: l10n.supervisorReturnReason,
       );
       if (!approved) {
         return;
@@ -156,7 +156,7 @@ class _ReturnDialogState extends ConsumerState<ReturnDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     return AlertDialog(
       title: Text(l10n.returnItems),

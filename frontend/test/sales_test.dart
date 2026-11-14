@@ -22,6 +22,7 @@ import 'package:mepharma/src/data/repositories/sqlite_user_repository.dart';
 import 'package:mepharma/src/domain/models/cart_item.dart';
 import 'package:mepharma/src/domain/models/payment_method.dart';
 import 'package:mepharma/src/domain/models/sale_receipt.dart';
+import 'package:mepharma/src/domain/repositories/purchase_repository.dart';
 import 'package:mepharma/src/presentation/pos/pos_controller.dart';
 
 void main() {
@@ -524,6 +525,76 @@ void main() {
 
       // The hold still exists and was not deleted by the partial restore.
       expect((await holds.watchAll().first).single.id, heldRow.id);
+    });
+
+    test('completeSale with bankTransfer saves transactionReference and records sale', () async {
+      final p = await products.create(
+        sku: 'BT1',
+        name: 'Bank Transfer Medicine',
+        sellingPrice: 7500,
+        stockQuantity: 15,
+      );
+      final notifier = container.read(posControllerProvider.notifier);
+      notifier.addProduct(p);
+
+      final receipt = await notifier.completeSale(
+        method: PaymentMethod.bankTransfer,
+        receivedCents: 7500,
+        taxRatePercent: 0,
+        userId: userId,
+        transactionReference: 'TRX-BANK-SUDAN-001',
+      );
+
+      expect(receipt.paymentMethod, 'bankTransfer');
+      expect(receipt.transactionReference, 'TRX-BANK-SUDAN-001');
+      expect(receipt.totalAmount, 7500);
+
+      // Verify in sales history stream
+      final history = await sales.watchSales().first;
+      final savedSale = history.firstWhere((s) => s.id == receipt.id);
+      expect(savedSale.paymentMethod, 'bankTransfer');
+      expect(savedSale.transactionReference, 'TRX-BANK-SUDAN-001');
+
+      // Verify in sale detail
+      final detail = await sales.getSaleDetail(receipt.id);
+      expect(detail.sale.transactionReference, 'TRX-BANK-SUDAN-001');
+      expect(detail.sale.paymentMethod, 'bankTransfer');
+    });
+
+    test('purchase repository creates and retrieves purchase with transactionReference', () async {
+      final p = await products.create(
+        sku: 'PUR-REF1',
+        name: 'Purchased Medicine',
+        costPrice: 2000,
+        sellingPrice: 3500,
+        stockQuantity: 5,
+      );
+
+      final purchaseRepo = SqlitePurchaseRepository(db);
+      final createdPurchase = await purchaseRepo.createPurchase(
+        userId: userId,
+        purchaseDate: DateTime.now(),
+        transactionReference: 'TXN-PO-999888',
+        items: [
+          PurchaseLineInput(
+            productId: p.id,
+            productName: p.name,
+            quantity: 10,
+            costPrice: 2000,
+          ),
+        ],
+      );
+
+      expect(createdPurchase.transactionReference, 'TXN-PO-999888');
+
+      // Verify in watchPurchases
+      final purchasesList = await purchaseRepo.watchPurchases().first;
+      final found = purchasesList.firstWhere((p) => p.id == createdPurchase.id);
+      expect(found.transactionReference, 'TXN-PO-999888');
+
+      // Verify in detail
+      final detail = await purchaseRepo.getPurchaseDetail(createdPurchase.id);
+      expect(detail.purchase.transactionReference, 'TXN-PO-999888');
     });
   });
 }

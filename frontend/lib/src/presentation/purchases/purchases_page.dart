@@ -54,7 +54,6 @@ class PurchasesPage extends ConsumerWidget {
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final purchase = purchases[index];
-        final isPending = purchase.status == PurchaseStatus.pending;
         return ListTile(
           onTap: () => showDialog<void>(
             context: context,
@@ -62,14 +61,13 @@ class PurchasesPage extends ConsumerWidget {
               purchaseId: purchase.id,
             ),
           ),
-          leading: CircleAvatar(
-            backgroundColor: isPending ? Colors.amber.shade100 : theme.colorScheme.primaryContainer,
-            child: Icon(
-              isPending ? Icons.pending_actions : Icons.inventory_2_outlined,
-              color: isPending ? Colors.amber.shade900 : theme.colorScheme.onPrimaryContainer,
-            ),
+          leading: const CircleAvatar(
+            child: Icon(Icons.inventory_2_outlined),
           ),
-          title: Row(
+          title: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 purchase.invoiceNumber,
@@ -77,25 +75,22 @@ class PurchasesPage extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isPending ? Colors.amber.shade50 : Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isPending ? Colors.amber.shade400 : Colors.green.shade400,
+              if (purchase.transactionReference != null &&
+                  purchase.transactionReference!.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${l10n.transactionReference}: ${purchase.transactionReference}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                child: Text(
-                  isPending ? l10n.pendingApproval : l10n.approved,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isPending ? Colors.amber.shade900 : Colors.green.shade800,
-                  ),
-                ),
-              ),
             ],
           ),
           subtitle: Text(
@@ -107,7 +102,7 @@ class PurchasesPage extends ConsumerWidget {
           trailing: Text(
             formatMoney(
               purchase.totalAmount,
-              symbol: ref.watch(currencySymbolProvider).valueOrNull ?? r'$',
+              symbol: ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س',
             ),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
@@ -158,15 +153,15 @@ class PurchasesPage extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.refresh),
-                    tooltip: 'Refresh',
+                    tooltip: l10n.refresh,
                     onPressed: () {
                       ref.read(purchaseRepositoryProvider).refresh();
                       ScaffoldMessenger.of(context)
                         ..clearSnackBars()
                         ..showSnackBar(
-                          const SnackBar(
-                            content: Text('Refreshing stock purchases list...'),
-                            duration: Duration(seconds: 1),
+                          SnackBar(
+                            content: Text(l10n.refreshing),
+                            duration: const Duration(seconds: 1),
                           ),
                         );
                     },

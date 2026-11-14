@@ -42,11 +42,14 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
 
   Future<void> _verify() async {
     final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (password.isEmpty) {
-      setState(() => _errorMessage = l10n.supervisorPasswordPin);
+      setState(() => _errorMessage = isArabic
+          ? 'يرجى إدخال كلمة مرور أو رمز المشرف.'
+          : 'Please enter supervisor password or PIN.');
       return;
     }
 
@@ -70,7 +73,9 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
           return;
         } else {
           setState(() {
-            _errorMessage = 'Invalid supervisor credentials or insufficient permissions.';
+            _errorMessage = isArabic
+                ? 'بيانات المشرف غير صحيحة أو الصلاحيات غير كافية.'
+                : 'Invalid supervisor credentials or insufficient permissions.';
             _loading = false;
           });
         }
@@ -87,7 +92,9 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
           }
         }
         setState(() {
-          _errorMessage = l10n.invalidSupervisorPassword;
+          _errorMessage = isArabic
+              ? 'كلمة مرور المشرف غير صحيحة.'
+              : 'Invalid local supervisor password.';
           _loading = false;
         });
       }
@@ -98,7 +105,9 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = isArabic
+            ? 'فشل التفويض: $e'
+            : 'Authorization failed: $e';
         _loading = false;
       });
     }
@@ -112,7 +121,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
         children: [
           const Icon(Icons.shield_outlined, color: Colors.orange, size: 28),
           const SizedBox(width: 10),
-          Text(l10n.supervisorAuthorization),
+          Expanded(child: Text(l10n.supervisorAuthTitle)),
         ],
       ),
       content: SizedBox(
@@ -156,7 +165,7 @@ class _SupervisorApprovalDialogState extends ConsumerState<SupervisorApprovalDia
               controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
-                labelText: l10n.supervisorPasswordPin,
+                labelText: l10n.supervisorPasswordRequired,
                 prefixIcon: const Icon(Icons.lock_outline),
                 border: const OutlineInputBorder(),
                 isDense: true,

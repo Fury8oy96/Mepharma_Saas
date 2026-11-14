@@ -1,12 +1,16 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { apiRequest, addToast, subscribeToSSE } from '../api';
+  import { currencyStore } from '../currency';
   import PrintLabelsModal from './PrintLabelsModal.svelte';
   import MasterCatalogModal from './MasterCatalogModal.svelte';
   import { generateInternalBarcode, generateBarcodeSVG, detectBarcodeSymbology, BARCODE_SYMBOLOGIES, type BarcodeSymbology } from '../utils/barcode';
   import { generatePharmaceuticalSku } from '../utils/sku';
   import { icons } from '../utils/icons';
   import { t, currentLocale } from '../i18n/store';
+
+  export let openCreateOnMount = false;
+  export let onConsumeAction: () => void = () => {};
 
   let activeTab: 'approved' | 'pending' = 'approved';
   let products: any[] = [];
@@ -102,8 +106,8 @@
       await apiRequest('/products/merge', {
         method: 'POST',
         body: JSON.stringify({
-          target_product_id: parseInt(targetProductId),
-          source_product_id: parseInt(sourceProductId)
+          target_id: parseInt(targetProductId),
+          source_ids: [parseInt(sourceProductId)]
         })
       });
       addToast($t('toast.success'), 'success');
@@ -285,8 +289,12 @@
     }
   }
 
-  onMount(() => {
-    loadData();
+  onMount(async () => {
+    await loadData();
+    if (openCreateOnMount) {
+      openCreateModal();
+      onConsumeAction();
+    }
     const unsub = subscribeToSSE((event) => {
       if (['product_created', 'product_updated', 'stock_adjusted', 'purchase_approved'].includes(event.event)) {
         loadData();
@@ -418,7 +426,7 @@
                   <td>
                     <div class="price-cell">
                       <span class="cost-text">{formatCurrency(prod.cost_price)}</span>
-                      <strong class="sell-text">{formatCurrency(prod.selling_price)} SDG</strong>
+                      <strong class="sell-text">{formatCurrency(prod.selling_price)} {$currencyStore}</strong>
                     </div>
                   </td>
                   <td>
@@ -487,7 +495,7 @@
                   <td><span class="prod-name">{item.product_name || item.product?.name}</span></td>
                   <td>{item.supplier_name}</td>
                   <td>{item.quantity} {$t('prod.stockUnit')}</td>
-                  <td><strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1))} SDG</strong></td>
+                  <td><strong>{formatCurrency((item.unit_cost || 0) * (item.quantity || 1))} {$currencyStore}</strong></td>
                   <td><span class="badge badge-pending">{$t('purch.status.pending')}</span></td>
                 </tr>
               {/each}
@@ -589,11 +597,11 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="p-cost">{$t('prod.costPrice')}</label>
+            <label for="p-cost">{$t('prod.costPrice')} ({$currencyStore})</label>
             <input id="p-cost" class="form-input" type="number" step="0.01" bind:value={productForm.cost_price} />
           </div>
           <div class="form-group">
-            <label for="p-sell">{$t('prod.sellingPrice')} *</label>
+            <label for="p-sell">{$t('prod.sellingPrice')} ({$currencyStore}) *</label>
             <input id="p-sell" class="form-input" type="number" step="0.01" required bind:value={productForm.selling_price} />
           </div>
         </div>
@@ -637,20 +645,20 @@
         </p>
 
         <div class="form-group">
-          <label for="m-target">Primary Item (Keep)</label>
+          <label for="m-target">{$t('prod.merge.keep')}</label>
           <select id="m-target" class="form-select" bind:value={targetProductId}>
             {#each products as p}
-              <option value={p.id}>{p.name} ({p.sku}) - Stock: {p.stock_quantity}</option>
+              <option value={p.id}>{p.name} ({p.sku}) - {$t('prod.merge.stock')}: {p.stock_quantity}</option>
             {/each}
           </select>
         </div>
 
         <div class="form-group">
-          <label for="m-source">Duplicate Item (Absorb & Delete)</label>
+          <label for="m-source">{$t('prod.merge.absorb')}</label>
           <select id="m-source" class="form-select" bind:value={sourceProductId}>
             <option value="">-- {$currentLocale === 'ar' ? 'اختر الصنف المكرر' : 'Select Duplicate'} --</option>
             {#each products.filter(p => String(p.id) !== String(targetProductId)) as p}
-              <option value={p.id}>{p.name} ({p.sku}) - Stock: {p.stock_quantity}</option>
+              <option value={p.id}>{p.name} ({p.sku}) - {$t('prod.merge.stock')}: {p.stock_quantity}</option>
             {/each}
           </select>
         </div>

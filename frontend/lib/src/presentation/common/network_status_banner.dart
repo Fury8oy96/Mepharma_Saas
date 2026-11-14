@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/services/network_monitor.dart';
+import '../../domain/models/api_config.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class NetworkStatusBanner extends ConsumerWidget {
@@ -9,6 +10,13 @@ class NetworkStatusBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(apiConfigProvider);
+    if (config.mode == DatabaseMode.local) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName.startsWith('ar');
     final networkMonitor = ref.watch(networkMonitorProvider);
     final syncEngine = ref.watch(syncEngineProvider);
     final pendingCount = syncEngine.pendingCount;
@@ -46,25 +54,39 @@ class NetworkStatusBanner extends ConsumerWidget {
             ? Icons.error_rounded
             : (isSyncing ? Icons.sync_rounded : Icons.cloud_upload_rounded);
 
-    final l10n = AppLocalizations.of(context);
-
     final title = isOffline
-        ? l10n.offlineModeBannerTitle
+        ? (isArabic
+            ? 'العمل في وضع عدم الاتصال — التخزين المحلي نشط'
+            : 'Operating in Offline Mode — Local Storage Active')
         : hasError
-            ? l10n.syncFailedBannerTitle
+            ? (isArabic
+                ? 'فشلت المزامنة — سيتم إعادة المحاولة عند استقرار الاتصال'
+                : 'Sync Failed — Retries When Connection Is Stable')
             : (isSyncing
-                ? l10n.networkRestoredBannerTitle
-                : l10n.pendingSyncBannerTitle);
+                ? (isArabic
+                    ? 'تمت استعادة الاتصال — جاري المزامنة مع الخادم...'
+                    : 'Network Restored — Synchronizing with Server...')
+                : (isArabic
+                    ? 'توجد تغييرات محلية بانتظار المزامنة'
+                    : 'Pending Local Changes Ready to Sync'));
 
     final subtitle = isOffline
         ? (pendingCount > 0
-            ? l10n.offlinePendingTransactions(pendingCount)
-            : l10n.offlineModeBannerSubtitle)
+            ? (isArabic
+                ? 'يوجد $pendingCount عملية في انتظار المزامنة.'
+                : '$pendingCount transaction${pendingCount > 1 ? 's' : ''} queued for sync.')
+            : (isArabic
+                ? 'يتم حفظ كافة العمليات محلياً في قاعدة بيانات SQLite.'
+                : 'All changes are saved locally to SQLite.'))
         : hasError
             ? lastError
             : (isSyncing
-                ? l10n.reconcilingRecordsSubtitle
-                : l10n.pendingServerReconciliation(pendingCount));
+                ? (isArabic
+                    ? 'جاري تسوية السجلات وتحديث المخزون...'
+                    : 'Reconciling pending records and updating stock...')
+                : (isArabic
+                    ? '$pendingCount عملية بانتظار المزامنة مع الخادم.'
+                    : '$pendingCount offline transaction${pendingCount > 1 ? 's' : ''} pending server reconciliation.'));
 
     return Container(
       width: double.infinity,

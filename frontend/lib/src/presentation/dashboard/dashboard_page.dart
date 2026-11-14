@@ -23,20 +23,21 @@ class DashboardPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final user = ref.watch(sessionProvider);
     
-    String roleLabel = l10n.roleStaff;
+    final isArabic = l10n.localeName.startsWith('ar');
+    String roleLabel = isArabic ? 'المدير' : l10n.roleStaff;
     if (user?.isSuperAdmin == true) {
-      roleLabel = l10n.superAdminRole;
+      roleLabel = isArabic ? 'المدير' : l10n.superAdminRole;
     } else if (user?.isBranchAdmin == true) {
-      roleLabel = l10n.branchAdminRole;
+      roleLabel = isArabic ? 'المدير' : l10n.branchAdminRole;
     } else if (user?.isAdmin == true) {
-      roleLabel = l10n.roleAdmin;
+      roleLabel = isArabic ? 'المدير' : l10n.roleAdmin;
     }
 
     final isAnyAdmin = user?.isAdmin == true;
     final lowStock = ref.watch(lowStockProductsProvider).valueOrNull ?? const [];
     final expiring = ref.watch(expiringProductsProvider).valueOrNull ?? const [];
     final todaySales = ref.watch(todaySalesProvider).valueOrNull;
-    final currency = ref.watch(storeSettingsProvider).valueOrNull?.currencySymbol ?? r'$';
+    final currency = ref.watch(storeSettingsProvider).valueOrNull?.currencySymbol ?? 'ج.س';
     final stockValuation = ref.watch(stockValuationProvider).valueOrNull;
     final purchases = ref.watch(purchaseListProvider).valueOrNull ?? const [];
     final pendingPurchases = purchases.where((p) => p.isPending).length;
@@ -751,7 +752,7 @@ class _RecentSalesCard extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
-                      '${DateFormat.Hm().format(sale.createdAt)} • ${sale.customerName ?? l10n.walkInCustomer} • ${sale.paymentMethod?.toUpperCase() ?? "CASH"}',
+                      '${DateFormat.Hm().format(sale.createdAt)} • ${sale.customerName ?? "Walk-in"} • ${sale.paymentMethod?.toUpperCase() ?? "CASH"}',
                     ),
                     trailing: Text(
                       formatMoney(sale.totalAmount, symbol: currency),

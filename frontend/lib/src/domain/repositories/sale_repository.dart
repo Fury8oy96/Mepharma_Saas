@@ -21,6 +21,7 @@ abstract interface class SaleRepository {
     required int userId,
     String? customerName,
     int? customerId,
+    String? transactionReference,
   });
 
   /// Sales for history, newest first, optionally filtered. Payment method and

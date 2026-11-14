@@ -112,21 +112,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final apiConfig = ref.watch(apiConfigProvider);
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
-
-    final displayName = apiConfig.mode == DatabaseMode.local &&
-            (apiConfig.pharmacyName == null || apiConfig.pharmacyName == 'Local Pharmacy (Offline)')
-        ? (isArabic ? 'صيدلية محلية (بدون إنترنت)' : 'Local Pharmacy (Offline)')
-        : (apiConfig.pharmacyName ?? AppConstants.appName);
-
-    final displayAddress = apiConfig.mode == DatabaseMode.local &&
-            (apiConfig.pharmacyAddress == null || apiConfig.pharmacyAddress == 'Standalone SQLite Database')
-        ? (isArabic ? 'قاعدة بيانات SQLite محلية مستقلة' : 'Standalone SQLite Database')
-        : (apiConfig.pharmacyAddress ?? l10n.appTitle);
-
-    final modeBadgeLabel = apiConfig.mode == DatabaseMode.onlineApi
-        ? (isArabic ? 'متصل مباشر • ${apiConfig.pharmacyDomain}' : 'ONLINE • ${apiConfig.pharmacyDomain}')
-        : (isArabic ? 'محلي • SQLite' : 'LOCAL • SQLite');
 
     return Scaffold(
       body: Container(
@@ -195,7 +180,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          displayName,
+                          apiConfig.pharmacyName ?? AppConstants.appName,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w800,
@@ -205,7 +190,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          displayAddress,
+                          apiConfig.pharmacyAddress ?? l10n.appTitle,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -246,7 +231,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    modeBadgeLabel,
+                                    apiConfig.mode == DatabaseMode.onlineApi
+                                        ? (l10n.localeName.startsWith('ar')
+                                            ? 'متصل أونلاين • ${apiConfig.pharmacyDomain}'
+                                            : 'ONLINE • ${apiConfig.pharmacyDomain}')
+                                        : (l10n.localeName.startsWith('ar')
+                                            ? 'محلي • SQLite'
+                                            : 'LOCAL • SQLite'),
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -403,7 +394,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.copy, size: 16),
-                                      tooltip: 'Copy Error Diagnostics',
+                                      tooltip: l10n.copyErrorDiagnostics,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () {
@@ -411,9 +402,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                           text: _authException.toString(),
                                         ));
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Diagnostics copied to clipboard'),
-                                            duration: Duration(seconds: 2),
+                                          SnackBar(
+                                            content: Text(l10n.diagnosticsCopied),
+                                            duration: const Duration(seconds: 2),
                                           ),
                                         );
                                       },
@@ -436,7 +427,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     child: Row(
                                       children: [
                                         Text(
-                                          _showDetails ? 'Hide technical trace' : 'Show technical trace',
+                                          _showDetails
+                                              ? (l10n.localeName.startsWith('ar')
+                                                  ? 'إخفاء التفاصيل التقنية'
+                                                  : 'Hide technical trace')
+                                              : (l10n.localeName.startsWith('ar')
+                                                  ? 'عرض التفاصيل التقنية'
+                                                  : 'Show technical trace'),
                                           style: TextStyle(
                                             color: theme.colorScheme.primary,
                                             fontSize: 11.5,
@@ -516,7 +513,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             onPressed: () => context.go('/setup'),
                             icon: const Icon(Icons.tune_outlined, size: 16),
                             label: Text(
-                              isArabic ? 'إعدادات المحطة والترخيص' : 'Terminal Setup & License Settings',
+                              l10n.localeName.startsWith('ar')
+                                  ? 'إعدادات الاتصال وتفعيل الترخيص أونلاين'
+                                  : 'Terminal Setup & License Settings',
                               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
                             ),
                           ),

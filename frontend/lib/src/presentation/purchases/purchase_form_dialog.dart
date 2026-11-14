@@ -25,6 +25,7 @@ class PurchaseFormDialog extends ConsumerStatefulWidget {
 class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
   int? _supplierId;
   DateTime? _purchaseDate;
+  final _transactionRefController = TextEditingController();
   final _lines = <_PurchaseLine>[];
   String? _error;
   bool _saving = false;
@@ -49,6 +50,12 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
         _supplierId = widget.initialProducts!.first.supplierId;
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _transactionRefController.dispose();
+    super.dispose();
   }
 
   int get _total => _lines.fold<int>(0, (sum, line) => sum + line.totalCost);
@@ -233,7 +240,9 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
             userId: userId,
             supplierId: supplierId,
             purchaseDate: _purchaseDate ?? DateTime.now(),
-            autoApprove: false,
+            transactionReference: _transactionRefController.text.trim().isEmpty
+                ? null
+                : _transactionRefController.text.trim(),
             items: [
               for (final line in _lines)
                 PurchaseLineInput(
@@ -262,7 +271,7 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final suppliers = ref.watch(supplierListProvider).valueOrNull ?? const [];
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final supplier = _supplierId == null
         ? null
         : suppliers.where((s) => s.id == _supplierId).firstOrNull;
@@ -325,6 +334,16 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _transactionRefController,
+                decoration: InputDecoration(
+                  labelText: l10n.transactionReference,
+                  hintText: l10n.transactionRefHint,
+                  prefixIcon: const Icon(Icons.receipt_long_outlined),
+                  isDense: true,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -439,7 +458,7 @@ class _PurchaseFormDialogState extends ConsumerState<PurchaseFormDialog> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Request',
+                            l10n.localeName.startsWith('ar') ? 'طلب' : 'Request',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -615,7 +634,7 @@ class _LineEditorState extends ConsumerState<_LineEditor> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
     final title = widget.product.name;
 
     return AlertDialog(

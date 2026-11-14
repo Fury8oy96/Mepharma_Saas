@@ -3,9 +3,9 @@
 ; ==============================================================================
 
 #define MyAppName "MePharma"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "2.0.1"
 #define MyAppPublisher "MePharma Systems"
-#define MyAppURL "https://github.com/Fury8oy96/Mepharma_Saas"
+#define MyAppURL "https://github.com/Fury8oy96/mepharma"
 #define MyAppExeName "mepharma.exe"
 #define SourceDir "..\frontend\build\windows\x64\runner\Release"
 #define AppIconPath "..\frontend\windows\runner\resources\app_icon.ico"
@@ -19,7 +19,6 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppMutex=MePharmaSingletonMutex
 
 ; Destination Directories
 DefaultDirName={autopf}\{#MyAppName}
@@ -28,7 +27,7 @@ DisableProgramGroupPage=yes
 
 ; Output Configuration
 OutputDir=Output
-OutputBaseFilename=MePharma_Setup_v{#MyAppVersion}
+OutputBaseFilename=MePharma_Setup_2.01
 SetupIconFile={#AppIconPath}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
@@ -37,20 +36,15 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 DisableWelcomePage=no
-CloseApplications=yes
-RestartApplications=no
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-
-#if defined(SignToolCmd)
-SignTool={#SignToolCmd}
-#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "startupicon"; Description: "Launch MePharma automatically on Windows startup"; GroupDescription: "Windows Integration"; Flags: unchecked
 
 [Files]
 ; Release bundle (all binaries, Flutter engine, assets, dynamic native libraries)
@@ -61,18 +55,17 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
 
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MePharma POS"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startupicon; Flags: uninsdeletevalue
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-const
-  AppGuid = '{D819C456-9B38-4F7E-9031-FA15093EAE72}';
-
 var
   EnvironmentPage: TWizardPage;
   LocalModeRadio: TRadioButton;
   OnlineModeRadio: TRadioButton;
-  CleanInstallCheckBox: TCheckBox;
   DomainLabel: TLabel;
   DomainEdit: TNewEdit;
   DomainHintLabel: TLabel;
@@ -90,12 +83,6 @@ begin
   LicenseKeyEdit.Enabled := OnlineModeRadio.Checked;
   LicenseKeyHintLabel.Enabled := OnlineModeRadio.Checked;
   OnlineNoteLabel.Visible := OnlineModeRadio.Checked;
-
-  // When Standalone Local SQLite is selected, default CleanInstall to True to guarantee an empty, clean DB
-  if LocalModeRadio.Checked then
-  begin
-    CleanInstallCheckBox.Checked := True;
-  end;
 end;
 
 procedure CreateEnvironmentPage;
@@ -108,7 +95,7 @@ begin
     'Choose your pharmacy connection mode and activate your 1-year license.'
   );
 
-  // 1. Standalone Local SQLite Option
+  // 1. Standalone Local SQLite Option (Default for initial release)
   LocalModeRadio := TRadioButton.Create(EnvironmentPage);
   LocalModeRadio.Parent := EnvironmentPage.Surface;
   LocalModeRadio.Left := ScaleX(10);
@@ -116,8 +103,8 @@ begin
   LocalModeRadio.Width := ScaleX(390);
   LocalModeRadio.Height := ScaleY(20);
   LocalModeRadio.Font.Style := [fsBold];
-  LocalModeRadio.Caption := '1. Standalone Local SQLite (Offline Mode)';
-  LocalModeRadio.Checked := False;
+  LocalModeRadio.Caption := '1. Standalone Local SQLite (Offline Mode - Default)';
+  LocalModeRadio.Checked := True;
   LocalModeRadio.OnClick := @ModeRadioOnClick;
 
   LocalDescLabel := TLabel.Create(EnvironmentPage);
@@ -128,7 +115,7 @@ begin
   LocalDescLabel.Height := ScaleY(28);
   LocalDescLabel.AutoSize := False;
   LocalDescLabel.WordWrap := True;
-  LocalDescLabel.Caption := 'All sales, users, and stock are saved locally on this machine. No server or internet connection required.';
+  LocalDescLabel.Caption := 'All sales, users, and stock are saved locally on this machine in SQLite. No server or internet connection required.';
 
   // 2. Online Server / Cloud API Option
   OnlineModeRadio := TRadioButton.Create(EnvironmentPage);
@@ -138,8 +125,8 @@ begin
   OnlineModeRadio.Width := ScaleX(390);
   OnlineModeRadio.Height := ScaleY(20);
   OnlineModeRadio.Font.Style := [fsBold];
-  OnlineModeRadio.Caption := '2. Online Server / Cloud Network (Recommended)';
-  OnlineModeRadio.Checked := True;
+  OnlineModeRadio.Caption := '2. Online Server / Cloud Network (Connect to Central Backend)';
+  OnlineModeRadio.Checked := False;
   OnlineModeRadio.OnClick := @ModeRadioOnClick;
 
   OnlineDescLabel := TLabel.Create(EnvironmentPage);
@@ -206,7 +193,7 @@ begin
   OnlineNoteLabel := TLabel.Create(EnvironmentPage);
   OnlineNoteLabel.Parent := EnvironmentPage.Surface;
   OnlineNoteLabel.Left := ScaleX(30);
-  OnlineNoteLabel.Top := ScaleY(205);
+  OnlineNoteLabel.Top := ScaleY(210);
   OnlineNoteLabel.Width := ScaleX(370);
   OnlineNoteLabel.Height := ScaleY(24);
   OnlineNoteLabel.AutoSize := False;
@@ -214,127 +201,12 @@ begin
   OnlineNoteLabel.Font.Color := clHighlight;
   OnlineNoteLabel.Caption := 'Pharmacy branding and terminal seats will be auto-grabbed from the server.';
   OnlineNoteLabel.Visible := True;
-
-  // Clean Install Option (Wipes previous SQLite database for fresh start)
-  CleanInstallCheckBox := TCheckBox.Create(EnvironmentPage);
-  CleanInstallCheckBox.Parent := EnvironmentPage.Surface;
-  CleanInstallCheckBox.Left := ScaleX(10);
-  CleanInstallCheckBox.Top := ScaleY(235);
-  CleanInstallCheckBox.Width := ScaleX(390);
-  CleanInstallCheckBox.Height := ScaleY(20);
-  if RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
-     RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') then
-  begin
-    CleanInstallCheckBox.Caption := 'Reset database: Wipe local database and start fresh (Caution: deletes offline sales)';
-    CleanInstallCheckBox.Checked := False;
-  end
-  else
-  begin
-    CleanInstallCheckBox.Caption := 'Clean install: Wipe previous local database (fresh start for this installation)';
-    CleanInstallCheckBox.Checked := True;
-  end;
-end;
-
-function GetExistingInstallDir: String;
-var
-  InstallPath: String;
-begin
-  Result := '';
-  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'Inno Setup: App Path', InstallPath) then
-  begin
-    if Length(InstallPath) > 0 then
-    begin
-      Result := InstallPath;
-      Exit;
-    end;
-  end;
-  if RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'Inno Setup: App Path', InstallPath) then
-  begin
-    if Length(InstallPath) > 0 then
-    begin
-      Result := InstallPath;
-      Exit;
-    end;
-  end;
-  if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'InstallLocation', InstallPath) then
-  begin
-    if Length(InstallPath) > 0 then
-    begin
-      Result := InstallPath;
-      Exit;
-    end;
-  end;
-  if RegQueryStringValue(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1', 'InstallLocation', InstallPath) then
-  begin
-    if Length(InstallPath) > 0 then
-    begin
-      Result := InstallPath;
-      Exit;
-    end;
-  end;
-end;
-
-procedure LoadExistingConfig;
-var
-  InstallDir: String;
-  ConfigFile: String;
-  FileContent: AnsiString;
-  P, PEnd: Integer;
-begin
-  InstallDir := GetExistingInstallDir;
-  if Length(InstallDir) = 0 then
-    Exit;
-
-  ConfigFile := InstallDir + '\api_config.json';
-  if FileExists(ConfigFile) then
-  begin
-    if LoadStringFromFile(ConfigFile, FileContent) then
-    begin
-      P := Pos('"pharmacyDomain": "', String(FileContent));
-      if P > 0 then
-      begin
-        P := P + Length('"pharmacyDomain": "');
-        PEnd := Pos('"', Copy(String(FileContent), P, Length(String(FileContent)) - P + 1));
-        if PEnd > 1 then
-          DomainEdit.Text := Copy(String(FileContent), P, PEnd - 1);
-      end;
-      P := Pos('"licenseKey": "', String(FileContent));
-      if P > 0 then
-      begin
-        P := P + Length('"licenseKey": "');
-        PEnd := Pos('"', Copy(String(FileContent), P, Length(String(FileContent)) - P + 1));
-        if PEnd > 1 then
-          LicenseKeyEdit.Text := Copy(String(FileContent), P, PEnd - 1);
-      end;
-      P := Pos('"mode": "local"', String(FileContent));
-      if P > 0 then
-      begin
-        LocalModeRadio.Checked := True;
-        OnlineModeRadio.Checked := False;
-        ModeRadioOnClick(nil);
-      end;
-    end;
-  end;
 end;
 
 procedure InitializeWizard;
-var
-  IsUpdateInstall: Boolean;
-  ExistingDir: String;
 begin
   CreateEnvironmentPage;
-  IsUpdateInstall := RegKeyExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1') or
-                     RegKeyExists(HKLM, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\' + AppGuid + '_is1');
-  if IsUpdateInstall then
-  begin
-    WizardForm.Caption := 'Update - ' + '{#MyAppName}';
-    ExistingDir := GetExistingInstallDir;
-    if Length(ExistingDir) > 0 then
-    begin
-      WizardForm.DirEdit.Text := ExistingDir;
-    end;
-    LoadExistingConfig;
-  end;
+  ModeRadioOnClick(nil);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -453,7 +325,7 @@ begin
       NormalizedUrl := 'http://localhost:8000/api';
       RawDomain := 'local';
       TenantCode := 'local';
-      LicenseKeyVal := 'OFFLINE-STANDALONE-PERPETUAL';
+      LicenseKeyVal := '';
     end
     else
     begin
@@ -473,31 +345,10 @@ begin
       '  "pharmacyCode": "' + TenantCode + '",' + #13#10 +
       '  "licenseKey": "' + LicenseKeyVal + '",' + #13#10 +
       '  "branchId": 1,' + #13#10 +
-      '  "isConfigured": true,' + #13#10 +
-      '  "isLicenseValid": true,' + #13#10 +
-      '  "licensePlan": "offline_standalone",' + #13#10 +
-      '  "validityDaysRemaining": 365,' + #13#10 +
-      '  "pharmacyName": "Local Pharmacy (Offline)",' + #13#10 +
-      '  "pharmacyAddress": "Standalone SQLite Database",' + #13#10 +
-      '  "currency": "USD",' + #13#10 +
-      '  "currencySymbol": "$"' + #13#10 +
+      '  "isConfigured": true' + #13#10 +
       '}';
 
     ConfigPath := ExpandConstant('{app}\api_config.json');
     SaveStringToFile(ConfigPath, ConfigJson, False);
-
-    // If clean installation was selected OR local offline mode is chosen, purge previous local SQLite database
-    if CleanInstallCheckBox.Checked or LocalModeRadio.Checked then
-    begin
-      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite'));
-      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-shm'));
-      DeleteFile(ExpandConstant('{userdocs}\mepharma.sqlite-wal'));
-      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite'));
-      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite-shm'));
-      DeleteFile(ExpandConstant('{localappdata}\mepharma.sqlite-wal'));
-      DeleteFile(ExpandConstant('{userappdata}\MePharma\api_config.json'));
-      // Drop clean install flag next to mepharma.exe to guarantee in-app database reset on first launch
-      SaveStringToFile(ExpandConstant('{app}\clean_install.flag'), 'CLEAN', False);
-    end;
   end;
 end;

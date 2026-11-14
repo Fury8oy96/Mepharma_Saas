@@ -50,10 +50,10 @@ class ApiSettingsRepository implements SettingsRepository {
         storePhone: (data['phone'] ?? data['store_phone'] ?? data['store.phone'] ?? '') as String,
         storeTaxId: (data['taxNumber'] ?? data['tax_number'] ?? data['store_tax_id'] ?? data['store.tax_id'] ?? '') as String,
         taxRate: (data['taxRate'] ?? data['tax_rate'] ?? data['store.tax_rate'] ?? '0').toString(),
-        currencySymbol: (data['currency'] ?? data['currencySymbol'] ?? data['currency_symbol'] ?? data['store.currency_symbol'] ?? r'$') as String,
+        currencySymbol: (data['currency'] ?? data['currencySymbol'] ?? data['currency_symbol'] ?? data['store.currency_symbol'] ?? 'ج.س') as String,
         receiptFooter: (data['receiptFooter'] ?? data['receipt_footer'] ?? data['store.receipt_footer'] ?? '') as String,
         defaultLowStockThreshold: (data['lowStockThreshold'] ?? data['low_stock_threshold'] ?? data['store.low_stock_threshold'] ?? '10').toString(),
-        profitMargin: (data['profitMargin'] ?? data['profit_margin'] ?? data['store.profit_margin'] ?? '0.3').toString(),
+        profitMargin: (data['profitMargin'] ?? data['profit_margin'] ?? data['store.profit_margin'] ?? '0').toString(),
         branchNumber: int.tryParse((data['branchNumber'] ?? data['branch_number'] ?? data['store.branch_number'] ?? data['seatNumber'] ?? 1).toString()) ?? 1,
         seatNumber: int.tryParse((data['seatNumber'] ?? data['seat_number'] ?? data['store.seat_number'] ?? data['branchNumber'] ?? 1).toString()) ?? 1,
         receiptStyle: (data['receiptStyle'] ?? data['receipt_style'] ?? data['store.receipt_style'] ?? 'modern') as String,
@@ -115,7 +115,7 @@ class ApiSettingsRepository implements SettingsRepository {
   @override
   Future<String> getCurrencySymbol() async {
     final value = await getValue('store.currency_symbol');
-    return (value == null || value.isEmpty) ? r'$' : value;
+    return (value == null || value.isEmpty) ? 'ج.س' : value;
   }
 
   @override

@@ -105,6 +105,9 @@ class Sales extends Table {
 
   TextColumn get paymentMethod => text().nullable()();
 
+  /// Bank transfer or external transaction reference number (رقم العملية)
+  TextColumn get transactionReference => text().nullable()();
+
   IntColumn get customerId =>
       integer().references(Customers, #id, onDelete: KeyAction.setNull).nullable()();
 
@@ -190,6 +193,9 @@ class Purchases extends Table {
 
   TextColumn get invoiceNumber => text().unique()();
 
+  /// External transaction reference / receipt / bank reference (رقم العملية)
+  TextColumn get transactionReference => text().nullable()();
+
   IntColumn get supplierId => integer().references(Suppliers, #id)();
 
   IntColumn get userId => integer().references(Users, #id)();
@@ -198,10 +204,6 @@ class Purchases extends Table {
   IntColumn get totalAmount => integer()();
 
   DateTimeColumn get purchaseDate => dateTime()();
-
-  TextColumn get status => text().withDefault(const Constant('pending'))();
-
-  TextColumn get notes => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

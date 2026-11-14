@@ -66,6 +66,7 @@ class SqliteUserRepository implements UserRepository {
   @override
   Future<AppUser> updateUser(
     int id, {
+    String? username,
     String? password,
     UserRole? role,
     bool? isActive,
@@ -73,9 +74,12 @@ class SqliteUserRepository implements UserRepository {
     final hash = password == null ? null : await hashPassword(password);
     await (_db.update(_db.users)..where((u) => u.id.equals(id))).write(
       UsersCompanion(
-        passwordHash: hash == null ? Value.absent() : Value(hash),
-        role: role == null ? Value.absent() : Value(role),
-        isActive: isActive == null ? Value.absent() : Value(isActive),
+        username: (username == null || username.trim().isEmpty)
+            ? const Value.absent()
+            : Value(username.trim()),
+        passwordHash: hash == null ? const Value.absent() : Value(hash),
+        role: role == null ? const Value.absent() : Value(role),
+        isActive: isActive == null ? const Value.absent() : Value(isActive),
       ),
     );
     return _getById(id);
@@ -98,6 +102,11 @@ class SqliteUserRepository implements UserRepository {
       password: AppConstants.defaultAdminPassword,
       role: UserRole.admin,
     );
+  }
+
+  @override
+  Future<void> deleteUser(int id) async {
+    await (_db.delete(_db.users)..where((u) => u.id.equals(id))).go();
   }
 
   AppUser _map(User row) {

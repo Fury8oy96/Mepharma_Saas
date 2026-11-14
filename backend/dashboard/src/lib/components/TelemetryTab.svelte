@@ -80,14 +80,14 @@
           <div class="icon-wrap bg-primary-light text-primary">
             {@html icons.database}
           </div>
-          <span class="badge badge-primary">{telemetry.database?.cacheHitRatioPercent || 99.8}% Cache Hit</span>
+          <span class="badge badge-primary">{telemetry.database?.cacheHitRatioPercent || 99.8}% {$currentLocale === 'ar' ? 'نسبة نجاح الذاكرة' : 'Cache Hit'}</span>
         </div>
         <div class="card-body">
           <span class="metric-label">{$t('telemetry.dbSize')}</span>
           <h3 class="metric-val text-primary">{telemetry.database?.size || '12 MB'}</h3>
           <div class="metric-meta">
             <span>{telemetry.database?.tenantSchemasCount || 1} {$t('telemetry.schemas')}</span>
-            <span class="status-tag status-active">HEALTHY</span>
+            <span class="status-tag status-active">{$currentLocale === 'ar' ? 'سليم' : 'HEALTHY'}</span>
           </div>
         </div>
       </div>
@@ -98,14 +98,14 @@
           <div class="icon-wrap bg-info-light text-info">
             {@html icons.activity}
           </div>
-          <span class="badge badge-info">PostgreSQL 16 Pool</span>
+          <span class="badge badge-info">{$currentLocale === 'ar' ? 'مجمع PostgreSQL 16' : 'PostgreSQL 16 Pool'}</span>
         </div>
         <div class="card-body">
           <span class="metric-label">{$t('telemetry.pool')}</span>
-          <h3 class="metric-val text-info">{telemetry.database?.activeConnections || 1} <small class="unit">active</small></h3>
+          <h3 class="metric-val text-info">{telemetry.database?.activeConnections || 1} <small class="unit">{$currentLocale === 'ar' ? 'نشط' : 'active'}</small></h3>
           <div class="metric-meta">
-            <span>Pool Size: 10 Max</span>
-            <span class="status-tag status-active">OPTIMAL</span>
+            <span>{$currentLocale === 'ar' ? 'حجم المجمع: 10 كحد أقصى' : 'Pool Size: 10 Max'}</span>
+            <span class="status-tag status-active">{$currentLocale === 'ar' ? 'مثالي' : 'OPTIMAL'}</span>
           </div>
         </div>
       </div>
@@ -116,7 +116,7 @@
           <div class="icon-wrap bg-warning-light text-warning">
             {@html icons.cpu}
           </div>
-          <span class="badge badge-warning">Node.js 24 Runtime</span>
+          <span class="badge badge-warning">{$currentLocale === 'ar' ? 'بيئة Node.js 24' : 'Node.js 24 Runtime'}</span>
         </div>
         <div class="card-body">
           <span class="metric-label">{$t('telemetry.rss')}</span>
@@ -137,7 +137,7 @@
       <div class="vuexy-card telemetry-card border-success">
         <div class="card-top">
           <div class="icon-wrap bg-success-light text-success">
-            {@html icons.clock || icons.activity}
+            {@html icons.activity}
           </div>
           <span class="badge badge-success">PID {telemetry.server?.pid || '1'}</span>
         </div>
@@ -145,7 +145,7 @@
           <span class="metric-label">{$t('telemetry.uptime')}</span>
           <h3 class="metric-val text-success">{formatUptime(telemetry.uptimeSeconds)}</h3>
           <div class="metric-meta">
-            <span>Core: {telemetry.server?.engine || 'AdonisJS v6'}</span>
+            <span>{$currentLocale === 'ar' ? 'النواة:' : 'Core:'} {telemetry.server?.engine || 'AdonisJS v6'}</span>
           </div>
         </div>
       </div>
@@ -158,10 +158,10 @@
           <span class="header-icon">{@html icons.warehouse}</span>
           <div>
             <h4>{$t('telemetry.containers')}</h4>
-            <p class="section-sub">Production Docker container cluster health and port bindings.</p>
+            <p class="section-sub">{$currentLocale === 'ar' ? 'حالة حاويات Docker الإنتاجية ومنافذ التشغيل.' : 'Production Docker container cluster health and port bindings.'}</p>
           </div>
         </div>
-        <span class="badge badge-role">3 Containers Healthy</span>
+        <span class="badge badge-role">{$currentLocale === 'ar' ? `${(telemetry.infrastructure?.containers || []).length || 3} حاويات سليمة` : `${(telemetry.infrastructure?.containers || []).length || 3} Containers Healthy`}</span>
       </div>
 
       <div class="containers-grid">
@@ -186,26 +186,26 @@
       <div class="vuexy-card spec-box">
         <div class="spec-header">
           {@html icons.shield}
-          <h5>Security & Cryptographic Boundary</h5>
+          <h5>{$currentLocale === 'ar' ? 'الأمان والعزل التشفيري' : 'Security & Cryptographic Boundary'}</h5>
         </div>
         <ul class="spec-list">
-          <li><strong>Architecture:</strong> Isolated Schema-per-Tenant (PostgreSQL 16)</li>
-          <li><strong>Edge Routing:</strong> Dynamic Traefik v3 wildcard Host SNI</li>
-          <li><strong>POS Security:</strong> Cryptographic token + SHA-256 Hardware seat lock</li>
-          <li><strong>Isolation:</strong> Zero cross-tenant data leak boundary</li>
+          <li><strong>{$currentLocale === 'ar' ? 'البنية:' : 'Architecture:'}</strong> {$currentLocale === 'ar' ? 'مخطط معزول لكل صيدلية (PostgreSQL 16)' : 'Isolated Schema-per-Tenant (PostgreSQL 16)'}</li>
+          <li><strong>{$currentLocale === 'ar' ? 'التوجيه الطرفي:' : 'Edge Routing:'}</strong> {$currentLocale === 'ar' ? 'توجيه Traefik v3 ديناميكي حسب النطاق' : 'Dynamic Traefik v3 wildcard Host SNI'}</li>
+          <li><strong>{$currentLocale === 'ar' ? 'أمان نقاط البيع:' : 'POS Security:'}</strong> {$currentLocale === 'ar' ? 'رمز تشفير + قفل مقعد ببصمة SHA-256' : 'Cryptographic token + SHA-256 Hardware seat lock'}</li>
+          <li><strong>{$currentLocale === 'ar' ? 'العزل:' : 'Isolation:'}</strong> {$currentLocale === 'ar' ? 'حاجز منع تسرب البيانات بين المشتركين' : 'Zero cross-tenant data leak boundary'}</li>
         </ul>
       </div>
 
       <div class="vuexy-card spec-box">
         <div class="spec-header">
           {@html icons.overview}
-          <h5>Environment & Runtime Specifications</h5>
+          <h5>{$currentLocale === 'ar' ? 'مواصفات البيئة والتشغيل' : 'Environment & Runtime Specifications'}</h5>
         </div>
         <ul class="spec-list">
-          <li><strong>Framework:</strong> AdonisJS 6.17 + Lucid ORM + TypeScript</li>
-          <li><strong>Node Runtime:</strong> {telemetry.server?.nodeVersion || 'v24'} ({telemetry.server?.platform || 'linux'}/{telemetry.server?.architecture || 'x64'})</li>
-          <li><strong>Reverse Gateway:</strong> {telemetry.server?.gateway || 'Traefik v3.0'}</li>
-          <li><strong>Web Engine:</strong> Svelte 4 Enterprise SPA (Vuexy Dark Mode)</li>
+          <li><strong>{$currentLocale === 'ar' ? 'إطار العمل:' : 'Framework:'}</strong> AdonisJS 6.17 + Lucid ORM + TypeScript</li>
+          <li><strong>{$currentLocale === 'ar' ? 'بيئة Node:' : 'Node Runtime:'}</strong> {telemetry.server?.nodeVersion || 'v24'} ({telemetry.server?.platform || 'linux'}/{telemetry.server?.architecture || 'x64'})</li>
+          <li><strong>{$currentLocale === 'ar' ? 'البوابة العكسية:' : 'Reverse Gateway:'}</strong> {telemetry.server?.gateway || 'Traefik v3.0'}</li>
+          <li><strong>{$currentLocale === 'ar' ? 'واجهة الويب:' : 'Web Engine:'}</strong> {$currentLocale === 'ar' ? 'تطبيق Svelte 4 مؤسسي (الوضع الداكن)' : 'Svelte 4 Enterprise SPA (Vuexy Dark Mode)'}</li>
         </ul>
       </div>
     </div>

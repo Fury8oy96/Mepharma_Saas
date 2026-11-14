@@ -1,4 +1,5 @@
 import { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
 import Purchase from '#models/tenant/purchase'
 import PurchaseItem from '#models/tenant/purchase_item'
 import Product from '#models/tenant/product'
@@ -6,27 +7,30 @@ import Supplier from '#models/tenant/supplier'
 import StockAdjustment from '#models/tenant/stock_adjustment'
 import db from '@adonisjs/lucid/services/db'
 import { TenantContext } from '#core/tenancy/tenant_context'
+import { syncHub } from '#core/events/sync_hub'
 
 function mapPurchase(p: Purchase) {
-  const items = p.items ? p.items.map((it) => ({
-    id: it.id,
-    purchase_id: it.purchaseId,
-    purchaseId: it.purchaseId,
-    product_id: it.productId,
-    productId: it.productId,
-    product_name: it.productName,
-    productName: it.productName,
-    quantity: it.quantity,
-    unit_cost: it.unitCost,
-    unitCost: it.unitCost,
-    cost_price: it.unitCost,
-    costPrice: it.unitCost,
-    subtotal: it.subtotal,
-    total_cost: it.subtotal,
-    totalCost: it.subtotal,
-    expiry_date: it.expiryDate ? it.expiryDate.toISODate() : null,
-    expiryDate: it.expiryDate ? it.expiryDate.toISODate() : null,
-  })) : []
+  const items = p.items
+    ? p.items.map((it) => ({
+        id: it.id,
+        purchase_id: it.purchaseId,
+        purchaseId: it.purchaseId,
+        product_id: it.productId,
+        productId: it.productId,
+        product_name: it.productName,
+        productName: it.productName,
+        quantity: it.quantity,
+        unit_cost: Number(it.unitCost) || 0,
+        unitCost: Number(it.unitCost) || 0,
+        cost_price: Number(it.unitCost) || 0,
+        costPrice: Number(it.unitCost) || 0,
+        subtotal: Number(it.subtotal) || 0,
+        total_cost: Number(it.subtotal) || 0,
+        totalCost: Number(it.subtotal) || 0,
+        expiry_date: it.expiryDate ? it.expiryDate.toISODate() : null,
+        expiryDate: it.expiryDate ? it.expiryDate.toISODate() : null,
+      }))
+    : []
 
   return {
     id: p.id,
@@ -34,6 +38,8 @@ function mapPurchase(p: Purchase) {
     invoiceNumber: p.invoiceNumber,
     purchase_number: p.invoiceNumber,
     purchaseNumber: p.invoiceNumber,
+    transaction_reference: p.transactionReference || null,
+    transactionReference: p.transactionReference || null,
     supplier_id: p.supplierId,
     supplierId: p.supplierId,
     supplier_name: p.supplier?.name || null,
@@ -47,7 +53,7 @@ function mapPurchase(p: Purchase) {
     totalAmount: Number(p.totalAmount || 0),
     paid_amount: Number(p.paidAmount || 0),
     paidAmount: Number(p.paidAmount || 0),
-    status: p.status, // 'pending' | 'approved' | 'received'
+    status: p.status,
     notes: p.notes,
     purchase_date: p.createdAt ? p.createdAt.toISODate() : new Date().toISOString().slice(0, 10),
     purchaseDate: p.createdAt ? p.createdAt.toISODate() : new Date().toISOString().slice(0, 10),
@@ -55,6 +61,12 @@ function mapPurchase(p: Purchase) {
     createdAt: p.createdAt ? p.createdAt.toISO() : new Date().toISOString(),
     items,
   }
+}
+
+function parseExpiry(raw: unknown): DateTime | null {
+  if (!raw || typeof raw !== 'string') return null
+  const dt = DateTime.fromISO(raw.trim())
+  return dt.isValid ? dt : null
 }
 
 export default class ProcurementController {
@@ -85,18 +97,18 @@ export default class ProcurementController {
     const user_id = body.user_id ?? body.userId ?? authUser?.id ?? null
     const requestedStatus = body.status ? String(body.status).toLowerCase() : 'pending'
     const notes = body.notes || null
+    const transactionReference = body.transaction_reference ?? body.transactionReference ?? null
     const rawItems: any[] = Array.isArray(body.items) ? body.items : []
 
     if (rawItems.length === 0) {
       return response.status(422).json({ error: 'Purchase order must have at least one line item.' })
     }
 
-    return await db.transaction(async (trx) => {
+    const result = await db.transaction(async (trx) => {
       const tenant = TenantContext.get()
       const schema = tenant?.schemaName || 'tenant_main'
-      await trx.rawQuery(`SET search_path TO "${schema}", public;`)
+      await trx.rawQuery(`SET LOCAL search_path TO "${schema}", public;`)
 
-      // 1. Calculate totals and sanitize line items
       let subtotal = 0
       const preparedItems: Array<{
         productId: number | null
@@ -104,6 +116,7 @@ export default class ProcurementController {
         quantity: number
         unitCost: number
         subtotal: number
+        expiryDate: DateTime | null
       }> = []
 
       for (const item of rawItems) {
@@ -111,8 +124,8 @@ export default class ProcurementController {
         let pName = (item.product_name ?? item.productName ?? '').trim()
         const qty = Math.max(1, parseInt(item.quantity, 10) || 1)
         let cost = Math.max(0, parseInt(item.cost_price ?? item.costPrice ?? item.unit_cost ?? item.unitCost ?? '0', 10) || 0)
+        const expiryDate = parseExpiry(item.expiry_date ?? item.expiryDate)
 
-        // Lookup product info if productId provided but name or cost omitted
         if (pId && pId !== 0) {
           const existingProd = await Product.query({ client: trx }).where('id', pId).first()
           if (existingProd) {
@@ -129,36 +142,39 @@ export default class ProcurementController {
         subtotal += lineTotal
 
         preparedItems.push({
-          productId: (pId && pId !== 0) ? pId : null,
+          productId: pId && pId !== 0 ? Number(pId) : null,
           productName: pName,
           quantity: qty,
           unitCost: cost,
           subtotal: lineTotal,
+          expiryDate,
         })
 
-        // If explicitly created as 'received' or 'approved', immediately stock inventory
         if (requestedStatus === 'received' || requestedStatus === 'approved') {
           if (pId && pId !== 0) {
-            const prod = await Product.query({ client: trx }).where('id', pId).first()
+            const prod = await Product.query({ client: trx }).where('id', pId).forUpdate().first()
             if (prod) {
               prod.stockQuantity += qty
               if (cost > 0) prod.costPrice = cost
+              if (expiryDate) prod.expiryDate = expiryDate
               prod.version += 1
               await prod.useTransaction(trx).save()
 
-              await StockAdjustment.create({
-                productId: prod.id,
-                userId: user_id,
-                type: 'add',
-                quantity: qty,
-                reason: `Stock replenished from PO`,
-              }, { client: trx })
+              await StockAdjustment.create(
+                {
+                  productId: prod.id,
+                  userId: user_id,
+                  type: 'add',
+                  quantity: qty,
+                  reason: 'Stock replenished from PO',
+                },
+                { client: trx }
+              )
             }
           }
         }
       }
 
-      // 2. Generate invoice number if not passed
       let invoiceNumber = body.invoice_number ?? body.invoiceNumber
       if (!invoiceNumber) {
         const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -168,25 +184,27 @@ export default class ProcurementController {
         invoiceNumber = `${prefix}${String(count + 1).padStart(4, '0')}`
       }
 
-      // 3. Create Purchase header
       let finalSupplierId = supplier_id
       if (finalSupplierId) {
         const supExists = await Supplier.query({ client: trx }).where('id', finalSupplierId).first()
         if (!supExists) finalSupplierId = null
       }
 
-      const purchase = await Purchase.create({
-        invoiceNumber,
-        supplierId: finalSupplierId,
-        userId: user_id,
-        subtotal,
-        totalAmount: subtotal,
-        paidAmount: (requestedStatus === 'received' || requestedStatus === 'approved') ? subtotal : 0,
-        status: requestedStatus, // default 'pending'
-        notes,
-      }, { client: trx })
+      const purchase = await Purchase.create(
+        {
+          invoiceNumber,
+          supplierId: finalSupplierId,
+          userId: user_id,
+          subtotal,
+          totalAmount: subtotal,
+          paidAmount: requestedStatus === 'received' || requestedStatus === 'approved' ? subtotal : 0,
+          transactionReference,
+          status: requestedStatus,
+          notes,
+        },
+        { client: trx }
+      )
 
-      // 4. Create Purchase Items
       await PurchaseItem.createMany(
         preparedItems.map((d) => ({
           ...d,
@@ -197,9 +215,16 @@ export default class ProcurementController {
 
       await purchase.load('supplier')
       await purchase.load('items')
-
-      return response.status(201).json(mapPurchase(purchase))
+      return mapPurchase(purchase)
     })
+
+    const tenantCode = TenantContext.get()?.code || 'main'
+    syncHub.emit(tenantCode, 'purchase_created', { id: result.id, status: result.status })
+    if (requestedStatus === 'received' || requestedStatus === 'approved') {
+      syncHub.emit(tenantCode, 'product_updated', { source: 'purchase', id: result.id })
+    }
+
+    return response.status(201).json(result)
   }
 
   async show({ params, response }: HttpContext) {
@@ -255,10 +280,10 @@ export default class ProcurementController {
       return response.status(422).json({ error: 'Purchase order must have at least one line item.' })
     }
 
-    return await db.transaction(async (trx) => {
+    const mapped = await db.transaction(async (trx) => {
       const tenant = TenantContext.get()
       const schema = tenant?.schemaName || 'tenant_main'
-      await trx.rawQuery(`SET search_path TO "${schema}", public;`)
+      await trx.rawQuery(`SET LOCAL search_path TO "${schema}", public;`)
 
       let finalSupplierId = supplier_id
       if (finalSupplierId) {
@@ -269,7 +294,6 @@ export default class ProcurementController {
       purchase.supplierId = finalSupplierId
       purchase.notes = notes
 
-      // Delete existing line items and recreate with updated sanitized values
       await PurchaseItem.query({ client: trx }).where('purchaseId', purchase.id).delete()
 
       let subtotal = 0
@@ -283,6 +307,7 @@ export default class ProcurementController {
           0,
           parseInt(item.cost_price ?? item.costPrice ?? item.unit_cost ?? item.unitCost ?? '0', 10) || 0
         )
+        const expiryDate = parseExpiry(item.expiry_date ?? item.expiryDate)
 
         if (pId && pId !== 0) {
           const prod = await Product.query({ client: trx }).where('id', pId).first()
@@ -301,11 +326,12 @@ export default class ProcurementController {
 
         newItems.push({
           purchaseId: purchase.id,
-          productId: pId && pId !== 0 ? pId : null,
+          productId: pId && pId !== 0 ? Number(pId) : null,
           productName: pName,
           quantity: qty,
           unitCost: cost,
           subtotal: lineTotal,
+          expiryDate,
         })
       }
 
@@ -318,12 +344,13 @@ export default class ProcurementController {
       await purchase.load('supplier')
       await purchase.load('items')
 
-      const mapped = mapPurchase(purchase)
-      return response.ok({
-        ...mapped,
-        purchase: mapped,
-        items: mapped.items,
-      })
+      return mapPurchase(purchase)
+    })
+
+    return response.ok({
+      ...mapped,
+      purchase: mapped,
+      items: mapped.items,
     })
   }
 
@@ -346,9 +373,9 @@ export default class ProcurementController {
       return response.status(404).json({ error: 'Purchase order not found.' })
     }
 
-    if (purchase.status === 'approved') {
+    if (purchase.status === 'approved' || purchase.status === 'received') {
       return response.status(400).json({
-        error: `Purchase order #${purchase.invoiceNumber} is already approved and stocked.`,
+        error: `Purchase order #${purchase.invoiceNumber} is already '${purchase.status}' and stocked.`,
       })
     }
 
@@ -356,12 +383,14 @@ export default class ProcurementController {
     const supplier_id = body.supplier_id ?? body.supplierId ?? null
     const resolveItems: any[] = Array.isArray(body.resolve_items)
       ? body.resolve_items
-      : (Array.isArray(body.items) ? body.items : [])
+      : Array.isArray(body.items)
+        ? body.items
+        : []
 
-    return await db.transaction(async (trx) => {
+    const approvedPurchase = await db.transaction(async (trx) => {
       const tenant = TenantContext.get()
       const schema = tenant?.schemaName || 'tenant_main'
-      await trx.rawQuery(`SET search_path TO "${schema}", public;`)
+      await trx.rawQuery(`SET LOCAL search_path TO "${schema}", public;`)
 
       if (supplier_id) {
         const supExists = await Supplier.query({ client: trx }).where('id', supplier_id).first()
@@ -369,8 +398,6 @@ export default class ProcurementController {
       }
 
       let grandTotal = 0
-
-      // Map existing line items by ID
       const existingItems = await PurchaseItem.query({ client: trx }).where('purchaseId', purchase.id)
       const existingItemsMap = new Map<number, PurchaseItem>()
       for (const it of existingItems) {
@@ -387,6 +414,7 @@ export default class ProcurementController {
         barcode: string | null
         sku: string | null
         productId: number | null
+        expiryDate: DateTime | null
       }> = []
 
       if (resolveItems.length > 0) {
@@ -406,12 +434,13 @@ export default class ProcurementController {
           if (selling === 0 && cost > 0 && margin > 0) {
             selling = Math.round(cost * (1 + margin / 100))
           } else if (selling === 0 && cost > 0) {
-            selling = Math.round(cost * 1.30)
+            selling = Math.round(cost * 1.3)
           }
 
           const rawProdId = resItem.product_id ?? resItem.productId ?? pItem?.productId
           const productId = rawProdId ? parseInt(rawProdId, 10) : null
           const pName = (resItem.product_name ?? resItem.productName ?? pItem?.productName ?? '').trim()
+          const expiryDate = parseExpiry(resItem.expiry_date ?? resItem.expiryDate) ?? pItem?.expiryDate ?? null
 
           itemsToProcess.push({
             pItem,
@@ -423,14 +452,14 @@ export default class ProcurementController {
             barcode: resItem.barcode || null,
             sku: resItem.sku || null,
             productId,
+            expiryDate,
           })
         }
       } else {
-        // Fallback: Stock all items currently attached to the purchase
         for (const it of existingItems) {
           const qty = Math.max(1, it.quantity || 1)
           const cost = Math.max(0, it.unitCost || 0)
-          const selling = Math.round(cost * 1.30)
+          const selling = Math.round(cost * 1.3)
           const pName = (it.productName || '').trim()
 
           itemsToProcess.push({
@@ -443,6 +472,7 @@ export default class ProcurementController {
             barcode: null,
             sku: null,
             productId: it.productId || null,
+            expiryDate: it.expiryDate || null,
           })
         }
       }
@@ -450,56 +480,59 @@ export default class ProcurementController {
       for (const line of itemsToProcess) {
         let product: Product | null = null
 
-        // 1. Look up by provided productId
         if (line.productId && line.productId !== 0) {
-          product = await Product.query({ client: trx }).where('id', line.productId).first()
+          product = await Product.query({ client: trx }).where('id', line.productId).forUpdate().first()
         }
 
-        // 2. If not found by ID or no ID provided, look up by exact name (case-insensitive)
         if (!product && line.pName) {
           product = await Product.query({ client: trx })
             .whereRaw('LOWER(TRIM(name)) = LOWER(TRIM(?))', [line.pName])
+            .forUpdate()
             .first()
         }
 
-        // 3. If still not found, auto-create the product in catalog
         if (!product) {
           const prodName = line.pName || `Medicine (PO #${purchase.invoiceNumber})`
           const sku = line.sku || `SKU-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
 
-          product = await Product.create({
-            name: prodName,
-            sku,
-            barcode: line.barcode,
-            categoryId: line.catId,
-            supplierId: purchase.supplierId,
-            costPrice: line.cost,
-            sellingPrice: line.selling,
-            stockQuantity: 0, // will be incremented below
-            lowStockThreshold: 10,
-            version: 1,
-          }, { client: trx })
+          product = await Product.create(
+            {
+              name: prodName,
+              sku,
+              barcode: line.barcode,
+              categoryId: line.catId,
+              supplierId: purchase.supplierId,
+              costPrice: line.cost,
+              sellingPrice: line.selling,
+              stockQuantity: 0,
+              lowStockThreshold: 10,
+              expiryDate: line.expiryDate,
+              version: 1,
+            },
+            { client: trx }
+          )
         }
 
-        // 4. Replenish stock & update pricing
         product.stockQuantity += line.qty
         if (line.cost > 0) product.costPrice = line.cost
         if (line.selling > 0) product.sellingPrice = line.selling
         if (line.catId) product.categoryId = line.catId
         if (line.barcode) product.barcode = line.barcode
+        if (line.expiryDate) product.expiryDate = line.expiryDate
         product.version += 1
         await product.useTransaction(trx).save()
 
-        // 5. Create StockAdjustment entry for audit trail
-        await StockAdjustment.create({
-          productId: product.id,
-          userId: authUser?.id || purchase.userId,
-          type: 'add',
-          quantity: line.qty,
-          reason: `Stock replenished from approved PO #${purchase.invoiceNumber}`,
-        }, { client: trx })
+        await StockAdjustment.create(
+          {
+            productId: product.id,
+            userId: authUser?.id || purchase.userId,
+            type: 'add',
+            quantity: line.qty,
+            reason: `Stock replenished from approved PO #${purchase.invoiceNumber}`,
+          },
+          { client: trx }
+        )
 
-        // 6. Update line item with product ID and financials
         const lineTotal = line.cost * line.qty
         grandTotal += lineTotal
 
@@ -507,6 +540,7 @@ export default class ProcurementController {
           line.pItem.productId = product.id
           line.pItem.unitCost = line.cost
           line.pItem.subtotal = lineTotal
+          if (line.expiryDate) line.pItem.expiryDate = line.expiryDate
           await line.pItem.useTransaction(trx).save()
         }
       }
@@ -522,11 +556,17 @@ export default class ProcurementController {
       await purchase.load('supplier')
       await purchase.load('items')
 
-      return response.ok({
-        message: 'Purchase approved successfully and products stocked.',
-        status: 'approved',
-        purchase: mapPurchase(purchase),
-      })
+      return mapPurchase(purchase)
+    })
+
+    const tenantCode = TenantContext.get()?.code || 'main'
+    syncHub.emit(tenantCode, 'purchase_approved', { id: approvedPurchase.id })
+    syncHub.emit(tenantCode, 'product_updated', { source: 'purchase_approved', id: approvedPurchase.id })
+
+    return response.ok({
+      message: 'Purchase approved successfully and products stocked.',
+      status: 'approved',
+      purchase: approvedPurchase,
     })
   }
 }

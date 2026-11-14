@@ -2,11 +2,9 @@ import { HttpContext } from '@adonisjs/core/http'
 import User from '#models/tenant/user'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import { getJwtSecret } from '#core/security/jwt_secret'
 
 export default class PosAuthController {
-  private static failedSupervisorAttempts = new Map<string, { count: number; lockedUntil: number }>()
-
   async login({ request, response, tenant }: HttpContext) {
     const { username, password } = request.all()
 
@@ -36,7 +34,6 @@ export default class PosAuthController {
       })
     }
 
-    const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
     const token = jwt.sign(
       {
         id: user.id,
@@ -45,7 +42,7 @@ export default class PosAuthController {
         pharmacyId: tenant.id,
         pharmacyCode: tenant.code,
       },
-      secret,
+      getJwtSecret(),
       { expiresIn: '30d' }
     )
 
@@ -65,53 +62,28 @@ export default class PosAuthController {
 
   async verifySupervisor({ request, response }: HttpContext) {
     const { username, password, pin } = request.all()
-    const clientIp = request.ip() || 'unknown'
-    const attemptKey = `${clientIp}:${String(username || 'all').toLowerCase()}`
+    const secretInput = password || pin
 
-    const now = Date.now()
-    const record = PosAuthController.failedSupervisorAttempts.get(attemptKey)
-    if (record && record.lockedUntil > now) {
-      const remainingSeconds = Math.ceil((record.lockedUntil - now) / 1000)
-      return response.status(429).json({
-        authorized: false,
-        error: `Too many failed supervisor attempts. Please wait ${remainingSeconds} seconds before trying again.`,
-        retryAfter: remainingSeconds,
-      })
-    }
-
-    if (!password && !pin) {
+    if (!secretInput) {
       return response.status(400).json({ error: 'Password or PIN required for authorization.' })
     }
 
+    const supervisorRoles = ['admin', 'super_admin', 'branch_admin', 'supervisor', 'pharmacy_admin']
     const query = User.query().where('is_active', true)
     if (username) {
       query.where('username', String(username).trim().toLowerCase())
     } else {
-      query.whereIn('role', ['branch_admin', 'supervisor', 'pharmacy_admin'])
+      query.whereIn('role', supervisorRoles)
     }
 
     const users = await query
 
     for (const user of users) {
-      if (user.role === 'branch_admin' || user.role === 'supervisor' || user.role === 'pharmacy_admin') {
-        const passwordMatch = await bcrypt.compare(String(password || pin).trim(), user.password)
+      if (supervisorRoles.includes(String(user.role || '').toLowerCase())) {
+        const passwordMatch = await bcrypt.compare(String(secretInput).trim(), user.password)
         if (passwordMatch) {
-          PosAuthController.failedSupervisorAttempts.delete(attemptKey)
-          const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
-          const supervisorToken = jwt.sign(
-            {
-              supervisorId: user.id,
-              supervisorUsername: user.username,
-              supervisorRole: user.role,
-              action: 'supervisor_override',
-            },
-            secret,
-            { expiresIn: '5m' }
-          )
-
           return response.ok({
             authorized: true,
-            supervisorToken,
             supervisor: {
               id: user.id,
               username: user.username,
@@ -122,16 +94,9 @@ export default class PosAuthController {
       }
     }
 
-    const count = (record?.count || 0) + 1
-    const lockedUntil = count >= 3 ? now + 5 * 60 * 1000 : 0
-    PosAuthController.failedSupervisorAttempts.set(attemptKey, { count, lockedUntil })
-
     return response.status(403).json({
       authorized: false,
-      error:
-        count >= 3
-          ? 'Too many failed supervisor attempts. Account locked for 5 minutes.'
-          : `Invalid supervisor credentials or insufficient permissions. (${3 - count} attempts remaining)`,
+      error: 'Invalid supervisor credentials or insufficient permissions.',
     })
   }
 }

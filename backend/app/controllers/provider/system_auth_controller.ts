@@ -2,7 +2,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import SystemUser from '#models/core/system_user'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import env from '#start/env'
+import { getJwtSecret } from '#core/security/jwt_secret'
 
 export default class SystemAuthController {
   async login({ request, response }: HttpContext) {
@@ -13,7 +13,7 @@ export default class SystemAuthController {
     }
 
     const user = await SystemUser.query()
-      .where('username', username.toLowerCase())
+      .where('username', String(username).trim().toLowerCase())
       .where('is_active', true)
       .first()
 
@@ -21,12 +21,11 @@ export default class SystemAuthController {
       return response.status(401).json({ error: 'Invalid provider administrator credentials.' })
     }
 
-    const valid = await bcrypt.compare(password, user.password)
+    const valid = await bcrypt.compare(String(password).trim(), user.password)
     if (!valid) {
       return response.status(401).json({ error: 'Invalid provider administrator credentials.' })
     }
 
-    const secret = env.get('JWT_SECRET') || env.get('APP_KEY')
     const token = jwt.sign(
       {
         id: user.id,
@@ -35,7 +34,7 @@ export default class SystemAuthController {
         role: user.role,
         isProviderAdmin: true,
       },
-      secret,
+      getJwtSecret(),
       { expiresIn: '7d' }
     )
 

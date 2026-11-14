@@ -13,7 +13,6 @@ class LanguageSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
     final l10n = AppLocalizations.of(context);
-    final currentSelected = locale.languageCode == 'ar' ? const Locale('ar') : const Locale('en');
 
     return SegmentedButton<Locale>(
       showSelectedIcon: false,
@@ -27,18 +26,17 @@ class LanguageSwitcher extends ConsumerWidget {
           label: Text(l10n.arabic),
         ),
       ],
-      selected: {currentSelected},
+      selected: {locale},
       onSelectionChanged: (selection) async {
-        final newLocale = selection.first;
-        final code = newLocale.languageCode;
-        ref.read(localeProvider.notifier).state = newLocale;
+        final code = selection.first.languageCode;
         try {
           await ref
               .read(settingsRepositoryProvider)
               .setValue(AppConstants.settingLocale, code);
-        } catch (e) {
-          debugPrint('Language preference save non-fatal notice: $e');
+        } on Exception {
+          // Persistence failure is non-fatal; still switch for this session.
         }
+        ref.read(localeProvider.notifier).state = selection.first;
       },
     );
   }

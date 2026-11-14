@@ -24,14 +24,15 @@ abstract interface class PurchaseRepository {
   /// Next purchase number, e.g. `PUR-20260101-0001`.
   Future<String> generatePurchaseNumber();
 
-  /// Records a purchase. When autoApprove is false, the purchase is created in pending state
-  /// and stock is not ingested until approved by an administrator. Defaults to true for test compatibility.
+  /// Records a purchase, restocks products and writes stock adjustment entries
+  /// — all in a single transaction. Each product's cost price is updated to the
+  /// latest purchase cost.
   Future<AppPurchase> createPurchase({
     int? supplierId,
     required int userId,
     required DateTime purchaseDate,
     required List<PurchaseLineInput> items,
-    bool autoApprove = true,
+    String? transactionReference,
   });
 
   /// Approves a pending purchase order and ingests stock.

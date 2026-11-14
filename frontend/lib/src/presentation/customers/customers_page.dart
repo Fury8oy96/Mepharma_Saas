@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/utils/money.dart';
+import '../../domain/models/api_config.dart';
 import '../../domain/models/customer.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../session/session_controller.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -559,18 +561,42 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       }
                       setDialogState(() => submitting = true);
                       try {
-                        final apiClient = ref.read(apiClientProvider);
+                        final config = ref.read(apiConfigProvider);
                         final qty = int.tryParse(quantityController.text.trim()) ?? 1;
-                        await apiClient.post(
-                          '/customer-requests',
-                          body: {
-                            'customer_name': custName,
-                            'customer_phone': phoneController.text.trim(),
-                            'product_name': prodName,
-                            'quantity': qty > 0 ? qty : 1,
-                            'notes': notesController.text.trim(),
-                          },
-                        );
+                        final safeQty = qty > 0 ? qty : 1;
+                        final phone = phoneController.text.trim();
+                        final notes = notesController.text.trim();
+
+                        if (config.mode == DatabaseMode.local) {
+                          final user = ref.read(sessionProvider);
+                          final noteParts = <String>[
+                            'Customer: $custName',
+                            if (phone.isNotEmpty) 'Phone: $phone',
+                            if (notes.isNotEmpty) notes,
+                          ];
+                          await ref.read(staffFeedbackRepositoryProvider).submitFeedback(
+                                productName: prodName,
+                                currentStock: 0,
+                                staffUserId: user?.id,
+                                staffUsername: user?.username ?? 'Staff',
+                                branchId: user?.branchId ?? 1,
+                                urgency: 'high_demand',
+                                suggestedQuantity: safeQty,
+                                notes: noteParts.join(' | '),
+                              );
+                        } else {
+                          final apiClient = ref.read(apiClientProvider);
+                          await apiClient.post(
+                            '/customer-requests',
+                            body: {
+                              'customer_name': custName,
+                              'customer_phone': phone,
+                              'product_name': prodName,
+                              'quantity': safeQty,
+                              'notes': notes,
+                            },
+                          );
+                        }
                         if (dialogContext.mounted) {
                           Navigator.of(dialogContext).pop();
                         }
@@ -636,15 +662,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 const SizedBox(width: 12),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh',
+                  tooltip: l10n.refresh,
                   onPressed: () {
                     ref.read(customerRepositoryProvider).refresh();
                     ScaffoldMessenger.of(context)
                       ..clearSnackBars()
                       ..showSnackBar(
-                        const SnackBar(
-                          content: Text('Refreshing customers list...'),
-                          duration: Duration(seconds: 1),
+                        SnackBar(
+                          content: Text(l10n.refreshing),
+                          duration: const Duration(seconds: 1),
                         ),
                       );
                   },
@@ -653,7 +679,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 OutlinedButton.icon(
                   onPressed: _openProductRequestDialog,
                   icon: const Icon(Icons.bookmark_add_outlined),
-                  label: const Text('Request Out-of-Stock Drug'),
+                  label: Text(l10n.requestOutOfStockDrug),
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(

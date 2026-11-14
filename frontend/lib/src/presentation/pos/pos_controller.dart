@@ -224,6 +224,7 @@ class PosController extends Notifier<PosState> {
     required int receivedCents,
     required double taxRatePercent,
     required int userId,
+    String? transactionReference,
   }) async {
     final current = state;
     if (current.items.isEmpty) {
@@ -307,6 +308,7 @@ class PosController extends Notifier<PosState> {
             paidAmount: paid,
             changeAmount: change,
             paymentMethod: method.name,
+            transactionReference: transactionReference,
             userId: userId,
             customerName: customer?.name,
             customerId: customer?.id,

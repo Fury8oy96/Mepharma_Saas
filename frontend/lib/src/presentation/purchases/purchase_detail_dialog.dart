@@ -37,9 +37,7 @@ class _PurchaseDetailDialogState extends ConsumerState<PurchaseDetailDialog> {
               Text(l10n.approveAndRestock),
             ],
           ),
-          content: const Text(
-            'Are you sure you want to approve this purchase order and ingest its inventory into the branch stock?',
-          ),
+          content: Text(l10n.confirmApprovePurchase),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -57,7 +55,7 @@ class _PurchaseDetailDialogState extends ConsumerState<PurchaseDetailDialog> {
     } else {
       final authorized = await SupervisorApprovalDialog.requestApproval(
         context,
-        reason: 'Approving purchase orders and ingesting stock requires Branch Administrator or Supervisor authorization.',
+        reason: l10n.supervisorApprovePurchaseReason,
       );
       if (!authorized) return;
     }
@@ -87,7 +85,7 @@ class _PurchaseDetailDialogState extends ConsumerState<PurchaseDetailDialog> {
           ..clearSnackBars()
           ..showSnackBar(
             SnackBar(
-              content: Text('Failed to approve purchase order: $e'),
+              content: Text('${l10n.errorOccurred}: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -101,7 +99,7 @@ class _PurchaseDetailDialogState extends ConsumerState<PurchaseDetailDialog> {
     final l10n = AppLocalizations.of(context);
     final detailAsync = ref.watch(purchaseDetailProvider(widget.purchaseId));
     final suppliers = ref.watch(supplierListProvider).valueOrNull ?? const [];
-    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? r'$';
+    final symbol = ref.watch(currencySymbolProvider).valueOrNull ?? 'ج.س';
 
     return AlertDialog(
       title: Text(l10n.purchaseDetail),
@@ -195,6 +193,24 @@ class _PurchaseDetailDialogState extends ConsumerState<PurchaseDetailDialog> {
                     ].join(' · '),
                     style: theme.textTheme.bodySmall,
                   ),
+                  if (detail.purchase.transactionReference != null &&
+                      detail.purchase.transactionReference!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          '${l10n.transactionReference}: ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          detail.purchase.transactionReference!,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ],
                   const Divider(height: 24),
                   for (final item in detail.items)
                     Padding(

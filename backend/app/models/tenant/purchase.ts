@@ -32,6 +32,9 @@ export default class Purchase extends BaseModel {
   declare paidAmount: number
 
   @column()
+  declare transactionReference: string | null
+
+  @column()
   declare status: string
 
   @column()

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../domain/models/api_config.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/auth/login_page.dart';
 import '../presentation/backup/backup_page.dart';
@@ -44,9 +43,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final config = ref.read(apiConfigProvider);
       final atSetup = state.matchedLocation == '/setup';
 
-      // If POS terminal is unconfigured in online mode, force Setup Wizard.
-      // Standalone local offline mode bypasses online server setup.
-      if (!config.isConfigured && config.mode != DatabaseMode.local) {
+      // If POS terminal is unconfigured, force Setup Wizard
+      if (!config.isConfigured) {
         return atSetup ? null : '/setup';
       }
 

@@ -30,9 +30,32 @@ class BackupPaths {
   );
 
   static Future<Directory> _defaultBackupsDirectory() async {
+    // Priority 1: D:\MePharma Backups
+    try {
+      final dDrive = Directory(r'D:\MePharma Backups');
+      if (Directory(r'D:\').existsSync()) {
+        if (!dDrive.existsSync()) {
+          dDrive.createSync(recursive: true);
+        }
+        return dDrive;
+      }
+    } catch (_) {}
+
+    // Priority 2: C:\MePharma Backups
+    try {
+      final cDrive = Directory(r'C:\MePharma Backups');
+      if (!cDrive.existsSync()) {
+        cDrive.createSync(recursive: true);
+      }
+      return cDrive;
+    } catch (_) {}
+
+    // Fallback: Documents/MePharma Backups
     final documents = await getApplicationDocumentsDirectory();
-    final dir = Directory(p.join(documents.path, 'MePharmaBackups'));
-    await dir.create(recursive: true);
+    final dir = Directory(p.join(documents.path, 'MePharma Backups'));
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
     return dir;
   }
 }
@@ -46,10 +69,13 @@ class BackupService {
   final AppDatabase _db;
   final BackupPaths _paths;
 
+  /// Returns the resolved directory where backups are stored.
+  Future<Directory> getBackupsDirectory() => _paths.backupsDirectory();
+
   /// Copies the live database to the backups folder and records the attempt.
   /// The database must be the primary connection so a WAL checkpoint flushes
   /// all data into the .sqlite file first.
-  Future<BackupRecord> createBackup() async {
+  Future<BackupRecord> createBackup({String? customFileName}) async {
     final now = DateTime.now();
     try {
       await _db.customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
@@ -59,16 +85,14 @@ class BackupService {
       }
       final backupsDir = await _paths.backupsDirectory();
       await backupsDir.create(recursive: true);
-      final target = File(
-        p.join(
-          backupsDir.path,
-          'mepharma_${_stamp(now)}.db',
-        ),
-      );
+
+      final fileName = customFileName ?? 'backup${_dayStamp(now)}.db';
+      final target = File(p.join(backupsDir.path, fileName));
       if (await target.exists()) {
         await target.delete();
       }
       await liveFile.copy(target.path);
+
       final id = await _db.into(_db.backupLogs).insert(
             BackupLogsCompanion.insert(
               backupTime: now,
@@ -93,6 +117,37 @@ class BackupService {
       }
       rethrow;
     }
+  }
+
+  /// Automatically creates a daily backup if one hasn't been created yet today.
+  /// Returns the created BackupRecord, or null if today's backup already exists.
+  Future<BackupRecord?> createDailyAutoBackupIfNeeded() async {
+    final now = DateTime.now();
+    final dayStamp = _dayStamp(now);
+    final targetName = 'backup$dayStamp.db';
+
+    final backupsDir = await _paths.backupsDirectory();
+    final targetFile = File(p.join(backupsDir.path, targetName));
+
+    if (await targetFile.exists()) {
+      // Already backed up today! Prevent duplicate work.
+      return null;
+    }
+
+    return await createBackup(customFileName: targetName);
+  }
+
+  /// Restores a backup from a local file directly.
+  Future<void> restoreFromFile(File file) async {
+    if (!await file.exists()) {
+      throw StateError('Backup file not found.');
+    }
+    final bytes = await file.readAsBytes();
+    if (bytes.length < 16 ||
+        String.fromCharCodes(bytes.sublist(0, 16)) != 'SQLite format 3\x00') {
+      throw StateError('The selected file is not a valid MePharma database backup.');
+    }
+    await replaceLiveDatabase(bytes);
   }
 
   /// Verifies the backup file and returns its bytes ready to replace the live
@@ -170,11 +225,8 @@ class BackupService {
     );
   }
 
-  static String _stamp(DateTime time) {
+  static String _dayStamp(DateTime time) {
     String two(int n) => n.toString().padLeft(2, '0');
-    final ms = time.millisecond.toString().padLeft(3, '0');
-    return '${time.year}${two(time.month)}${two(time.day)}'
-        '_${two(time.hour)}${two(time.minute)}${two(time.second)}'
-        '_$ms';
+    return '${time.year}${two(time.month)}${two(time.day)}';
   }
 }

@@ -6,8 +6,8 @@
   "main": "bin/server.js",
   "scripts": {
     "dev": "node ace serve --watch",
-    "build": "node ace build",
-    "start": "node bin/server.js",
+    "build": "node bin/build.mjs",
+    "start": "node build/bin/server.js",
     "migrate": "node ace migration:run",
     "seed": "node ace db:seed"
   },

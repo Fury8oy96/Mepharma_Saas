@@ -138,3 +138,71 @@ enum BarcodeSymbologyType {
     }
   }
 }
+
+/// Smart 1D Barcode Engine providing automatic 1D symbology detection, rendering,
+/// and unique EAN-13 internal barcode generation without user complexity.
+class SmartBarcodeEngine {
+  /// Resolves the optimal 1D barcode renderer for [data] automatically:
+  /// - 13 digits with valid checksum -> EAN-13
+  /// - 12 digits with valid checksum -> UPC-A
+  /// - 8 digits with valid checksum -> EAN-8
+  /// - Fallback for any other alphanumeric or numeric length -> Code 128 (never fails).
+  static Barcode resolveRenderer(String? data) {
+    if (data == null || data.trim().isEmpty) {
+      return Barcode.code128();
+    }
+    final clean = data.trim();
+    final isDigitsOnly = RegExp(r'^\d+$').hasMatch(clean);
+
+    if (isDigitsOnly) {
+      if (clean.length == 13) {
+        final b = Barcode.ean13();
+        try {
+          b.verify(clean);
+          return b;
+        } catch (_) {}
+      } else if (clean.length == 12) {
+        final b = Barcode.upcA();
+        try {
+          b.verify(clean);
+          return b;
+        } catch (_) {}
+      } else if (clean.length == 8) {
+        final b = Barcode.ean8();
+        try {
+          b.verify(clean);
+          return b;
+        } catch (_) {}
+      }
+    }
+
+    try {
+      final b = Barcode.code128();
+      b.verify(clean);
+      return b;
+    } catch (_) {
+      return Barcode.code128();
+    }
+  }
+
+  /// Calculates standard EAN-13 check digit for a 12-digit prefix.
+  static int computeEan13Checksum(String digits12) {
+    int sum = 0;
+    for (int i = 0; i < digits12.length; i++) {
+      final digit = int.tryParse(digits12[i]) ?? 0;
+      sum += i % 2 == 0 ? digit : digit * 3;
+    }
+    return (10 - (sum % 10)) % 10;
+  }
+
+  /// Generates a unique 13-digit EAN-13 code starting with `200` + 9 digits + checksum.
+  static String generateUniqueEan13() {
+    final now = DateTime.now();
+    final timeStr = now.millisecondsSinceEpoch.toString();
+    final sub = timeStr.length >= 6 ? timeStr.substring(timeStr.length - 6) : timeStr.padLeft(6, '0');
+    final rand = (100 + (now.microsecond % 900)).toString();
+    final base12 = '200$sub$rand'.substring(0, 12);
+    final check = computeEan13Checksum(base12);
+    return '$base12$check';
+  }
+}
